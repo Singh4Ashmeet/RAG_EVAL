@@ -887,6 +887,9 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
+bench = [
+    { name = "psutil" },
+]
 dev = [
     { name = "mypy" },
     { name = "pre-commit" },
@@ -916,6 +919,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
+bench = [{ name = "psutil", specifier = ">=6.1.1" }]
 dev = [
     { name = "mypy", specifier = ">=2.4.1" },
     { name = "pre-commit", specifier = ">=4.7.0" },

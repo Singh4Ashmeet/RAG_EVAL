@@ -1,0 +1,22 @@
+{
+  "environment": {
+    "date": "2026-10-29T12:13:56.821665+00:00",
+    "os": "Windows 11 (10.0.26200)",
+    "cpu_model": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+    "physical_cores": 8,
+    "logical_cores": 16,
+    "total_ram_gb": 13.3,
+    "ollama_version": "0.40.13",
+    "ac_power": false,
+    "battery_percent": 32
+  },
+  "results": [],
+  "skipped": [
+    "llama3.2:3b",
+    "qwen2.5:3b",
+    "qwen2.5:7b",
+    "llama3.1:8b"
+  ],
+  "thread_sweep": null,
+  "prompt_token_count": 0
+}
