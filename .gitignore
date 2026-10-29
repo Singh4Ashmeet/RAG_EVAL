@@ -1,0 +1,13 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+data/uploads/*
+data/cache/*
+eval/reports/*
+node_modules/
+.idea/
+.vscode/
+!data/uploads/.gitkeep
+!data/cache/.gitkeep
+!eval/reports/.gitkeep

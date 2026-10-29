@@ -1,0 +1,1 @@
+"""Citation generation logic (placeholder)."""

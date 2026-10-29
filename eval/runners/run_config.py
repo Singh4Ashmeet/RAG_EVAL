@@ -1,0 +1,1 @@
+"""Run configuration schema (placeholder)."""

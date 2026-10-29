@@ -1,0 +1,1 @@
+"""Normalization schema definitions (placeholder)."""
