@@ -7,6 +7,7 @@ import uuid
 from scripts.benchmark_models import (
     build_prompt,
     format_markdown_table,
+    is_ollama_process_name,
     median,
     tokens_per_second,
 )
@@ -137,3 +138,32 @@ class TestFormatMarkdownTable:
         result = format_markdown_table(["X"], [["a"], ["b"]])
         assert "| X |" in result
         assert "| a |" in result
+
+
+# ---------------------------------------------------------------------------
+# is_ollama_process_name
+# ---------------------------------------------------------------------------
+
+
+class TestIsOllamaProcessName:
+    def test_ollama_exe(self):
+        assert is_ollama_process_name("ollama.exe") is True
+
+    def test_ollama_app_exe(self):
+        assert is_ollama_process_name("ollama app.exe") is True
+
+    def test_llama_server_exe(self):
+        assert is_ollama_process_name("llama-server.exe") is True
+
+    def test_mixed_case(self):
+        assert is_ollama_process_name("Llama-Server.EXE") is True
+        assert is_ollama_process_name("OLLAMA.EXE") is True
+        assert is_ollama_process_name("Ollama App.Exe") is True
+
+    def test_unrelated_processes_do_not_match(self):
+        assert is_ollama_process_name("chrome.exe") is False
+        assert is_ollama_process_name("python.exe") is False
+
+    def test_absent_and_empty_names(self):
+        assert is_ollama_process_name(None) is False
+        assert is_ollama_process_name("") is False

@@ -56,6 +56,19 @@ def median(values: list[float]) -> float:
     return statistics.median(values)
 
 
+def is_ollama_process_name(name: str | None) -> bool:
+    """Return True if the process name belongs to Ollama or its inference workers.
+
+    Matches process names containing 'ollama' (e.g. ollama.exe, ollama app.exe)
+    or 'llama-server' (the llama.cpp model runner worker process).
+    Handles None safely and matches case-insensitively.
+    """
+    if not name:
+        return False
+    name_lower = name.lower()
+    return "ollama" in name_lower or "llama-server" in name_lower
+
+
 def build_prompt(nonce: str | None = None) -> list[dict[str, str]]:
     """Build a deterministic RAG-style chat prompt (~1500 prompt tokens).
 
@@ -244,7 +257,13 @@ def get_ps_info(model: str) -> dict:
 
 
 class MemorySampler:
-    """Background thread that samples Ollama RSS and system available memory."""
+    """Background thread that samples Ollama RSS and system available memory.
+
+    Measures the peak summed RSS across all matching Ollama-related processes
+    (the Ollama server, GUI app, and llama-server worker processes), as well
+    as the minimum available system memory. Note that this metric is the aggregate
+    RSS of matching processes, not an isolated measurement of model memory.
+    """
 
     def __init__(self, interval: float = MEMORY_SAMPLE_INTERVAL) -> None:
         self.interval = interval
@@ -269,8 +288,8 @@ class MemorySampler:
                 rss_sum = 0
                 for proc in psutil.process_iter(["name", "memory_info"]):
                     try:
-                        name = proc.info["name"] or ""
-                        if "ollama" in name.lower():
+                        name = proc.info.get("name")
+                        if is_ollama_process_name(name):
                             rss_sum += proc.info["memory_info"].rss
                     except (psutil.NoSuchProcess, psutil.AccessDenied):
                         pass

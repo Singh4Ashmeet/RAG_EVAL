@@ -1,0 +1,51 @@
+{
+  "environment": {
+    "date": "2026-10-29T13:55:36.319003+00:00",
+    "os": "Windows 11 (10.0.26200)",
+    "cpu_model": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+    "physical_cores": 8,
+    "logical_cores": 16,
+    "total_ram_gb": 13.3,
+    "ollama_version": "0.40.13",
+    "ac_power": true,
+    "battery_percent": 49
+  },
+  "results": [
+    {
+      "model": "llama3.2:3b",
+      "num_thread": null,
+      "cold_ttft": 18.81200000003446,
+      "cold_load_duration_ns": 5012574300,
+      "prompt_eval_count": 611,
+      "size": 2567826307,
+      "size_vram": 0,
+      "warm_ttft": 14.484000000054948,
+      "warm_prompt_tok_s": 49.98073230418587,
+      "warm_gen_tok_s": 9.334753211528493,
+      "warm_wall_total": 19.89000000001397,
+      "warm_eval_count": 50.0,
+      "warm_runs_raw": {
+        "wall_ttft": [
+          14.484000000054948
+        ],
+        "prompt_tok_s": [
+          49.98073230418587
+        ],
+        "gen_tok_s": [
+          9.334753211528493
+        ],
+        "wall_total": [
+          19.89000000001397
+        ],
+        "eval_count": [
+          50.0
+        ]
+      },
+      "peak_ollama_rss": 87916544,
+      "min_available_mem": 729866240
+    }
+  ],
+  "skipped": [],
+  "thread_sweep": null,
+  "prompt_token_count": 611
+}
