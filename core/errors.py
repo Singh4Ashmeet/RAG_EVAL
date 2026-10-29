@@ -11,3 +11,11 @@ class ParserError(RAGEvalError):
 
 class ChunkerError(RAGEvalError):
     """Raised when document chunking fails."""
+
+
+class EmbedderError(RAGEvalError):
+    """Raised when text embedding fails."""
+
+
+class RetrievalError(RAGEvalError):
+    """Raised when document retrieval or reranking fails."""
