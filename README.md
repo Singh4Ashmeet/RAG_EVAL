@@ -117,6 +117,14 @@ The one-command ingestion CLI only parses and chunks; indexing is shown explicit
 - [Setup, workflow, evaluation, experiments, and diagnosis runbook](docs/runbook.md)
 - [Metrics, experiment interpretation, and benchmark results](docs/benchmarks.md)
 - [Current findings and known limitations](docs/findings.md)
+- [Privacy and data handling](docs/privacy.md)
+- [Changelog](CHANGELOG.md)
+
+## License and project terms
+
+Copyright © 2026 Ashmeet Singh. RAG_EVAL is proprietary and all rights are reserved; it is not offered under an open-source license. See [LICENSE](LICENSE) and [Terms and Conditions](TERMS.md). Third-party dependencies and models remain under their own licenses. Public repository access is subject to GitHub's platform terms, including its applicable terms for viewing and forking public repositories.
+
+Project process documents: [Contributing](CONTRIBUTING.md) and [Security reporting](SECURITY.md).
 
 ## Project status
 

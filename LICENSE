@@ -1,0 +1,26 @@
+RAG_EVAL PROPRIETARY LICENSE
+
+Copyright (c) 2026 Ashmeet Singh. All rights reserved.
+
+This repository and its original source code and documentation are proprietary.
+No license or other permission is granted to use, reproduce, modify, prepare
+derivative works from, distribute, sublicense, publish, or commercially exploit
+this material, except for rights that cannot be restricted by applicable law,
+rights expressly granted in writing by the copyright holder, or limited rights
+expressly provided by the hosting platform's applicable terms for on-platform
+access to public content.
+
+Access to this public repository is also subject to the [GitHub Terms of
+Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service).
+In particular, this notice does not purport to remove the limited rights that
+GitHub grants users to use, display, perform, and reproduce public repository
+content through GitHub's functionality, including by forking on the service.
+
+Third-party software, model weights, datasets, and other materials referenced
+or used by RAG_EVAL are not owned or relicensed by this notice. They remain
+subject to their respective licenses and terms.
+
+THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT, TO THE
+MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW.

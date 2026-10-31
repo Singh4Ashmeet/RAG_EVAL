@@ -8,6 +8,15 @@ Start with the root [README](../README.md) for project scope, installation, and 
 - [Runbook](runbook.md): configure Ollama, ingest/index documents, generate answers, evaluate, compare variants, and diagnose runs.
 - [Benchmarks and metrics](benchmarks.md): metric definitions, experiment interpretation, and historical model-inference measurements.
 - [Findings and limitations](findings.md): verified capabilities, current gaps, and evidence still needed.
+- [Privacy and data handling](privacy.md): documents, prompts, vectors, reports, and configured model hosts.
+
+## Project policies
+
+- [License](../LICENSE): proprietary notice and copyright attribution.
+- [Terms and Conditions](../TERMS.md): intended use and warranty terms.
+- [Contributing](../CONTRIBUTING.md): development and review expectations.
+- [Security](../SECURITY.md): responsible vulnerability reporting.
+- [Changelog](../CHANGELOG.md): milestone-level project history.
 
 ## Suggested reading paths
 
