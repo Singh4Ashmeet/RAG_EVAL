@@ -64,15 +64,14 @@ See [.env.example](.env.example) for variable names. It is a template, not an au
 
 ## Hosted beta workbench
 
-The frontend lives in `frontend/`. Run it against the FastAPI API during local development:
+The frontend lives in `frontend/`. Run the FastAPI API and frontend together from the repository root:
 
 ```powershell
-cd frontend
-npm ci
-npm run dev
+uv sync
+python main.py
 ```
 
-In another terminal, start the API with `uv run uvicorn apps.api.main:app --reload`. Configure the Vite development proxy in `frontend/vite.config.ts` to point to the API. The hosted sign-in flow requires a GitHub OAuth app and an administrator-created invitation. For the container reference stack, see [docs/hosted-beta.md](docs/hosted-beta.md) and [deploy/docker-compose.yml](deploy/docker-compose.yml).
+Open `http://127.0.0.1:5173`; API docs are at `http://127.0.0.1:8000/docs`. The runner installs frontend dependencies on its first run when needed and stops both services with Ctrl+C. The hosted sign-in flow requires a GitHub OAuth app and an administrator-created invitation. For the container reference stack, see [docs/hosted-beta.md](docs/hosted-beta.md) and [deploy/docker-compose.yml](deploy/docker-compose.yml). See [docs/ci-cd.md](docs/ci-cd.md) for GitHub Actions checks and container publishing.
 
 The workbench supports private document uploads, Ollama indexing and grounded asking, element-labeled immutable datasets, queued retrieval evaluations, paired retrieval-depth experiments, encrypted Gemini/Groq chat keys, and workspace deletion. Read the hosted [Terms](docs/hosted-terms.md) and [Privacy Notice](docs/hosted-privacy.md) before inviting beta users. It remains an early beta; validate PostgreSQL migrations and RLS on the target service, and add rate limits, abuse controls, backup expiry automation, and independent security review before broader access.
 
