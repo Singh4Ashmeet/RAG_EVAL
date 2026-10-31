@@ -24,6 +24,9 @@ from eval.metrics.retrieval import (
     precision_at_k,
     recall_at_k,
     reciprocal_rank_at_k,
+    source_element_hit_rate_at_k,
+    source_element_recall_at_k,
+    source_element_reciprocal_rank_at_k,
 )
 from eval.runners.run_config import EvaluationRunConfig
 
@@ -40,6 +43,7 @@ class QueryEvaluationResult(BaseModel):
     query: str
     status: QueryStatus
     relevant_chunk_ids: list[str] = Field(default_factory=list)
+    relevant_element_ids: list[str] = Field(default_factory=list)
     reference_answer: str | None = None
     retrieved_sources: list[SearchResult] = Field(default_factory=list)
     retrieval_metrics: dict[str, float] = Field(default_factory=dict)
@@ -102,16 +106,24 @@ class EvaluationRunner:
                     result.generation_duration_ms
                 )
 
-        metric_names = [
-            f"retrieval.{metric}@{cutoff}"
-            for cutoff in self.config.cutoffs
-            for metric in ("recall", "precision", "mrr", "map", "hit_rate")
-        ] + [
-            "answer.exact_match",
-            "answer.token_f1",
-            "latency.retrieval_ms",
-            "latency.generation_ms",
-        ]
+        metric_names = (
+            [
+                f"retrieval.{metric}@{cutoff}"
+                for cutoff in self.config.cutoffs
+                for metric in ("recall", "precision", "mrr", "map", "hit_rate")
+            ]
+            + [
+                f"retrieval.source_element_{metric}@{cutoff}"
+                for cutoff in self.config.cutoffs
+                for metric in ("recall", "mrr", "hit_rate")
+            ]
+            + [
+                "answer.exact_match",
+                "answer.token_f1",
+                "latency.retrieval_ms",
+                "latency.generation_ms",
+            ]
+        )
         metrics = {
             name: fmean(metric_values[name]) if metric_values.get(name) else None
             for name in metric_names
@@ -199,6 +211,23 @@ class EvaluationRunner:
                     }
                 )
 
+        if retrieval_succeeded and case.relevant_element_ids:
+            retrieved_chunks = [result.chunk for result in retrieved_sources]
+            for cutoff in self.config.cutoffs:
+                retrieval_metrics.update(
+                    {
+                        f"source_element_recall@{cutoff}": source_element_recall_at_k(
+                            retrieved_chunks, case.relevant_element_ids, cutoff
+                        ),
+                        f"source_element_mrr@{cutoff}": source_element_reciprocal_rank_at_k(
+                            retrieved_chunks, case.relevant_element_ids, cutoff
+                        ),
+                        f"source_element_hit_rate@{cutoff}": source_element_hit_rate_at_k(
+                            retrieved_chunks, case.relevant_element_ids, cutoff
+                        ),
+                    }
+                )
+
         if retrieval_succeeded and answerer is not None:
             generation_started = perf_counter()
             try:
@@ -230,6 +259,7 @@ class EvaluationRunner:
             query=case.query,
             status=status,
             relevant_chunk_ids=case.relevant_chunk_ids,
+            relevant_element_ids=case.relevant_element_ids,
             reference_answer=case.reference_answer,
             retrieved_sources=retrieved_sources,
             retrieval_metrics=retrieval_metrics,

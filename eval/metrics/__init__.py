@@ -7,6 +7,9 @@ from eval.metrics.retrieval import (
     precision_at_k,
     recall_at_k,
     reciprocal_rank_at_k,
+    source_element_hit_rate_at_k,
+    source_element_recall_at_k,
+    source_element_reciprocal_rank_at_k,
 )
 
 __all__ = [
@@ -16,5 +19,8 @@ __all__ = [
     "precision_at_k",
     "recall_at_k",
     "reciprocal_rank_at_k",
+    "source_element_hit_rate_at_k",
+    "source_element_recall_at_k",
+    "source_element_reciprocal_rank_at_k",
     "token_f1",
 ]

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from core.normalize.schema import Chunk
 from eval.metrics import (
     average_precision_at_k,
     exact_match,
@@ -11,6 +12,9 @@ from eval.metrics import (
     precision_at_k,
     recall_at_k,
     reciprocal_rank_at_k,
+    source_element_hit_rate_at_k,
+    source_element_recall_at_k,
+    source_element_reciprocal_rank_at_k,
     token_f1,
 )
 
@@ -59,3 +63,28 @@ def test_token_f1_uses_multiset_overlap() -> None:
     assert token_f1("red red blue", "red blue blue") == pytest.approx(2 / 3)
     assert token_f1("entirely unrelated", "expected phrase") == 0.0
     assert token_f1("", "expected phrase") == 0.0
+
+
+def test_source_element_metrics_are_stable_across_chunk_boundaries() -> None:
+    # A chunking change can alter chunk IDs and boundaries while preserving the
+    # source element IDs used as ground truth.
+    chunks = [
+        Chunk(
+            chunk_id="new-chunk-a",
+            document_id="doc",
+            text="first",
+            chunk_index=0,
+            source_element_ids=["e1", "e2"],
+        ),
+        Chunk(
+            chunk_id="new-chunk-b",
+            document_id="doc",
+            text="second",
+            chunk_index=1,
+            source_element_ids=["e2", "e3"],
+        ),
+    ]
+    assert source_element_recall_at_k(chunks, ["e1", "e2", "e3"], 1) == pytest.approx(2 / 3)
+    assert source_element_recall_at_k(chunks, ["e1", "e2", "e3"], 2) == 1.0
+    assert source_element_reciprocal_rank_at_k(chunks, ["e3"], 2) == 0.5
+    assert source_element_hit_rate_at_k(chunks, ["missing"], 2) == 0.0
