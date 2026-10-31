@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 data/uploads/*
 data/cache/*
+/data/rag_eval.sqlite3
 eval/reports/*
 node_modules/
 .idea/
