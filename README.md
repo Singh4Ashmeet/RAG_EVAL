@@ -15,7 +15,7 @@ RAG_EVAL can parse and chunk local text documents, embed and index chunks, retri
 - Experiment records compare named variants on the same dataset and report paired bootstrap confidence intervals.
 - Diagnostics identify observed retrieval, generation, lexical-overlap, and citation-resolution issues.
 
-The API and worker packages are placeholders; there is no web application or frontend yet. PDF, DOCX, image, BM25, hybrid, and reranking modules elsewhere in the repository are not wired into the verified default workflow. See [the implementation boundaries](docs/architecture.md#current-scope-and-limitations).
+The repository also includes an invite-only hosted beta workbench. Its remaining deployment constraints and unimplemented production safeguards are listed in [the hosted beta guide](docs/hosted-beta.md). PDF, DOCX, image, BM25, hybrid, and reranking modules elsewhere in the repository are not wired into the verified default workflow. See [the implementation boundaries](docs/architecture.md#current-scope-and-limitations).
 
 ## Requirements
 
@@ -23,6 +23,8 @@ The API and worker packages are placeholders; there is no web application or fro
 - [uv](https://docs.astral.sh/uv/) for dependency and environment management
 - Ollama installed separately for the local embedding and generation workflow
 - One Ollama model suitable for embeddings and one chat model, already pulled into Ollama
+- Node.js and npm for the React frontend
+- Docker Compose for the reference hosted service stack
 
 Unit and integration tests use fakes and do not require the Ollama service or model files.
 
@@ -59,6 +61,20 @@ $env:RAG_EVAL_DB_PATH = "data/rag_eval.sqlite3"
 ```
 
 See [.env.example](.env.example) for variable names. It is a template, not an automatically loaded configuration file. `configs/baseline.yaml` documents baseline settings but is not loaded by a runner.
+
+## Hosted beta workbench
+
+The frontend lives in `frontend/`. Run it against the FastAPI API during local development:
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+In another terminal, start the API with `uv run uvicorn apps.api.main:app --reload`. Configure the Vite development proxy in `frontend/vite.config.ts` to point to the API. The hosted sign-in flow requires a GitHub OAuth app and an administrator-created invitation. For the container reference stack, see [docs/hosted-beta.md](docs/hosted-beta.md) and [deploy/docker-compose.yml](deploy/docker-compose.yml).
+
+The workbench supports private document uploads, Ollama indexing and grounded asking, element-labeled immutable datasets, queued retrieval evaluations, paired retrieval-depth experiments, encrypted Gemini/Groq chat keys, and workspace deletion. Read the hosted [Terms](docs/hosted-terms.md) and [Privacy Notice](docs/hosted-privacy.md) before inviting beta users. It remains an early beta; validate PostgreSQL migrations and RLS on the target service, and add rate limits, abuse controls, backup expiry automation, and independent security review before broader access.
 
 ## Quickstart: ingest, index, retrieve, and answer
 
@@ -128,4 +144,4 @@ Project process documents: [Contributing](CONTRIBUTING.md) and [Security reporti
 
 ## Project status
 
-The verified local RAG and evaluation path is implemented through experiment tracking and failure diagnosis. Real evaluations still require reviewed ground truth and an installed local embedding model. The next product milestone is to plan the frontend; no frontend framework or interface has been selected.
+The local RAG and evaluation path includes repeatable experiment tracking and failure diagnosis. The hosted UI is an invite-only technical workbench; real scores require reviewed ground truth and configured model services. The hosted deployment guide tracks its beta limits.

@@ -1,6 +1,6 @@
 # Privacy and data handling
 
-RAG_EVAL is a developer tool. Operators choose which documents to process, where to store the vector database, and which model host to use. The project does not provide account management, data retention controls, or a hosted service.
+This page describes the local developer workflow. The separate invite-only hosted beta has account, tenant, retention, and provider-processing behavior described in the [Hosted Privacy Notice](hosted-privacy.md) and [Hosted Beta Guide](hosted-beta.md).
 
 ## Data handled by the current workflow
 
@@ -14,7 +14,7 @@ The default Ollama provider is intended for a local Ollama service. If `OLLAMA_H
 
 ## Telemetry and dependencies
 
-The verified local workflow contains no project analytics or telemetry component. Package installation, model runtimes, operating systems, and services may perform their own network communication; review their documentation and configuration. Optional or placeholder integrations may have different data flows if implemented and enabled later.
+The local workflow contains no project analytics or telemetry component. Package installation, model runtimes, operating systems, and services may perform their own network communication; review their documentation and configuration. The hosted beta processes uploaded documents and prompts on the service and can send chat prompts with retrieved excerpts to Gemini or Groq when a tenant selects that provider.
 
 ## Operator responsibilities
 

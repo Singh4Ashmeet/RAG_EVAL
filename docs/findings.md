@@ -24,14 +24,15 @@ Automated tests use fakes for provider calls and do not require Ollama or model 
 
 ## Product and engineering gaps
 
-- There is no frontend. The API and worker modules are placeholders; the usable workflows are Python APIs and a minimal ingestion CLI.
+- An invite-only hosted API, worker, and React workbench are implemented. The hosted service still needs versioned Alembic migrations, automated backup expiry, rate limiting, export, operational alerting, and independent security review before broad access; see the [hosted beta guide](hosted-beta.md).
 - The default ingest path only registers `.txt` and `.md`, although other parser modules exist in the repository.
 - BM25, hybrid retrieval, and reranking modules are not connected to the current verified pipeline.
 - SQLite uses an exact vector scan and will become slow as a corpus grows.
 - Configuration YAML and `.env.example` document settings but are not loaded automatically by an application runner.
 - Evaluation answer metrics are lexical only; semantic answer relevance and claim-level faithfulness are not measured.
 - Experiment reports capture latency but not memory or other resource consumption.
+- Hosted retrieval embeds stable source elements and exact-scans serialized vectors; chunked indexing and pgvector are needed for larger corpora.
 
-## Next planning step
+## Next product milestone
 
-The next product discussion is the frontend. Before choosing a framework, define the target user flow and decide whether the frontend should call a new application API or operate as a local desktop-style interface around the existing Python core. The API package is currently a stub, so an API-backed frontend would require a separately scoped backend milestone.
+Review the hosted beta against production migration, backup, access-control, and service monitoring requirements before inviting users. Real evaluation conclusions still require reviewed ground truth and configured model services.
