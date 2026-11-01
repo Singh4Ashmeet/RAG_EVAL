@@ -9,8 +9,12 @@ import sys
 import time
 from pathlib import Path
 
+import dotenv
+
 ROOT = Path(__file__).resolve().parent
 FRONTEND = ROOT / "frontend"
+
+dotenv.load_dotenv(ROOT / ".env")
 
 
 def _npm(*args: str, cwd: Path = FRONTEND) -> int:

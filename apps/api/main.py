@@ -13,6 +13,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
+import dotenv
 import httpx
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
@@ -24,6 +25,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker,
 
 from core.generate.pipeline import NO_CONTEXT_ANSWER
 from eval.datasets.schema import EvaluationCase, EvaluationDataset
+
+dotenv.load_dotenv()
 
 
 class Base(DeclarativeBase):
@@ -592,7 +595,13 @@ class EmailLinkRequest(BaseModel):
 @app.post("/api/v1/auth/email/request")
 async def request_email_login(payload: EmailLinkRequest, request: Request, db=Depends(db_session)):
     api_key, sender = os.getenv("RESEND_API_KEY"), os.getenv("AUTH_EMAIL_FROM")
-    if not api_key or not sender:
+    dev_mode = os.getenv("AUTH_DEV_MODE", "false").lower() == "true" or api_key in (
+        "console",
+        "mock",
+        "dev",
+        "local",
+    )
+    if not dev_mode and (not api_key or not sender):
         raise HTTPException(503, "Email sign-in is not configured yet.")
     now = datetime.now(UTC)
     recent = db.scalar(
@@ -615,6 +624,15 @@ async def request_email_login(payload: EmailLinkRequest, request: Request, db=De
     )
     db.commit()
     link = f"{public_base_url(request)}/api/v1/auth/email/consume?token={raw_token}"
+    if dev_mode:
+        print("\n==================================================", flush=True)
+        print(f"[RAG_EVAL AUTH] Local sign-in link for {payload.email}:", flush=True)
+        print(f"{link}", flush=True)
+        print("==================================================\n", flush=True)
+        return {
+            "detail": "If that address can receive sign-in links, one will arrive shortly.",
+            "dev_link": link,
+        }
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             sent = await client.post(
@@ -680,8 +698,12 @@ def me(account=Depends(current_account)):
 
 @app.get("/api/v1/auth/methods")
 def auth_methods():
+    dev_mode = os.getenv("AUTH_DEV_MODE", "false").lower() == "true" or os.getenv(
+        "RESEND_API_KEY"
+    ) in ("console", "mock", "dev", "local")
+    has_resend = bool(os.getenv("RESEND_API_KEY") and os.getenv("AUTH_EMAIL_FROM"))
     return {
-        "email": bool(os.getenv("RESEND_API_KEY") and os.getenv("AUTH_EMAIL_FROM")),
+        "email": dev_mode or has_resend,
         "google": bool(os.getenv("GOOGLE_CLIENT_ID") and os.getenv("GOOGLE_CLIENT_SECRET")),
         "github": bool(os.getenv("GITHUB_CLIENT_ID") and os.getenv("GITHUB_CLIENT_SECRET")),
     }

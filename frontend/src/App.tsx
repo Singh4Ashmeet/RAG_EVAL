@@ -16,6 +16,7 @@ import {
   ShieldCheckIcon,
   SparklesIcon,
 } from './icons'
+import { GuideBot } from './GuideBot'
 import './App.css'
 
 type Section = 'Corpus' | 'Ask' | 'Datasets' | 'Runs' | 'Experiments'
@@ -97,6 +98,7 @@ function App() {
   const [emailInput, setEmailInput] = useState('')
   const [emailLinkSent, setEmailLinkSent] = useState(false)
   const [emailSending, setEmailSending] = useState(false)
+  const [devLink, setDevLink] = useState('')
   const [authError, setAuthError] = useState('')
   const [documents, setDocuments] = useState<DocumentRow[]>([])
   const [datasets, setDatasets] = useState<DatasetRow[]>([])
@@ -194,14 +196,18 @@ function App() {
     event.preventDefault()
     setAuthError('')
     setEmailLinkSent(false)
+    setDevLink('')
     setEmailSending(true)
     try {
-      await api<{ detail: string }>('/auth/email/request', {
+      const result = await api<{ detail: string; dev_link?: string }>('/auth/email/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailInput }),
       })
       setEmailLinkSent(true)
+      if (result.dev_link) {
+        setDevLink(result.dev_link)
+      }
     } catch (e) {
       setAuthError((e as Error).message)
     } finally {
@@ -319,6 +325,15 @@ function App() {
                       <p className="auth-confirmation" role="status">
                         If that address can receive sign-in links, one will arrive shortly. The link expires in 15 minutes.
                       </p>
+                    )}
+                    {devLink && (
+                      <div className="dev-sign-in-banner">
+                        <span className="dev-tag">LOCAL DEV MODE</span>
+                        <p>One-click local sign-in link generated:</p>
+                        <a className="button primary dev-login-link" href={devLink}>
+                          Sign In Instantly →
+                        </a>
+                      </div>
                     )}
                   </form>
                 )}
@@ -611,6 +626,7 @@ function App() {
             </div>
           </footer>
         </main>
+        <GuideBot isLoggedIn={false} />
       </div>
     )
   }
@@ -860,6 +876,8 @@ function App() {
           </div>
         </footer>
       </main>
+
+      <GuideBot isLoggedIn={true} currentSection={section} onNavigate={setSection} />
 
       {settingsOpen && (
         <SettingsPanel account={account} onClose={() => setSettingsOpen(false)} onError={message => setError(message)} />
