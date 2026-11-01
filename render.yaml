@@ -1,0 +1,110 @@
+services:
+  - type: web
+    name: rag-eval-web
+    runtime: docker
+    region: singapore
+    dockerfilePath: ./deploy/Dockerfile
+    dockerCommand: /bin/sh -c 'exec uv run uvicorn apps.api.main:app --host 0.0.0.0 --port "$PORT"'
+    preDeployCommand: uv run alembic upgrade head
+    healthCheckPath: /api/v1/health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rag-eval-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: rag-eval-queue
+          type: keyvalue
+          property: connectionString
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: SKIP_SCHEMA_INIT
+        value: "true"
+      - key: MAX_UPLOAD_BYTES
+        value: "26214400"
+      - key: INVITATION_ADMIN_TOKEN
+        generateValue: true
+      - key: CREDENTIAL_ENCRYPTION_KEY
+        generateValue: true
+      - key: S3_BUCKET
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: OLLAMA_BASE_URL
+        sync: false
+      - key: OLLAMA_EMBED_MODEL
+        value: nomic-embed-text
+      - key: OLLAMA_MODEL
+        value: llama3.2:3b
+
+  - type: worker
+    name: rag-eval-worker
+    runtime: docker
+    region: singapore
+    dockerfilePath: ./deploy/Dockerfile
+    dockerCommand: /bin/sh -c 'exec uv run rq worker --url "$REDIS_URL" rag_eval'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rag-eval-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: rag-eval-queue
+          type: keyvalue
+          property: connectionString
+      - key: SKIP_SCHEMA_INIT
+        value: "true"
+      - key: CREDENTIAL_ENCRYPTION_KEY
+        fromService:
+          name: rag-eval-web
+          type: web
+          envVarKey: CREDENTIAL_ENCRYPTION_KEY
+      - key: S3_BUCKET
+        fromService:
+          name: rag-eval-web
+          type: web
+          envVarKey: S3_BUCKET
+      - key: AWS_REGION
+        fromService:
+          name: rag-eval-web
+          type: web
+          envVarKey: AWS_REGION
+      - key: AWS_ACCESS_KEY_ID
+        fromService:
+          name: rag-eval-web
+          type: web
+          envVarKey: AWS_ACCESS_KEY_ID
+      - key: AWS_SECRET_ACCESS_KEY
+        fromService:
+          name: rag-eval-web
+          type: web
+          envVarKey: AWS_SECRET_ACCESS_KEY
+      - key: OLLAMA_BASE_URL
+        fromService:
+          name: rag-eval-web
+          type: web
+          envVarKey: OLLAMA_BASE_URL
+      - key: OLLAMA_EMBED_MODEL
+        value: nomic-embed-text
+      - key: OLLAMA_MODEL
+        value: llama3.2:3b
+
+  - type: keyvalue
+    name: rag-eval-queue
+    region: singapore
+    plan: starter
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
+    persistenceMode: journal-snapshot
+
+databases:
+  - name: rag-eval-db
+    region: singapore
+    postgresMajorVersion: "17"
