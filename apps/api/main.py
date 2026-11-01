@@ -213,6 +213,10 @@ class AskResponse(BaseModel):
 
 
 DB_URL = os.getenv("DATABASE_URL", "sqlite:///./rag_eval_hosted.db")
+if DB_URL.startswith("postgres://"):
+    DB_URL = "postgresql+psycopg://" + DB_URL.removeprefix("postgres://")
+elif DB_URL.startswith("postgresql://"):
+    DB_URL = "postgresql+psycopg://" + DB_URL.removeprefix("postgresql://")
 engine = create_engine(
     DB_URL,
     pool_pre_ping=True,
