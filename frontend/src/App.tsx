@@ -109,6 +109,7 @@ function App() {
   const [busy, setBusy] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [copiedHash, setCopiedHash] = useState<string | null>(null)
+  const [uploadedFileName, setUploadedFileName] = useState('')
 
   const refresh = async () => {
     if (!account) return
@@ -184,6 +185,7 @@ function App() {
         `Document stored with ${result.status} indexing status. ${result.element_count} source elements are ready for dataset labels.`,
       )
       formElement.reset()
+      setUploadedFileName('')
       await refresh()
     } catch (e) {
       setError((e as Error).message)
@@ -735,10 +737,20 @@ function App() {
               </div>
               <form onSubmit={upload} className="upload-form">
                 <label className="file-input">
-                  <span className="file-input-text">Choose file</span>
-                  <input name="file" type="file" accept=".txt,.md,text/plain,text/markdown" />
+                  <span className="file-input-text">
+                    {uploadedFileName ? `📄 ${uploadedFileName}` : 'Choose .txt or .md file'}
+                  </span>
+                  <input
+                    name="file"
+                    type="file"
+                    accept=".txt,.md,text/plain,text/markdown"
+                    onChange={e => {
+                      const f = e.target.files?.[0]
+                      setUploadedFileName(f ? f.name : '')
+                    }}
+                  />
                 </label>
-                <button className="button primary" disabled={busy}>
+                <button className="button primary" disabled={busy || !uploadedFileName}>
                   {busy ? 'Saving…' : 'Upload source'}
                 </button>
               </form>

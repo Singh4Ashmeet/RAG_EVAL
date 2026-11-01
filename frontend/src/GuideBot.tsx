@@ -13,7 +13,6 @@ interface TourStep {
   title: string
   subtitle: string
   body: string
-  placement: 'top' | 'bottom' | 'left' | 'right' | 'center'
   section?: Section
   actionLabel?: string
   tip?: string
@@ -24,98 +23,88 @@ const WORKSPACE_STEPS: TourStep[] = [
     id: 'welcome',
     target: null,
     title: 'Welcome to RAG_EVAL',
-    subtitle: 'Interactive Workbench Walkthrough',
-    body: 'RAG_EVAL is a rigorous evaluation platform for retrieval-augmented generation. Follow this guided walkthrough to learn how to measure retrieval precision, verify grounded answers, and run paired bootstrap experiments.',
-    placement: 'center',
-    actionLabel: 'Start Walkthrough →',
-    tip: 'Press Escape anytime to pause or close the guide.',
+    subtitle: 'Evaluation Workflow Walkthrough',
+    body: 'RAG_EVAL provides rigorous, reproducible evaluation for your RAG pipelines with deterministic ground truth and statistical significance testing. Let\'s walk through the workbench in 8 quick steps.',
+    actionLabel: 'Begin Walkthrough →',
+    tip: 'Press Escape anytime to pause or close the tour.',
   },
   {
     id: 'nav',
     target: '[data-tour="nav"]',
-    title: 'Pipeline Stages Navigation',
+    title: '1. Pipeline Stages Navigation',
     subtitle: 'Corpus · Ask · Datasets · Runs · Experiments',
-    body: 'Each tab represents a stage in your evaluation pipeline: manage source documents, test real-time retrieval in Ask, build immutable ground-truth datasets, queue quantitative runs, and measure statistical effect sizes in Experiments.',
-    placement: 'bottom',
+    body: 'Navigate between the five evaluation stages: manage source documents, test real-time retrieval in Ask, build immutable ground-truth datasets, queue quantitative runs, and measure statistical effect sizes in Experiments.',
     actionLabel: 'Next: Ingestion →',
   },
   {
     id: 'upload',
     target: '[data-tour="upload"]',
-    title: 'Step 1: Upload Source Corpus',
+    title: '2. Upload Source Material',
     subtitle: 'Stable, Deterministic Element Extraction',
-    body: 'Upload UTF-8 text (.txt) or Markdown (.md) documents up to 25 MiB. Each document is deterministically parsed into stable elements with immutable UUIDs (elem_...). When you adjust chunk sizes later, your ground-truth labels remain valid.',
-    placement: 'bottom',
+    body: 'Upload UTF-8 text (.txt) or Markdown (.md) documents up to 25 MiB. Each file is parsed into stable elements with immutable IDs (elem_...). When you adjust chunk sizes later, your ground-truth labels remain valid.',
     section: 'Corpus',
-    actionLabel: 'Next: Document Library →',
-    tip: 'Upload technical specs or documentation to start evaluating.',
+    actionLabel: 'Next: Document Registry →',
+    tip: 'Select a document file above to begin.',
   },
   {
     id: 'documents',
     target: '[data-tour="documents"]',
-    title: 'Step 2: Inspect Extracted Elements',
+    title: '3. Document Registry & Elements',
     subtitle: 'Content-Addressed Document Registry',
-    body: 'Review processing state, SHA-256 content digests, and indexed status. Click any document name to expand its extracted source elements and inspect the exact text spans available for evaluation queries.',
-    placement: 'top',
+    body: 'Review processing state, SHA-256 content digests, and indexed status. Click any document name to inspect its individual extracted elements and verify the exact text spans available for evaluation queries.',
     section: 'Corpus',
     actionLabel: 'Next: Ask & Evidence →',
   },
   {
     id: 'ask',
     target: '[data-tour="ask-section"]',
-    title: 'Step 3: Interactive Query & Evidence',
-    subtitle: 'Inspect Real-Time Cosine Scores & Provenance',
+    title: '4. Ask & Evidence Retrieval',
+    subtitle: 'Real-Time Cosine Scores & Provenance',
     body: 'Type a question to test retrieval live. Select local Ollama (private) or configured cloud models (Gemini, Groq). Review retrieved passages ranked by exact cosine similarity with visual match gauges and grounded citations.',
-    placement: 'bottom',
     section: 'Ask',
     actionLabel: 'Next: Gold Datasets →',
   },
   {
     id: 'datasets',
     target: '[data-tour="datasets-section"]',
-    title: 'Step 4: Build Ground-Truth Datasets',
-    subtitle: 'Immutable, SHA-256 Revisions',
-    body: 'Map realistic evaluation questions directly to source element checkboxes. Revisions (r1, r2, ...) are content-addressed and immutable so your benchmark metrics remain comparable over time.',
-    placement: 'bottom',
+    title: '5. Build Ground-Truth Datasets',
+    subtitle: 'Immutable, Content-Addressed Revisions',
+    body: 'Map realistic evaluation questions directly to source element checkboxes. Revisions (r1, r2, ...) are content-addressed with SHA-256 digests so your benchmark metrics remain comparable over time.',
     section: 'Datasets',
     actionLabel: 'Next: Evaluation Runs →',
   },
   {
     id: 'runs',
     target: '[data-tour="runs-section"]',
-    title: 'Step 5: Quantitative Benchmark Runs',
+    title: '6. Quantitative Benchmark Runs',
     subtitle: 'Precision @ 1/3/5 · Recall @ 5 · MRR',
     body: 'Queue batch evaluation jobs against dataset revisions. Every run produces standardized metrics (Precision@K, Mean Reciprocal Rank) and audits generated answers for hallucinated citation references [S1].',
-    placement: 'bottom',
     section: 'Runs',
     actionLabel: 'Next: Paired Experiments →',
   },
   {
     id: 'experiments',
     target: '[data-tour="experiments-section"]',
-    title: 'Step 6: Paired A/B Experiments',
+    title: '7. Paired A/B Experiments',
     subtitle: '1,000 Bootstrap Resamples · 95% Confidence Intervals',
     body: 'Compare Baseline vs. Candidate retrieval configurations on the identical dataset revision. The engine runs 1,000 bootstrap resamples to calculate empirical 95% confidence intervals, proving whether improvements are statistically genuine.',
-    placement: 'bottom',
     section: 'Experiments',
     actionLabel: 'Next: Configuration →',
   },
   {
     id: 'settings',
     target: '[data-tour="settings-btn"]',
-    title: 'Settings & Encryption Keys',
+    title: '8. Settings & Encryption Keys',
     subtitle: 'Fernet-Encrypted Key Storage',
     body: 'Add your Gemini or Groq API keys here. Secrets are encrypted at rest with your CREDENTIAL_ENCRYPTION_KEY. Private Ollama embeddings run locally through your configured OLLAMA_BASE_URL.',
-    placement: 'bottom',
     actionLabel: 'Finish Tour →',
   },
   {
     id: 'complete',
     target: null,
-    title: 'Ready to Evaluate',
-    subtitle: 'You are all set!',
-    body: 'You now know the full evaluation lifecycle. Start by uploading a document in Corpus, then build a dataset revision and compare pipeline variants.',
-    placement: 'center',
+    title: 'You\'re All Set!',
+    subtitle: 'Ready to Evaluate',
+    body: 'You now know the full evaluation workflow. Start by uploading a source document in Corpus, then create a dataset revision and compare pipeline variants.',
     actionLabel: 'Enter Workspace',
   },
 ]
@@ -127,7 +116,6 @@ const LANDING_STEPS: TourStep[] = [
     title: 'Welcome to RAG_EVAL',
     subtitle: 'Local-First RAG Evaluation Workbench',
     body: 'RAG_EVAL evaluates Retrieval-Augmented Generation systems with mathematical rigor: element-level ground truth, deterministic metrics, and paired bootstrap significance tests.',
-    placement: 'center',
     actionLabel: 'See How to Start →',
   },
   {
@@ -136,7 +124,6 @@ const LANDING_STEPS: TourStep[] = [
     title: 'Sign In to Your Workspace',
     subtitle: 'Email Link · Google · GitHub · Local Dev Mode',
     body: 'Access your private workspace here. For local testing, AUTH_DEV_MODE prints an instant one-click login link directly to your terminal without needing email credentials.',
-    placement: 'right',
     actionLabel: 'Explore Features →',
   },
   {
@@ -145,16 +132,15 @@ const LANDING_STEPS: TourStep[] = [
     title: 'Rigorous Evaluation Features',
     subtitle: 'Beyond Synthetic LLM-as-a-Judge',
     body: 'Explore deterministic element extraction, content-addressed datasets, paired hypothesis testing, and encryption at rest. Scroll down to review the architecture and documentation.',
-    placement: 'top',
     actionLabel: 'Got It!',
   },
 ]
 
 /* --------------------------------------------------------------------------
-   Geometry & Positioning Helpers
+   Viewport & Geometry Helpers
    -------------------------------------------------------------------------- */
 
-interface Rect {
+interface ViewportRect {
   top: number
   left: number
   width: number
@@ -163,155 +149,68 @@ interface Rect {
   right: number
 }
 
-function getElementRect(selector: string): Rect | null {
+function getTargetViewportRect(selector: string): ViewportRect | null {
   const el = document.querySelector(selector)
   if (!el) return null
   const r = el.getBoundingClientRect()
   return {
-    top: r.top + window.scrollY,
-    left: r.left + window.scrollX,
+    top: r.top,
+    left: r.left,
     width: r.width,
     height: r.height,
-    bottom: r.bottom + window.scrollY,
-    right: r.right + window.scrollX,
+    bottom: r.bottom,
+    right: r.right,
   }
 }
 
-function computeTooltipPosition(
-  rect: Rect | null,
-  placement: TourStep['placement'],
-): CSSProperties {
-  const GAP = 16
-  const TOOLTIP_W = 380
+function computeTooltipPosition(rect: ViewportRect | null): CSSProperties {
   const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1200
+  const viewportH = typeof window !== 'undefined' ? window.innerHeight : 800
+  const CARD_W = Math.min(420, viewportW - 32)
+  const CARD_APPROX_H = 260
+  const GAP = 12
 
-  if (!rect || placement === 'center') {
+  // Center modal if no target element
+  if (!rect) {
     return {
       position: 'fixed',
       top: '50%',
       left: '50%',
       transform: 'translate(-50%, -50%)',
-      width: Math.min(TOOLTIP_W, viewportW - 32),
-      zIndex: 10002,
+      width: CARD_W,
+      maxHeight: `calc(100vh - 32px)`,
+      zIndex: 10003,
     }
   }
 
-  // Clamped horizontal center relative to target
-  let left = rect.left + rect.width / 2 - TOOLTIP_W / 2
-  if (left < 16) left = 16
-  if (left + TOOLTIP_W > viewportW - 16) {
-    left = Math.max(16, viewportW - TOOLTIP_W - 16)
+  // Horizontal position: center relative to target element, clamped inside viewport
+  let left = rect.left + rect.width / 2 - CARD_W / 2
+  left = Math.max(16, Math.min(left, viewportW - CARD_W - 16))
+
+  // Vertical position: prefer below target if space permits, else above
+  const spaceBelow = viewportH - rect.bottom
+  const spaceAbove = rect.top
+  const placeAbove = spaceBelow < CARD_APPROX_H + GAP && spaceAbove > spaceBelow
+
+  let top: number
+  if (placeAbove) {
+    top = Math.max(16, rect.top - CARD_APPROX_H - GAP)
+  } else {
+    top = Math.min(viewportH - CARD_APPROX_H - 16, rect.bottom + GAP)
   }
 
-  const base: CSSProperties = {
-    position: 'absolute',
-    width: Math.min(TOOLTIP_W, viewportW - 32),
-    zIndex: 10002,
-  }
-
-  switch (placement) {
-    case 'bottom':
-      return {
-        ...base,
-        top: rect.bottom + GAP,
-        left,
-      }
-    case 'top':
-      return {
-        ...base,
-        top: rect.top - GAP,
-        left,
-        transform: 'translateY(-100%)',
-      }
-    case 'right':
-      if (rect.right + GAP + TOOLTIP_W < viewportW) {
-        return {
-          ...base,
-          top: Math.max(16, rect.top + rect.height / 2 - 120),
-          left: rect.right + GAP,
-        }
-      }
-      // Fallback to bottom if right edge overflows
-      return {
-        ...base,
-        top: rect.bottom + GAP,
-        left,
-      }
-    case 'left':
-      if (rect.left - GAP - TOOLTIP_W > 16) {
-        return {
-          ...base,
-          top: Math.max(16, rect.top + rect.height / 2 - 120),
-          left: rect.left - GAP - TOOLTIP_W,
-        }
-      }
-      return {
-        ...base,
-        top: rect.bottom + GAP,
-        left,
-      }
+  return {
+    position: 'fixed',
+    top,
+    left,
+    width: CARD_W,
+    maxHeight: `calc(100vh - 32px)`,
+    zIndex: 10003,
   }
 }
 
 /* --------------------------------------------------------------------------
-   Spotlight SVG Mask Overlay
-   -------------------------------------------------------------------------- */
-
-function SpotlightOverlay({ rect }: { rect: Rect | null }) {
-  if (!rect) {
-    return <div className="tour-backdrop" />
-  }
-
-  const PAD = 10
-  const RADIUS = 10
-  const x = Math.max(0, rect.left - PAD)
-  const y = Math.max(0, rect.top - PAD)
-  const w = rect.width + PAD * 2
-  const h = rect.height + PAD * 2
-
-  const docW = typeof document !== 'undefined' ? Math.max(document.documentElement.scrollWidth, window.innerWidth) : 2000
-  const docH = typeof document !== 'undefined' ? Math.max(document.documentElement.scrollHeight, window.innerHeight) : 2000
-
-  return (
-    <>
-      <svg
-        className="tour-svg-mask"
-        viewBox={`0 0 ${docW} ${docH}`}
-        aria-hidden="true"
-      >
-        <defs>
-          <mask id="tour-spotlight-cutout">
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            <rect x={x} y={y} width={w} height={h} rx={RADIUS} ry={RADIUS} fill="black" />
-          </mask>
-        </defs>
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="rgba(14, 23, 17, 0.65)"
-          mask="url(#tour-spotlight-cutout)"
-        />
-      </svg>
-      {/* Animated beacon ring around target element */}
-      <div
-        className="tour-beacon-ring"
-        style={{
-          top: y,
-          left: x,
-          width: w,
-          height: h,
-          borderRadius: RADIUS,
-        }}
-        aria-hidden="true"
-      />
-    </>
-  )
-}
-
-/* --------------------------------------------------------------------------
-   GuideBot Props
+   GuideBot Component
    -------------------------------------------------------------------------- */
 
 interface GuideBotProps {
@@ -322,48 +221,40 @@ interface GuideBotProps {
 
 const STORAGE_TOUR_DONE = 'rag_eval_tour_seen'
 const STORAGE_COMPLETED_STEPS = 'rag_eval_guide_completed'
+const STORAGE_BANNER_DISMISSED = 'rag_eval_welcome_dismissed'
 
 export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
-  // Modal / Drawer state vs. Interactive Tour state
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [tourActive, setTourActive] = useState(false)
   const [tourIndex, setTourIndex] = useState(0)
-  const [targetRect, setTargetRect] = useState<Rect | null>(null)
+  const [targetRect, setTargetRect] = useState<ViewportRect | null>(null)
   const [completedSteps, setCompletedSteps] = useState<string[]>([])
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false)
 
   const steps = isLoggedIn ? WORKSPACE_STEPS : LANDING_STEPS
   const currentStep = steps[tourIndex] || steps[0]
 
-  // Load completed step ids from localStorage
+  // Check stored states
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_COMPLETED_STEPS)
-      if (saved) {
-        setCompletedSteps(JSON.parse(saved) as string[])
+      const savedSteps = localStorage.getItem(STORAGE_COMPLETED_STEPS)
+      if (savedSteps) {
+        setCompletedSteps(JSON.parse(savedSteps) as string[])
       }
-    } catch {
-      // Ignore
-    }
-  }, [])
 
-  // Auto-prompt tour on first workspace visit
-  useEffect(() => {
-    if (!isLoggedIn) return
-    try {
-      const seen = localStorage.getItem(STORAGE_TOUR_DONE)
-      if (!seen) {
-        const timer = setTimeout(() => {
-          setTourActive(true)
-          setTourIndex(0)
-        }, 800)
-        return () => clearTimeout(timer)
+      if (isLoggedIn) {
+        const dismissed = localStorage.getItem(STORAGE_BANNER_DISMISSED)
+        const tourDone = localStorage.getItem(STORAGE_TOUR_DONE)
+        if (!dismissed && !tourDone) {
+          setShowWelcomeBanner(true)
+        }
       }
     } catch {
-      // Ignore
+      // Ignore storage errors
     }
   }, [isLoggedIn])
 
-  // Recalculate spotlight measurement
+  // Measure element in viewport coordinates
   const updateMeasurement = useCallback(() => {
     if (!tourActive) return
     const cur = steps[tourIndex]
@@ -371,7 +262,7 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
       setTargetRect(null)
       return
     }
-    const rect = getElementRect(cur.target)
+    const rect = getTargetViewportRect(cur.target)
     setTargetRect(rect)
   }, [tourActive, tourIndex, steps])
 
@@ -393,13 +284,13 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
       const el = document.querySelector(cur.target)
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        const timer = setTimeout(updateMeasurement, 320)
+        const timer = setTimeout(updateMeasurement, 250)
         return () => clearTimeout(timer)
       }
     }
   }, [tourActive, tourIndex, steps, updateMeasurement])
 
-  // Keyboard navigation (Escape = close, Arrows = next/prev)
+  // Keyboard navigation: Escape closes, Arrows navigate
   useEffect(() => {
     if (!tourActive) return
     const handleKey = (e: KeyboardEvent) => {
@@ -419,7 +310,7 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
     if (nextIdx < 0 || nextIdx >= steps.length) return
     const targetStep = steps[nextIdx]
 
-    // Mark current step as completed
+    // Record completed step
     if (currentStep && !completedSteps.includes(currentStep.id)) {
       const updated = [...completedSteps, currentStep.id]
       setCompletedSteps(updated)
@@ -430,10 +321,10 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
       }
     }
 
-    // If step belongs to another section, navigate first
+    // Switch workspace section if step requires it
     if (targetStep?.section && onNavigate && isLoggedIn) {
       onNavigate(targetStep.section)
-      setTimeout(() => setTourIndex(nextIdx), 120)
+      setTimeout(() => setTourIndex(nextIdx), 100)
     } else {
       setTourIndex(nextIdx)
     }
@@ -441,6 +332,7 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
 
   function startTourFrom(index: number = 0) {
     setDrawerOpen(false)
+    setShowWelcomeBanner(false)
     setTourIndex(index)
     setTourActive(true)
     const stepObj = steps[index]
@@ -453,6 +345,15 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
     setTourActive(false)
     try {
       localStorage.setItem(STORAGE_TOUR_DONE, 'true')
+    } catch {
+      // Ignore
+    }
+  }
+
+  function dismissWelcomeBanner() {
+    setShowWelcomeBanner(false)
+    try {
+      localStorage.setItem(STORAGE_BANNER_DISMISSED, 'true')
     } catch {
       // Ignore
     }
@@ -472,9 +373,8 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
 
   const isFirst = tourIndex === 0
   const isLast = tourIndex === steps.length - 1
-  const tooltipStyle = computeTooltipPosition(targetRect, currentStep.placement)
+  const tooltipStyle = computeTooltipPosition(targetRect)
 
-  // Calculate checklist progress
   const actionSteps = steps.filter(s => s.target !== null)
   const completedCount = actionSteps.filter(s => completedSteps.includes(s.id)).length
   const progressPercent = actionSteps.length > 0 ? Math.round((completedCount / actionSteps.length) * 100) : 0
@@ -482,7 +382,37 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
   return (
     <>
       {/* --------------------------------------------------------------------
-          1. Floating Guide Bot Trigger Pill (Always available)
+          1. Optional First-Visit Welcome Banner (Polite & Non-intrusive)
+          -------------------------------------------------------------------- */}
+      {showWelcomeBanner && !tourActive && !drawerOpen && (
+        <aside className="guide-welcome-toast" aria-label="Welcome guide prompt">
+          <div className="guide-welcome-toast-icon">🧭</div>
+          <div className="guide-welcome-toast-text">
+            <strong>Welcome to RAG_EVAL!</strong>
+            <span>Take the 1-minute walkthrough to learn how to evaluate your RAG pipeline.</span>
+          </div>
+          <div className="guide-welcome-toast-actions">
+            <button
+              type="button"
+              className="button primary guide-welcome-btn-start"
+              onClick={() => startTourFrom(0)}
+            >
+              Start Tour →
+            </button>
+            <button
+              type="button"
+              className="guide-welcome-btn-dismiss"
+              onClick={dismissWelcomeBanner}
+              aria-label="Dismiss banner"
+            >
+              Dismiss
+            </button>
+          </div>
+        </aside>
+      )}
+
+      {/* --------------------------------------------------------------------
+          2. Floating Guide Bot Trigger Pill (Bottom Right)
           -------------------------------------------------------------------- */}
       {!tourActive && (
         <aside className="guide-bot-anchor" aria-label="Evaluation Workflow Assistant">
@@ -501,15 +431,15 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
             </span>
             <span className="guide-bot-label">
               <strong>Guide Bot</strong>
-              <span className="guide-bot-sub">{isLoggedIn ? `${progressPercent}% completed` : 'Step-by-step help'}</span>
+              <span className="guide-bot-sub">{isLoggedIn ? `${progressPercent}% complete` : 'Step-by-step help'}</span>
             </span>
-            <span className="guide-bot-badge">{isLoggedIn ? `${completedCount}/${actionSteps.length}` : 'Start'}</span>
+            <span className="guide-bot-badge">{isLoggedIn ? `${completedCount}/${actionSteps.length}` : 'Help'}</span>
           </button>
         </aside>
       )}
 
       {/* --------------------------------------------------------------------
-          2. Step-by-Step Interactive Guide Drawer / Panel
+          3. Step-by-Step Checklist Drawer
           -------------------------------------------------------------------- */}
       {drawerOpen && !tourActive && (
         <div
@@ -521,11 +451,11 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
           <header className="guide-drawer-header">
             <div className="guide-drawer-title-group">
               <span className="guide-drawer-tag">EVALUATION ASSISTANT</span>
-              <h3 id="guide-drawer-heading">Step-by-Step Workflow Guide</h3>
+              <h3 id="guide-drawer-heading">Evaluation Workflow Guide</h3>
               <p className="guide-drawer-desc">
                 {isLoggedIn
-                  ? 'Follow these six steps to establish reproducible RAG quality benchmarks.'
-                  : 'Welcome to RAG_EVAL. Follow these steps to sign in and begin evaluating.'}
+                  ? 'Follow these steps to establish rigorous, reproducible RAG quality benchmarks.'
+                  : 'Follow these steps to access your workspace and evaluate your RAG pipeline.'}
               </p>
             </div>
             <button
@@ -538,22 +468,22 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
             </button>
           </header>
 
-          {/* Quick Launch Interactive Tour Banner */}
+          {/* Quick Tour Launcher Card */}
           <div className="guide-tour-cta-card">
             <div className="guide-tour-cta-content">
               <h4>Interactive Spotlight Tour</h4>
-              <p>Let the Guide Bot walk you through every UI element on screen.</p>
+              <p>Walk through every section with guided highlights and tips.</p>
             </div>
             <button
               type="button"
               className="button primary guide-launch-tour-btn"
               onClick={() => startTourFrom(0)}
             >
-              Start Interactive Tour →
+              Start Walkthrough →
             </button>
           </div>
 
-          {/* Progress Bar */}
+          {/* Checklist Progress */}
           {isLoggedIn && (
             <div className="guide-drawer-progress">
               <div className="guide-drawer-progress-header">
@@ -569,7 +499,7 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
             </div>
           )}
 
-          {/* Steps Checklist */}
+          {/* Step Cards */}
           <div className="guide-drawer-steps-list">
             {steps
               .filter(s => s.target !== null)
@@ -605,7 +535,7 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
                             if (foundIndex >= 0) startTourFrom(foundIndex)
                           }}
                         >
-                          Show on screen ↗
+                          Highlight on screen ↗
                         </button>
                         {step.section && onNavigate && isLoggedIn && (
                           <button
@@ -635,6 +565,7 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
                 try {
                   localStorage.removeItem(STORAGE_COMPLETED_STEPS)
                   localStorage.removeItem(STORAGE_TOUR_DONE)
+                  localStorage.removeItem(STORAGE_BANNER_DISMISSED)
                 } catch {
                   // Ignore
                 }
@@ -647,23 +578,34 @@ export function GuideBot({ isLoggedIn, onNavigate }: GuideBotProps) {
       )}
 
       {/* --------------------------------------------------------------------
-          3. Interactive Spotlight Tour Mode
+          4. Robust CSS Box-Shadow Spotlight Tour Mode
           -------------------------------------------------------------------- */}
       {tourActive && (
         <div className="tour-layer" role="dialog" aria-modal="true" aria-label="Guided Tour">
-          {/* Spotlight overlay with cut-out hole */}
-          <SpotlightOverlay rect={targetRect} />
-
           {/* Clickable backdrop dismiss */}
           <div
-            className="tour-shield"
+            className="tour-backdrop"
             onClick={() => (isLast ? endTour() : stepTo(tourIndex + 1))}
             aria-hidden="true"
           />
 
+          {/* Bulletproof CSS Box-Shadow Spotlight Cutout */}
+          {targetRect && (
+            <div
+              className="tour-spotlight-cutout"
+              style={{
+                top: targetRect.top - 6,
+                left: targetRect.left - 6,
+                width: targetRect.width + 12,
+                height: targetRect.height + 12,
+              }}
+              aria-hidden="true"
+            />
+          )}
+
           {/* Floating Tooltip Card */}
           <aside
-            className={`tour-card tour-placement-${currentStep.placement}`}
+            className="tour-card"
             style={tooltipStyle}
             onClick={e => e.stopPropagation()}
           >
