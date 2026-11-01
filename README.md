@@ -2,6 +2,8 @@
 
 **A local-first toolkit for building and evaluating retrieval-augmented generation pipelines.**
 
+🔗 **Live demo:** [rag-eval-koyb.onrender.com](https://rag-eval-koyb.onrender.com)
+
 RAG_EVAL can parse and chunk local text documents, embed and index chunks, retrieve evidence, generate answers from that evidence, score runs against a JSONL dataset, compare pipeline variants, and summarize observed failures. The current end-to-end path uses Ollama and SQLite. Tests use deterministic fakes and do not need Ollama or model downloads.
 
 > The repository's golden evaluation dataset is intentionally empty. It contains no project-specific ground truth, so no RAG quality score or improvement claim is currently available.
