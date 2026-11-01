@@ -638,7 +638,7 @@ function App() {
           <BrandLogo />
           <span>RAG<span>_</span>EVAL</span>
         </a>
-        <nav aria-label="Primary navigation">
+        <nav aria-label="Primary navigation" data-tour="nav">
           {tabs.map(tab => {
             const IconComponent = tab.icon
             return (
@@ -660,7 +660,7 @@ function App() {
             {account.login.slice(0, 1).toUpperCase()}
           </span>
           <span className="account-name">{account.login}</span>
-          <button className="quiet-button button-with-icon" onClick={() => setSettingsOpen(true)}>
+          <button className="quiet-button button-with-icon" onClick={() => setSettingsOpen(true)} data-tour="settings-btn">
             <SettingsIcon />
             <span>Settings</span>
           </button>
@@ -723,7 +723,7 @@ function App() {
 
         {section === 'Corpus' && (
           <>
-            <section className="upload-row">
+            <section className="upload-row" data-tour="upload">
               <div className="upload-header">
                 <div className="upload-icon-circle">
                   <UploadCloudIcon />
@@ -744,7 +744,7 @@ function App() {
               </form>
             </section>
 
-            <section className="table-section">
+            <section className="table-section" data-tour="documents">
               <div className="section-title">
                 <div>
                   <h2>Documents</h2>
@@ -846,23 +846,35 @@ function App() {
         )}
 
         {section === 'Datasets' && (
-          <DatasetWorkbench
-            datasets={datasets}
-            documents={documents}
-            onCreated={async () => {
-              await refresh()
-              setNotice('Immutable dataset revision created.')
-            }}
-            onError={message => setError(message)}
-          />
+          <div data-tour="datasets-section">
+            <DatasetWorkbench
+              datasets={datasets}
+              documents={documents}
+              onCreated={async () => {
+                await refresh()
+                setNotice('Immutable dataset revision created.')
+              }}
+              onError={message => setError(message)}
+            />
+          </div>
         )}
 
-        {section === 'Ask' && <AskWorkbench documents={documents} />}
+        {section === 'Ask' && (
+          <div data-tour="ask-section">
+            <AskWorkbench documents={documents} />
+          </div>
+        )}
 
-        {section === 'Runs' && <RunsWorkbench datasets={datasets} onError={message => setError(message)} />}
+        {section === 'Runs' && (
+          <div data-tour="runs-section">
+            <RunsWorkbench datasets={datasets} onError={message => setError(message)} />
+          </div>
+        )}
 
         {section === 'Experiments' && (
-          <ExperimentsWorkbench datasets={datasets} onError={message => setError(message)} />
+          <div data-tour="experiments-section">
+            <ExperimentsWorkbench datasets={datasets} onError={message => setError(message)} />
+          </div>
         )}
 
         <footer className="app-footer">
