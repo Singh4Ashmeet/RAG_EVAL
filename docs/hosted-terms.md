@@ -2,11 +2,11 @@
 
 **Effective date: November 1, 2026**
 
-These terms apply to the invite-only hosted RAG_EVAL beta. The hosted beta is operated by Ashmeet Singh (“Operator”). By signing in or using the service, you agree to these terms. If you do not agree, do not use the hosted service.
+These terms apply to the hosted RAG_EVAL service. The service is operated by Ashmeet Singh (“Operator”). By creating an account, signing in, or using the service, you agree to these terms. If you do not agree, do not use the hosted service.
 
 ## Beta access and acceptable use
 
-Access is invitation-only and may be suspended or withdrawn. You are responsible for activity under your account and for having the rights needed to upload and process your content. Do not upload unlawful material, attempt to access another workspace, disrupt the service, or use the service to violate others’ rights or applicable law.
+Account registration is open, subject to service availability and these terms. The Operator may suspend or withdraw access for abuse, security, legal, or operational reasons. You are responsible for activity under your account and for having the rights needed to upload and process your content. Do not upload unlawful material, attempt to access another workspace, disrupt the service, or use the service to violate others’ rights or applicable law.
 
 ## Your content and processing
 

@@ -8,9 +8,19 @@ afterEach(() => {
 })
 
 describe('RAG_EVAL workbench', () => {
-  it('shows invite-only sign in when no session is present', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Unauthenticated')))
+  it('shows configured open sign-in methods when no session is present', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith('/auth/methods')) {
+        return Response.json({ email: true, google: true, github: true })
+      }
+      return Response.json({ detail: 'Unauthenticated' }, { status: 401 })
+    }))
     render(<App />)
+    expect(await screen.findByRole('button', { name: 'Email me a sign-in link' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Continue with Google' })).toHaveAttribute(
+      'href',
+      '/api/v1/auth/google',
+    )
     expect(await screen.findByRole('link', { name: 'Continue with GitHub' })).toHaveAttribute(
       'href',
       '/api/v1/auth/github',

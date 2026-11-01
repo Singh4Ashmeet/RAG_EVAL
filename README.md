@@ -15,7 +15,7 @@ RAG_EVAL can parse and chunk local text documents, embed and index chunks, retri
 - Experiment records compare named variants on the same dataset and report paired bootstrap confidence intervals.
 - Diagnostics identify observed retrieval, generation, lexical-overlap, and citation-resolution issues.
 
-The repository also includes an invite-only hosted beta workbench. Its remaining deployment constraints and unimplemented production safeguards are listed in [the hosted beta guide](docs/hosted-beta.md). PDF, DOCX, image, BM25, hybrid, and reranking modules elsewhere in the repository are not wired into the verified default workflow. See [the implementation boundaries](docs/architecture.md#current-scope-and-limitations).
+The repository also includes a hosted workbench with public account registration by one-time email link, Google, and GitHub sign-in. Its deployment requirements and unimplemented production safeguards are listed in [the hosted beta guide](docs/hosted-beta.md). PDF, DOCX, image, BM25, hybrid, and reranking modules elsewhere in the repository are not wired into the verified default workflow. See [the implementation boundaries](docs/architecture.md#current-scope-and-limitations).
 
 ## Requirements
 
@@ -71,7 +71,7 @@ uv sync
 python main.py
 ```
 
-Open `http://127.0.0.1:5173`; API docs are at `http://127.0.0.1:8000/docs`. The runner installs frontend dependencies on its first run when needed and stops both services with Ctrl+C. The hosted sign-in flow requires a GitHub OAuth app and an administrator-created invitation. For the container reference stack, see [docs/hosted-beta.md](docs/hosted-beta.md) and [deploy/docker-compose.yml](deploy/docker-compose.yml). See [docs/ci-cd.md](docs/ci-cd.md) for GitHub Actions checks and container publishing.
+Open `http://127.0.0.1:5173`; API docs are at `http://127.0.0.1:8000/docs`. The runner installs frontend dependencies on its first run when needed and stops both services with Ctrl+C. Hosted registration supports passwordless email links through Resend, Google OAuth, and GitHub OAuth; configure provider credentials in the deployment environment. For the container reference stack, see [docs/hosted-beta.md](docs/hosted-beta.md) and [deploy/docker-compose.yml](deploy/docker-compose.yml). See [docs/ci-cd.md](docs/ci-cd.md) for GitHub Actions checks and container publishing.
 
 The workbench supports private document uploads, Ollama indexing and grounded asking, element-labeled immutable datasets, queued retrieval evaluations, paired retrieval-depth experiments, encrypted Gemini/Groq chat keys, and workspace deletion. Read the hosted [Terms](docs/hosted-terms.md) and [Privacy Notice](docs/hosted-privacy.md) before inviting beta users. It remains an early beta; validate PostgreSQL migrations and RLS on the target service, and add rate limits, abuse controls, backup expiry automation, and independent security review before broader access.
 
@@ -145,4 +145,4 @@ Project process documents: [Contributing](CONTRIBUTING.md) and [Security reporti
 
 ## Project status
 
-The local RAG and evaluation path includes repeatable experiment tracking and failure diagnosis. The hosted UI is an invite-only technical workbench; real scores require reviewed ground truth and configured model services. The hosted deployment guide tracks its beta limits.
+The local RAG and evaluation path includes repeatable experiment tracking and failure diagnosis. The hosted UI is a technical workbench with self-service account registration; real scores require reviewed ground truth and configured model services. The hosted deployment guide tracks its beta limits.

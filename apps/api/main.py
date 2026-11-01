@@ -20,7 +20,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from sqlalchemy import DateTime, ForeignKey, String, Text, create_engine, delete, select, text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, synonym
 
 from core.generate.pipeline import NO_CONTEXT_ANSWER
 from eval.datasets.schema import EvaluationCase, EvaluationDataset
@@ -33,7 +33,10 @@ class Base(DeclarativeBase):
 class Account(Base):
     __tablename__ = "accounts"
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    github_id: Mapped[str] = mapped_column(String(32), unique=True)
+    # Keep the legacy column name so existing hosted SQLite/DB deployments can
+    # adopt the new identity providers without losing existing accounts.
+    auth_subject: Mapped[str] = mapped_column("github_id", String(32), unique=True)
+    github_id = synonym("auth_subject")
     login: Mapped[str] = mapped_column(String(128))
     email: Mapped[str] = mapped_column(String(320), unique=True)
 
@@ -50,6 +53,16 @@ class SessionRecord(Base):
     __tablename__ = "sessions"
     token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     account_id: Mapped[str] = mapped_column(ForeignKey("accounts.id", ondelete="CASCADE"))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class EmailLoginToken(Base):
+    __tablename__ = "email_login_tokens"
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
@@ -385,22 +398,72 @@ def hosted_privacy():
     )
 
 
-@app.get("/api/v1/auth/github")
-def github_login(request: Request):
-    client_id = os.getenv("GITHUB_CLIENT_ID")
-    if not client_id:
-        raise HTTPException(503, "GitHub OAuth is not configured.")
-    state = secrets.token_urlsafe(32)
-    response = RedirectResponse(
-        "https://github.com/login/oauth/authorize?"
-        + str(
-            httpx.QueryParams(
-                {"client_id": client_id, "scope": "read:user user:email", "state": state}
-            )
+def resolve_auth_account(db, subject: str, email: str, login: str) -> Account:
+    account = db.scalar(select(Account).where(Account.auth_subject == subject))
+    if account is None:
+        account = db.scalar(select(Account).where(Account.email == email))
+    if account is None:
+        account = Account(
+            id=str(uuid.uuid4()), auth_subject=subject, login=login[:128], email=email
+        )
+        db.add(account)
+        db.flush()
+    else:
+        account.login = login[:128]
+        account.email = email
+        # Promote passwordless-email identities to a stable provider subject
+        # when the user later chooses Google or GitHub.
+        if account.auth_subject.startswith("e:"):
+            account.auth_subject = subject
+    return account
+
+
+def create_session_response(db, account: Account, response: RedirectResponse | None = None):
+    session_token = secrets.token_urlsafe(48)
+    db.add(
+        SessionRecord(
+            token_hash=hashlib.sha256(session_token.encode()).hexdigest(),
+            account_id=account.id,
+            expires_at=datetime.now(UTC) + timedelta(days=14),
         )
     )
+    db.commit()
+    response = response or RedirectResponse("/")
     response.set_cookie(
-        "oauth_state",
+        "rag_eval_session",
+        session_token,
+        httponly=True,
+        secure=os.getenv("COOKIE_SECURE", "true").lower() == "true",
+        samesite="lax",
+        max_age=14 * 86400,
+    )
+    return response
+
+
+def public_base_url(request: Request | None = None) -> str:
+    configured = os.getenv("PUBLIC_BASE_URL") or os.getenv("RENDER_EXTERNAL_URL")
+    if configured:
+        return configured.rstrip("/")
+    return str(request.base_url).rstrip("/") if request else ""
+
+
+def oauth_redirect(provider: str, authorize_url: str, client_id: str, scope: str, request: Request):
+    state = secrets.token_urlsafe(32)
+    callback_path = (
+        "/api/v1/auth/callback" if provider == "github" else f"/api/v1/auth/{provider}/callback"
+    )
+    query = httpx.QueryParams(
+        {
+            "client_id": client_id,
+            "redirect_uri": f"{public_base_url(request)}{callback_path}",
+            "response_type": "code",
+            "scope": scope,
+            "state": state,
+        }
+    )
+    response = RedirectResponse(f"{authorize_url}?{query}")
+    response.set_cookie(
+        f"oauth_state_{provider}",
         state,
         httponly=True,
         secure=os.getenv("COOKIE_SECURE", "true").lower() == "true",
@@ -410,9 +473,23 @@ def github_login(request: Request):
     return response
 
 
+@app.get("/api/v1/auth/github")
+def github_login(request: Request):
+    client_id = os.getenv("GITHUB_CLIENT_ID")
+    if not client_id or not os.getenv("GITHUB_CLIENT_SECRET"):
+        raise HTTPException(503, "GitHub sign-in is not configured.")
+    return oauth_redirect(
+        "github",
+        "https://github.com/login/oauth/authorize",
+        client_id,
+        "read:user user:email",
+        request,
+    )
+
+
 @app.get("/api/v1/auth/callback")
 async def github_callback(code: str, state: str, request: Request, db=Depends(db_session)):
-    if not secrets.compare_digest(state, request.cookies.get("oauth_state", "")):
+    if not secrets.compare_digest(state, request.cookies.get("oauth_state_github", "")):
         raise HTTPException(400, "Invalid sign-in state.")
     async with httpx.AsyncClient(timeout=15) as client:
         token_response = await client.post(
@@ -431,36 +508,155 @@ async def github_callback(code: str, state: str, request: Request, db=Depends(db
         headers = {"Authorization": f"Bearer {access}", "Accept": "application/vnd.github+json"}
         profile = (await client.get("https://api.github.com/user", headers=headers)).json()
         emails = (await client.get("https://api.github.com/user/emails", headers=headers)).json()
-    primary = next(
-        (e["email"].lower() for e in emails if e.get("primary") and e.get("verified")), None
+    email = next(
+        (item["email"].lower() for item in emails if item.get("primary") and item.get("verified")),
+        None,
     )
-    if not primary or db.get(Invitation, primary) is None:
-        raise HTTPException(403, "This GitHub account does not have a beta invitation.")
-    github_id = str(profile["id"])
-    account = db.scalar(select(Account).where(Account.github_id == github_id))
-    if account is None:
-        account = Account(
-            id=str(uuid.uuid4()), github_id=github_id, login=profile["login"], email=primary
+    if not email:
+        raise HTTPException(403, "Add a verified primary email to your GitHub account to continue.")
+    account = resolve_auth_account(db, str(profile["id"]), email, profile["login"])
+    response = create_session_response(db, account)
+    response.delete_cookie("oauth_state_github")
+    return response
+
+
+@app.get("/api/v1/auth/google")
+def google_login(request: Request):
+    client_id = os.getenv("GOOGLE_CLIENT_ID")
+    if not client_id:
+        raise HTTPException(503, "Google sign-in is not configured yet.")
+    return oauth_redirect(
+        "google",
+        "https://accounts.google.com/o/oauth2/v2/auth",
+        client_id,
+        "openid email profile",
+        request,
+    )
+
+
+@app.get("/api/v1/auth/google/callback")
+async def google_callback(code: str, state: str, request: Request, db=Depends(db_session)):
+    if not secrets.compare_digest(state, request.cookies.get("oauth_state_google", "")):
+        raise HTTPException(400, "Invalid sign-in state.")
+    client_id, client_secret = os.getenv("GOOGLE_CLIENT_ID"), os.getenv("GOOGLE_CLIENT_SECRET")
+    if not client_id or not client_secret:
+        raise HTTPException(503, "Google sign-in is not configured yet.")
+    redirect_uri = f"{public_base_url(request)}/api/v1/auth/google/callback"
+    async with httpx.AsyncClient(timeout=15) as client:
+        token_response = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": redirect_uri,
+            },
         )
-        db.add(account)
-    else:
-        account.login = profile["login"]
-        account.email = primary
-    token = secrets.token_urlsafe(48)
+        token_response.raise_for_status()
+        access = token_response.json().get("access_token")
+        if not access:
+            raise HTTPException(401, "Google sign-in failed.")
+        profile_response = await client.get(
+            "https://openidconnect.googleapis.com/v1/userinfo",
+            headers={"Authorization": f"Bearer {access}"},
+        )
+        profile_response.raise_for_status()
+        profile = profile_response.json()
+    if not profile.get("email_verified") or not profile.get("email") or not profile.get("sub"):
+        raise HTTPException(403, "Google did not return a verified email for this account.")
+    email = profile["email"].lower()
+    account = resolve_auth_account(
+        db,
+        f"g:{profile['sub']}",
+        email,
+        profile.get("name") or email.split("@", 1)[0],
+    )
+    response = create_session_response(db, account)
+    response.delete_cookie("oauth_state_google")
+    return response
+
+
+class EmailLinkRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        email = value.strip().lower()
+        if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+            raise ValueError("Enter a valid email address.")
+        return email
+
+
+@app.post("/api/v1/auth/email/request")
+async def request_email_login(payload: EmailLinkRequest, request: Request, db=Depends(db_session)):
+    api_key, sender = os.getenv("RESEND_API_KEY"), os.getenv("AUTH_EMAIL_FROM")
+    if not api_key or not sender:
+        raise HTTPException(503, "Email sign-in is not configured yet.")
+    now = datetime.now(UTC)
+    recent = db.scalar(
+        select(EmailLoginToken).where(
+            EmailLoginToken.email == payload.email,
+            EmailLoginToken.created_at >= now - timedelta(seconds=60),
+        )
+    )
+    if recent:
+        return {"detail": "If that address can receive sign-in links, one will arrive shortly."}
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
     db.add(
-        SessionRecord(
-            token_hash=hashlib.sha256(token.encode()).hexdigest(),
-            account_id=account.id,
-            expires_at=datetime.now(UTC) + timedelta(days=14),
+        EmailLoginToken(
+            token_hash=token_hash,
+            email=payload.email,
+            created_at=now,
+            expires_at=now + timedelta(minutes=15),
         )
     )
     db.commit()
-    response = RedirectResponse("/")
-    secure = os.getenv("COOKIE_SECURE", "true").lower() == "true"
-    response.set_cookie(
-        "rag_eval_session", token, httponly=True, secure=secure, samesite="lax", max_age=14 * 86400
-    )
-    response.delete_cookie("oauth_state")
+    link = f"{public_base_url(request)}/api/v1/auth/email/consume?token={raw_token}"
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            sent = await client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {api_key}"},
+                json={
+                    "from": sender,
+                    "to": [payload.email],
+                    "subject": "Your RAG_EVAL sign-in link",
+                    "text": (
+                        "Use this one-time link to sign in to RAG_EVAL. "
+                        "It expires in 15 minutes.\n\n"
+                        f"{link}\n\n"
+                        "If you did not request this link, you can ignore this message."
+                    ),
+                },
+            )
+            sent.raise_for_status()
+    except httpx.HTTPError as exc:
+        token_record = db.get(EmailLoginToken, token_hash)
+        if token_record:
+            db.delete(token_record)
+        db.commit()
+        raise HTTPException(502, "We could not send the sign-in email. Please try again.") from exc
+    return {"detail": "If that address can receive sign-in links, one will arrive shortly."}
+
+
+@app.get("/api/v1/auth/email/consume")
+def consume_email_login(token: str, db=Depends(db_session)):
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    record = db.get(EmailLoginToken, token_hash)
+    expiry = record.expires_at if record else None
+    if expiry is not None and expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=UTC)
+    if not record or expiry < datetime.now(UTC):
+        raise HTTPException(400, "This sign-in link is invalid or has expired. Request a new one.")
+    email = record.email
+    db.delete(record)
+    email_subject = "e:" + hashlib.sha256(email.encode()).hexdigest()[:24]
+    account = resolve_auth_account(db, email_subject, email, email.split("@", 1)[0])
+    response = create_session_response(db, account)
+    response.delete_cookie("oauth_state_google")
     return response
 
 
@@ -480,6 +676,15 @@ def logout(request: Request, db=Depends(db_session)):
 @app.get("/api/v1/auth/me", response_model=AccountResponse)
 def me(account=Depends(current_account)):
     return {"id": account.id, "login": account.login}
+
+
+@app.get("/api/v1/auth/methods")
+def auth_methods():
+    return {
+        "email": bool(os.getenv("RESEND_API_KEY") and os.getenv("AUTH_EMAIL_FROM")),
+        "google": bool(os.getenv("GOOGLE_CLIENT_ID") and os.getenv("GOOGLE_CLIENT_SECRET")),
+        "github": bool(os.getenv("GITHUB_CLIENT_ID") and os.getenv("GITHUB_CLIENT_SECRET")),
+    }
 
 
 @app.get("/api/v1/documents", response_model=list[DocumentResponse])

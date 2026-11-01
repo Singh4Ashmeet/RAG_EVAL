@@ -127,6 +127,13 @@ footer { display: flex; justify-content: space-between; gap: 18px; padding: 20px
 .sign-in .wordmark { font-size: 18px; margin-bottom: 60px; }
 .sign-in h1 { font-size: 42px; }
 .intro { color: #5F685E; font-size: 14px; line-height: 1.7; margin: 8px 0 23px; }
+.sign-in-form { width: 100%; display: grid; gap: 8px; }
+.sign-in-form label { color: #222820; font-size: 12px; font-weight: 650; }
+.sign-in-form input { width: 100%; min-height: 42px; padding: 0 11px; border: 1px solid #c9c7bd; background: #FFFEFA; color: #222820; font: inherit; }
+.sign-in-form .button { width: 100%; margin-top: 4px; }
+.sign-in-providers { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
+.sign-in-providers .button { width: 100%; }
+.auth-confirmation, .auth-help { color: #5F685E; font-size: 12px; line-height: 1.55; margin: 8px 0 0; }
 .legal { margin-top: 18px; color: #5F685E; font-size: 11px; }
 .legal a { color: #2F5D46; }
 .auth-state { padding: 15vh 10vw; color: #5F685E; }
@@ -138,6 +145,10 @@ footer { display: flex; justify-content: space-between; gap: 18px; padding: 20px
 .admin-invite label { flex: 1; margin: 0; }
 .admin-back { display: inline-block; margin-top: 22px; color: #2F5D46; font-size: 12px; }
 @media (max-width: 760px) {
+ .sign-in { padding: 40px 0; }
+ .sign-in .wordmark { margin-bottom: 36px; }
+ .sign-in h1 { font-size: 34px; }
+ .sign-in-providers { grid-template-columns: 1fr; }
  .topbar { height: auto; padding: 14px 18px 0; display: grid; grid-template-columns: 1fr auto; gap: 8px; }
  .topbar nav { grid-column: 1 / -1; grid-row: 2; gap: 21px; overflow-x: auto; height: 43px; }
  .nav-item { white-space: nowrap; font-size: 12px; }

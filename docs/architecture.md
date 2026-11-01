@@ -61,12 +61,12 @@ SQLite currently scans all vectors in Python to calculate exact cosine similarit
 - The checked-in golden JSONL is empty. There are no project-specific retrieval or answer scores.
 - Answer metrics are exact match and token F1. There is no semantic judge or claim-level faithfulness evaluator.
 - Retrieval uses dense cosine search. BM25, hybrid, and reranker modules are not wired into this verified workflow.
-- `apps/api` serves an invite-only hosted beta API and built React application. `apps/worker` handles embedding, evaluation, and experiment jobs through RQ. See [the hosted beta guide](hosted-beta.md) for deployment limits.
+- `apps/api` serves the hosted account API and built React application. `apps/worker` handles embedding, evaluation, and experiment jobs through RQ. See [the hosted beta guide](hosted-beta.md) for deployment limits.
 - PDF, DOCX, and image parser modules are not registered in the default ingestion pipeline.
 
 ## Hosted beta path
 
-The hosted application adds GitHub identity sign-in, invited-email checks, secure session cookies, private account workspaces, workspace-scoped PostgreSQL policies, Redis/RQ indexing and evaluation, private S3-compatible originals, and a same-origin React workbench. Hosted text is segmented into stable source elements; Ollama vectors are stored with those elements and exact cosine search ranks them. Ask uses one retrieved evidence list for the answer prompt and citation audit. Gemini and Groq keys are encrypted at rest and can be selected for chat only; Ollama remains responsible for embeddings.
+The hosted application adds passwordless email, Google, and GitHub sign-in, secure session cookies, private account workspaces, workspace-scoped PostgreSQL policies, Redis/RQ indexing and evaluation, private S3-compatible originals, and a same-origin React workbench. Hosted text is segmented into stable source elements; Ollama vectors are stored with those elements and exact cosine search ranks them. Ask uses one retrieved evidence list for the answer prompt and citation audit. Gemini and Groq keys are encrypted at rest and can be selected for chat only; Ollama remains responsible for embeddings.
 
 Evaluation datasets are stored as immutable canonical JSON revisions with SHA-256 digests. Source-element references are checked against the active workspace. Retrieval reports retain per-query excerpts, metric values, and counts. Retrieval-depth experiments pair the same query IDs and record configured variants and bootstrap intervals.
 

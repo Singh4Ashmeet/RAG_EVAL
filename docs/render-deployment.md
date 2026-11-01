@@ -20,17 +20,23 @@ The Render web and worker plans must have enough memory for this app and workloa
 5. Wait for the initial deployment. The web service runs `alembic upgrade head` before starting the API. Its health endpoint is `/api/v1/health`.
 6. Copy the generated web URL from the Render dashboard, for example `https://rag-eval-web.onrender.com`.
 
-## Configure GitHub sign-in
+## Configure account sign-in
 
-Create a dedicated GitHub OAuth App for the hosted environment under GitHub **Settings → Developer settings → OAuth Apps**. Set its homepage to the Render web URL and its authorization callback to:
+Set `PUBLIC_BASE_URL` to the exact public Render origin, for example `https://rag-eval-koyb.onrender.com`.
+
+For Google sign-in, create a **Web application** OAuth client in Google Cloud Console and set its authorized redirect URI to:
 
 ```text
-https://<your-render-service>.onrender.com/api/v1/auth/callback
+https://<your-render-service>.onrender.com/api/v1/auth/google/callback
 ```
 
-After the Render URL exists, add `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` to the **web service's Environment** in Render and redeploy. No repository permissions or personal access token are needed; the app requests `read:user` and `user:email`. Use a separate OAuth App for local development if needed.
+Add the Google client ID and secret to Render as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 
-Open `https://<your-render-service>.onrender.com/admin/invitations`, retrieve `INVITATION_ADMIN_TOKEN` from the web service's Render Environment settings, and invite the verified primary email address associated with the GitHub account. Do not paste secrets into GitHub issues, commits, or logs.
+To retain GitHub sign-in, configure its callback as `https://<your-render-service>.onrender.com/api/v1/auth/callback` and save the credentials as `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. No repository permissions or personal access token are needed.
+
+For passwordless email sign-in, configure a sender domain with Resend, create an API key, and add `RESEND_API_KEY` and `AUTH_EMAIL_FROM` to Render. The sender must be authorized by Resend for production delivery. Email links expire after 15 minutes and can be used once. Keep all OAuth secrets and email API keys in Render's secret environment settings; do not add them to Git or share them in chat.
+
+Redeploy after setting the environment variables. The sign-in page only displays methods with configured credentials. Provider registration and email delivery remain dependent on correct callback URLs, verified sender domains, and working provider credentials.
 
 ## Future deploys
 

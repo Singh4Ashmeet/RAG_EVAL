@@ -2,18 +2,20 @@
 
 **Effective date: November 1, 2026**
 
-This notice describes the invite-only hosted service operated by Ashmeet Singh. It supplements the repository's software privacy documentation and applies to hosted accounts.
+This notice describes the hosted service operated by Ashmeet Singh. It supplements the repository's software privacy documentation and applies to self-service accounts.
 
 ## Information processed
 
-- **GitHub account identity:** GitHub user ID, login, and verified primary email used to check invitations and provide sign-in. The OAuth app requests identity access, not repository access.
+- **Account and sign-in data:** email address, display name, provider subject identifier, session records, and short-lived hashed email-link tokens. Users may sign in through a verified email link, Google, or GitHub. OAuth requests identity and email access only, not repository access.
+- **Email delivery metadata:** Resend receives the destination email address and the sign-in message needed to deliver one-time links. Magic links expire after 15 minutes and are single use.
+- **OAuth identity data:** Google or GitHub provides a stable account identifier, display name, and verified email. The service does not request access to Google Drive or GitHub repositories.
 - **Workspace content:** uploaded UTF-8 text and Markdown files, extracted source elements, queries, dataset labels, generated answers, retrieved excerpts, evaluation reports, and experiment records.
 - **Service data:** session records, job state, content digests, timestamps, and security/diagnostic logs.
 - **Provider credentials:** optional Gemini or Groq chat API keys, encrypted before database storage. The service does not return the plaintext key after saving it.
 
 ## Use and disclosure
 
-Workspace content is processed to index sources, retrieve evidence, answer questions, and run evaluations requested by the user. Server-managed Ollama handles embeddings and default chat. If a user selects Gemini or Groq for chat, the relevant prompt and retrieved source excerpts are sent to that provider. Those providers process data under their own terms. The service does not sell workspace content.
+Workspace content is processed to index sources, retrieve evidence, answer questions, and run evaluations requested by the user. Server-managed Ollama handles embeddings and default chat. If a user selects Gemini or Groq for chat, the relevant prompt and retrieved source excerpts are sent to that provider. Those providers process data under their own terms. Resend processes sign-in emails. Google or GitHub processes authentication when the user selects that provider. The service does not sell workspace content.
 
 ## Retention and deletion
 

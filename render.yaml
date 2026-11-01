@@ -24,6 +24,20 @@ services:
         value: "true"
       - key: MAX_UPLOAD_BYTES
         value: "26214400"
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: AUTH_EMAIL_FROM
+        sync: false
       - key: INVITATION_ADMIN_TOKEN
         generateValue: true
       - key: CREDENTIAL_ENCRYPTION_KEY

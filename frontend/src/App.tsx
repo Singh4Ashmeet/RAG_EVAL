@@ -6,6 +6,7 @@ import './App.css'
 type Section = 'Corpus' | 'Ask' | 'Datasets' | 'Runs' | 'Experiments'
 type Json200<Operation> = Operation extends { responses: { 200: { content: { 'application/json': infer Body } } } } ? Body : never
 type Account = Json200<paths['/api/v1/auth/me']['get']>
+type AuthMethods = { email: boolean; google: boolean; github: boolean }
 type DocumentRow = Json200<paths['/api/v1/documents']['get']>[number]
 type DatasetRow = Json200<paths['/api/v1/datasets']['get']>[number]
 type ElementRow = Json200<paths['/api/v1/documents/{doc_id}/elements']['get']>[number]
@@ -28,6 +29,11 @@ function App() {
   const [section, setSection] = useState<Section>('Corpus')
   const [account, setAccount] = useState<Account | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
+  const [authMethods, setAuthMethods] = useState<AuthMethods | null>(null)
+  const [emailInput, setEmailInput] = useState('')
+  const [emailLinkSent, setEmailLinkSent] = useState(false)
+  const [emailSending, setEmailSending] = useState(false)
+  const [authError, setAuthError] = useState('')
   const [documents, setDocuments] = useState<DocumentRow[]>([])
   const [datasets, setDatasets] = useState<DatasetRow[]>([])
   const [elements, setElements] = useState<ElementRow[]>([])
@@ -46,6 +52,9 @@ function App() {
   }
   useEffect(() => {
     api<Account>('/auth/me').then(setAccount).catch(() => setAccount(null)).finally(() => setAuthChecked(true))
+  }, [])
+  useEffect(() => {
+    api<AuthMethods>('/auth/methods').then(setAuthMethods).catch(() => setAuthMethods(null))
   }, [])
   useEffect(() => { void refresh() }, [account])
   const processingDocuments = documents.some(document => document.status === 'queued' || document.status === 'running')
@@ -74,6 +83,25 @@ function App() {
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
 
+  async function sendSignInLink(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setAuthError('')
+    setEmailLinkSent(false)
+    setEmailSending(true)
+    try {
+      await api<{ detail: string }>('/auth/email/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailInput }),
+      })
+      setEmailLinkSent(true)
+    } catch (e) {
+      setAuthError((e as Error).message)
+    } finally {
+      setEmailSending(false)
+    }
+  }
+
   async function removeDocument(doc: DocumentRow) {
     if (!window.confirm(`Delete ${doc.name}? Existing evaluation reports may retain source excerpts.`)) return
     try { await api(`/documents/${doc.id}`, { method: 'DELETE' }); setNotice('Document and active source elements deleted. Existing reports retain their excerpts.'); if (selectedDocument === doc.id) setSelectedDocument(''); await refresh() }
@@ -87,7 +115,27 @@ function App() {
 
   if (!authChecked) return <main className="auth-state" aria-live="polite">Checking your session…</main>
   if (window.location.pathname === '/admin/invitations') return <InvitationAdmin />
-  if (!account) return <main className="sign-in"><div className="wordmark">RAG<span>_</span>EVAL</div><p className="eyebrow">PRIVATE RESEARCH WORKSPACE</p><h1>Measure the evidence behind your RAG system.</h1><p className="intro">An invite-only workbench for source material, retrieval, and evaluation. Sign in with the GitHub account on your invitation.</p><a className="button primary" href="/api/v1/auth/github">Continue with GitHub</a><p className="legal">By continuing, you agree to the <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy notice</a>.</p></main>
+  if (!account) return <main className="sign-in">
+    <div className="wordmark">RAG<span>_</span>EVAL</div>
+    <p className="eyebrow">RAG EVALUATION WORKSPACE</p>
+    <h1>Measure the evidence behind your RAG system.</h1>
+    <p className="intro">Create an account with your email, Google, or GitHub. Your workspace is private to you.</p>
+    {authError && <p className="inline-error" role="alert">{authError}</p>}
+    {authMethods?.email && <form className="sign-in-form" onSubmit={sendSignInLink}>
+      <label htmlFor="sign-in-email">Email address</label>
+      <input id="sign-in-email" type="email" autoComplete="email" required value={emailInput} onChange={event => setEmailInput(event.target.value)} placeholder="you@example.com" />
+      <button className="button primary" type="submit" disabled={emailSending}>{emailSending ? 'Sending link…' : 'Email me a sign-in link'}</button>
+      {emailLinkSent && <p className="auth-confirmation" role="status">If that address can receive sign-in links, one will arrive shortly. The link expires in 15 minutes.</p>}
+    </form>}
+    <div className="sign-in-providers" aria-label="Other sign-in options">
+      {authMethods?.google && <a className="button secondary" href="/api/v1/auth/google">Continue with Google</a>}
+      {authMethods?.github && <a className="button secondary" href="/api/v1/auth/github">Continue with GitHub</a>}
+    </div>
+    {authMethods === null && <p className="auth-help" role="status">Sign-in options are loading. Refresh this page if they do not appear.</p>}
+    {authMethods && !authMethods.email && <p className="auth-help">Email sign-in is not configured yet.</p>}
+    {authMethods && !authMethods.google && <p className="auth-help">Google sign-in is not configured yet.</p>}
+    <p className="legal">By continuing, you agree to the <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy notice</a>.</p>
+  </main>
 
   return <div className="shell">
     <header className="topbar"><a className="wordmark" href="#corpus" onClick={() => setSection('Corpus')}>RAG<span>_</span>EVAL</a><nav aria-label="Primary navigation">{tabs.map(tab => <button key={tab} className={section === tab ? 'nav-item active' : 'nav-item'} onClick={() => setSection(tab)}>{tab}</button>)}</nav><div className="account"><span className="account-mark" aria-hidden="true">{account.login.slice(0, 1).toUpperCase()}</span><span>{account.login}</span><button className="quiet-button" onClick={() => setSettingsOpen(true)}>Settings</button><button className="quiet-button" onClick={() => { void fetch('/api/v1/auth/logout', { method: 'POST' }).then(() => window.location.reload()) }}>Sign out</button></div></header>

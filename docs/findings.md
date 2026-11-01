@@ -24,7 +24,7 @@ Automated tests use fakes for provider calls and do not require Ollama or model 
 
 ## Product and engineering gaps
 
-- An invite-only hosted API, worker, and React workbench are implemented. The hosted service still needs versioned Alembic migrations, automated backup expiry, rate limiting, export, operational alerting, and independent security review before broad access; see the [hosted beta guide](hosted-beta.md).
+- A hosted API, worker, and React workbench support passwordless email, Google, and GitHub sign-in. The service still needs robust distributed rate limiting, export, automated backup expiry, operational alerting, and independent security review before broad access; see the [hosted beta guide](hosted-beta.md).
 - The default ingest path only registers `.txt` and `.md`, although other parser modules exist in the repository.
 - BM25, hybrid retrieval, and reranking modules are not connected to the current verified pipeline.
 - SQLite uses an exact vector scan and will become slow as a corpus grows.

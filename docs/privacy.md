@@ -1,6 +1,6 @@
 # Privacy and data handling
 
-This page describes the local developer workflow. The separate invite-only hosted beta has account, tenant, retention, and provider-processing behavior described in the [Hosted Privacy Notice](hosted-privacy.md) and [Hosted Beta Guide](hosted-beta.md).
+This page describes the local developer workflow. The hosted service has account, tenant, retention, and provider-processing behavior described in the [Hosted Privacy Notice](hosted-privacy.md) and [Hosted Beta Guide](hosted-beta.md).
 
 ## Data handled by the current workflow
 
