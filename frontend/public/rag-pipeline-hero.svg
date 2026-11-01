@@ -1,0 +1,281 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141E17" />
+      <stop offset="50%" stop-color="#1B2820" />
+      <stop offset="100%" stop-color="#0E1611" />
+    </linearGradient>
+    <linearGradient id="card-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#24342A" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#1A261E" stop-opacity="0.9" />
+    </linearGradient>
+    <linearGradient id="emerald-glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3FA66F" />
+      <stop offset="100%" stop-color="#2F5D46" />
+    </linearGradient>
+    <linearGradient id="accent-amber" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E2B155" />
+      <stop offset="100%" stop-color="#C78E32" />
+    </linearGradient>
+    <linearGradient id="line-flow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3FA66F" stop-opacity="0.2" />
+      <stop offset="50%" stop-color="#5CD692" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#3FA66F" stop-opacity="0.2" />
+    </linearGradient>
+    <filter id="shadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#050806" flood-opacity="0.5" />
+    </filter>
+    <pattern id="tech-grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#2B3C30" stroke-width="0.75" stroke-opacity="0.4" />
+      <circle cx="0" cy="0" r="1.5" fill="#3FA66F" fill-opacity="0.2" />
+    </pattern>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="960" height="540" rx="16" fill="url(#bg-grad)" />
+  <rect width="960" height="540" rx="16" fill="url(#tech-grid)" />
+
+  <!-- Background Ambient Glows -->
+  <circle cx="180" cy="260" r="140" fill="#3FA66F" fill-opacity="0.08" filter="blur(60px)" />
+  <circle cx="480" cy="270" r="160" fill="#2F5D46" fill-opacity="0.12" filter="blur(70px)" />
+  <circle cx="780" cy="260" r="140" fill="#E2B155" fill-opacity="0.06" filter="blur(60px)" />
+
+  <!-- Top System Header Status Bar -->
+  <g transform="translate(40, 28)">
+    <rect width="880" height="42" rx="8" fill="#18231C" stroke="#2C3D32" stroke-width="1" />
+    <circle cx="22" cy="21" r="5" fill="#3FA66F" />
+    <text x="36" y="25" fill="#E4ECE6" font-family="ui-monospace, monospace" font-size="12" font-weight="600" letter-spacing="1">PIPELINE VERIFICATION ENGINE · HIGH INTEGRITY BENCHMARK</text>
+    <rect x="670" y="9" width="100" height="24" rx="4" fill="#233529" stroke="#375240" stroke-width="1" />
+    <text x="682" y="25" fill="#7EE7AE" font-family="ui-monospace, monospace" font-size="11">DETERMINISTIC</text>
+    <rect x="780" y="9" width="90" height="24" rx="4" fill="#2D2A1C" stroke="#5C4D26" stroke-width="1" />
+    <text x="793" y="25" fill="#F0C773" font-family="ui-monospace, monospace" font-size="11">r4 STABLE</text>
+  </g>
+
+  <!-- Connection Flow Lines -->
+  <path d="M 230 270 L 330 270" stroke="url(#line-flow)" stroke-width="3" stroke-dasharray="6 4" />
+  <polygon points="332,270 324,265 324,275" fill="#5CD692" />
+
+  <path d="M 480 270 L 570 270" stroke="url(#line-flow)" stroke-width="3" stroke-dasharray="6 4" />
+  <polygon points="572,270 564,265 564,275" fill="#5CD692" />
+
+  <path d="M 700 270 L 780 270" stroke="url(#line-flow)" stroke-width="3" stroke-dasharray="6 4" />
+  <polygon points="782,270 774,265 774,275" fill="#5CD692" />
+
+  <!-- STAGE 1: Source Corpus & Chunking -->
+  <g transform="translate(60, 105)" filter="url(#shadow)">
+    <rect width="180" height="320" rx="12" fill="url(#card-grad)" stroke="#32493A" stroke-width="1.5" />
+    <rect x="0" y="0" width="180" height="42" rx="12" fill="#1C2B21" />
+    <rect x="0" y="30" width="180" height="12" fill="#1C2B21" />
+    <text x="16" y="26" fill="#A8BFB0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="700" letter-spacing="0.5">01 · SOURCE CORPUS</text>
+    <circle cx="160" cy="21" r="3" fill="#3FA66F" />
+
+    <!-- Document representations -->
+    <g transform="translate(16, 56)">
+      <rect width="148" height="66" rx="6" fill="#141E17" stroke="#283C2F" stroke-width="1" />
+      <rect x="10" y="12" width="22" height="26" rx="3" fill="#24382A" />
+      <text x="14" y="28" fill="#5CD692" font-family="ui-monospace, monospace" font-size="10">MD</text>
+      <text x="40" y="22" fill="#E3EDE6" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600">arch-spec-v3.md</text>
+      <text x="40" y="36" fill="#6A8574" font-family="ui-monospace, monospace" font-size="9">sha: e3b0c442…</text>
+      <rect x="10" y="47" width="128" height="6" rx="2" fill="#1E2D23" />
+      <rect x="10" y="47" width="94" height="6" rx="2" fill="#3FA66F" />
+    </g>
+
+    <!-- Chunked Elements -->
+    <g transform="translate(16, 134)">
+      <text x="0" y="12" fill="#88A392" font-family="ui-monospace, monospace" font-size="10" font-weight="600">SOURCE ELEMENTS</text>
+      <rect y="20" width="148" height="38" rx="5" fill="#152119" stroke="#253A2C" stroke-width="1" />
+      <text x="10" y="35" fill="#B3CCC0" font-family="ui-monospace, monospace" font-size="10">elem_901f · r4</text>
+      <text x="10" y="48" fill="#5E7868" font-family="ui-sans-serif, system-ui, sans-serif" font-size="9">Normalized paragraph</text>
+
+      <rect y="64" width="148" height="38" rx="5" fill="#152119" stroke="#253A2C" stroke-width="1" />
+      <text x="10" y="79" fill="#B3CCC0" font-family="ui-monospace, monospace" font-size="10">elem_902a · r4</text>
+      <text x="10" y="92" fill="#5E7868" font-family="ui-sans-serif, system-ui, sans-serif" font-size="9">Stable boundary chunk</text>
+
+      <rect y="108" width="148" height="38" rx="5" fill="#152119" stroke="#253A2C" stroke-width="1" />
+      <text x="10" y="123" fill="#B3CCC0" font-family="ui-monospace, monospace" font-size="10">elem_903c · r4</text>
+      <text x="10" y="136" fill="#5E7868" font-family="ui-sans-serif, system-ui, sans-serif" font-size="9">Token length: 248</text>
+    </g>
+
+    <!-- Footer pill -->
+    <g transform="translate(16, 290)">
+      <rect width="148" height="20" rx="4" fill="#1A2D21" />
+      <text x="24" y="14" fill="#65C28C" font-family="ui-monospace, monospace" font-size="9">100% Deterministic ID</text>
+    </g>
+  </g>
+
+  <!-- STAGE 2: Dense Retrieval & Cosine Ranking -->
+  <g transform="translate(300, 90)" filter="url(#shadow)">
+    <rect width="210" height="350" rx="12" fill="url(#card-grad)" stroke="#3B5945" stroke-width="2" />
+    <rect x="0" y="0" width="210" height="42" rx="12" fill="#1E3125" />
+    <rect x="0" y="30" width="210" height="12" fill="#1E3125" />
+    <text x="18" y="26" fill="#BFE3CF" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="700" letter-spacing="0.5">02 · VECTOR RETRIEVAL</text>
+    <rect x="156" y="11" width="40" height="20" rx="4" fill="#2C4837" />
+    <text x="163" y="25" fill="#78E6AA" font-family="ui-monospace, monospace" font-size="10">KNN</text>
+
+    <!-- Query Input Node -->
+    <g transform="translate(16, 54)">
+      <rect width="178" height="48" rx="6" fill="#131F17" stroke="#2E4837" stroke-width="1" />
+      <text x="10" y="18" fill="#6A8A76" font-family="ui-monospace, monospace" font-size="9">EVAL QUERY</text>
+      <text x="10" y="35" fill="#F2FAF5" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="500">"What is the token cutoff?"</text>
+    </g>
+
+    <!-- Cosine Scores Bar Chart -->
+    <g transform="translate(16, 114)">
+      <text x="0" y="12" fill="#88A392" font-family="ui-monospace, monospace" font-size="10" font-weight="600">COSINE SIMILARITY @ K</text>
+
+      <!-- Match 1 -->
+      <g transform="translate(0, 22)">
+        <rect width="178" height="42" rx="6" fill="#17271D" stroke="#375B42" stroke-width="1" />
+        <rect x="8" y="8" width="26" height="26" rx="4" fill="#243F2D" />
+        <text x="13" y="25" fill="#7EE7AE" font-family="ui-monospace, monospace" font-size="10" font-weight="700">K1</text>
+        <text x="42" y="20" fill="#E6F2EB" font-family="ui-monospace, monospace" font-size="10">elem_901f</text>
+        <text x="42" y="32" fill="#4EDB92" font-family="ui-monospace, monospace" font-size="10" font-weight="700">0.932</text>
+        <rect x="106" y="23" width="62" height="7" rx="3" fill="#1D3024" />
+        <rect x="106" y="23" width="58" height="7" rx="3" fill="#4EDB92" />
+      </g>
+
+      <!-- Match 2 -->
+      <g transform="translate(0, 70)">
+        <rect width="178" height="42" rx="6" fill="#17271D" stroke="#2A4333" stroke-width="1" />
+        <rect x="8" y="8" width="26" height="26" rx="4" fill="#1C3023" />
+        <text x="13" y="25" fill="#B3CCC0" font-family="ui-monospace, monospace" font-size="10" font-weight="700">K2</text>
+        <text x="42" y="20" fill="#E6F2EB" font-family="ui-monospace, monospace" font-size="10">elem_902a</text>
+        <text x="42" y="32" fill="#5CD692" font-family="ui-monospace, monospace" font-size="10" font-weight="700">0.871</text>
+        <rect x="106" y="23" width="62" height="7" rx="3" fill="#1D3024" />
+        <rect x="106" y="23" width="54" height="7" rx="3" fill="#5CD692" />
+      </g>
+
+      <!-- Match 3 -->
+      <g transform="translate(0, 118)">
+        <rect width="178" height="42" rx="6" fill="#17271D" stroke="#253A2C" stroke-width="1" />
+        <rect x="8" y="8" width="26" height="26" rx="4" fill="#1C3023" />
+        <text x="13" y="25" fill="#88A392" font-family="ui-monospace, monospace" font-size="10" font-weight="700">K3</text>
+        <text x="42" y="20" fill="#CBD9CF" font-family="ui-monospace, monospace" font-size="10">elem_903c</text>
+        <text x="42" y="32" fill="#E2B155" font-family="ui-monospace, monospace" font-size="10" font-weight="700">0.748</text>
+        <rect x="106" y="23" width="62" height="7" rx="3" fill="#1D3024" />
+        <rect x="106" y="23" width="46" height="7" rx="3" fill="#E2B155" />
+      </g>
+    </g>
+
+    <!-- Local Ollama Embedder Badge -->
+    <g transform="translate(16, 314)">
+      <rect width="178" height="24" rx="4" fill="#1A2D21" stroke="#2D4C38" stroke-width="1" />
+      <circle cx="12" cy="12" r="3" fill="#5CD692" />
+      <text x="22" y="16" fill="#C5DDD0" font-family="ui-monospace, monospace" font-size="9">Ollama nomic-embed-text</text>
+    </g>
+  </g>
+
+  <!-- STAGE 3: Grounded Answer & Citations -->
+  <g transform="translate(540, 105)" filter="url(#shadow)">
+    <rect width="170" height="320" rx="12" fill="url(#card-grad)" stroke="#32493A" stroke-width="1.5" />
+    <rect x="0" y="0" width="170" height="42" rx="12" fill="#1C2B21" />
+    <rect x="0" y="30" width="170" height="12" fill="#1C2B21" />
+    <text x="14" y="26" fill="#A8BFB0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="700" letter-spacing="0.5">03 · GROUNDING</text>
+    <rect x="118" y="11" width="40" height="20" rx="4" fill="#243A2C" />
+    <text x="123" y="25" fill="#7EE7AE" font-family="ui-monospace, monospace" font-size="9">LLM</text>
+
+    <!-- Grounded Context Window -->
+    <g transform="translate(14, 56)">
+      <rect width="142" height="96" rx="6" fill="#141E17" stroke="#283C2F" stroke-width="1" />
+      <text x="10" y="18" fill="#6A8A76" font-family="ui-monospace, monospace" font-size="9">SYNTHESIS WITH [S1]</text>
+      <text x="10" y="36" fill="#E4EFE8" font-family="Georgia, serif" font-size="11" font-style="italic">"The token cutoff is</text>
+      <text x="10" y="52" fill="#E4EFE8" font-family="Georgia, serif" font-size="11" font-style="italic">strictly 512 tokens</text>
+      <text x="10" y="68" fill="#E4EFE8" font-family="Georgia, serif" font-size="11" font-style="italic">with 10% overlap."</text>
+      <rect x="10" y="78" width="54" height="14" rx="3" fill="#243D2D" />
+      <text x="14" y="88" fill="#7EE7AE" font-family="ui-monospace, monospace" font-size="8">VERIFIED [S1]</text>
+    </g>
+
+    <!-- Denominator & Faithfulness -->
+    <g transform="translate(14, 164)">
+      <text x="0" y="12" fill="#88A392" font-family="ui-monospace, monospace" font-size="10" font-weight="600">CITATION AUDIT</text>
+      <rect y="20" width="142" height="34" rx="4" fill="#16241B" stroke="#253A2C" stroke-width="1" />
+      <text x="10" y="34" fill="#B3CCC0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10">Unresolved labels</text>
+      <text x="120" y="34" fill="#7EE7AE" font-family="ui-monospace, monospace" font-size="11" font-weight="700">0</text>
+      <text x="10" y="46" fill="#5E7868" font-family="ui-monospace, monospace" font-size="8">Zero Hallucinated Ref</text>
+
+      <rect y="60" width="142" height="34" rx="4" fill="#16241B" stroke="#253A2C" stroke-width="1" />
+      <text x="10" y="74" fill="#B3CCC0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="10">Answer Latency</text>
+      <text x="96" y="74" fill="#E2B155" font-family="ui-monospace, monospace" font-size="11" font-weight="700">418ms</text>
+      <text x="10" y="86" fill="#5E7868" font-family="ui-monospace, monospace" font-size="8">Local / Cloud Key</text>
+    </g>
+
+    <!-- Provider badge -->
+    <g transform="translate(14, 280)">
+      <rect width="142" height="24" rx="4" fill="#1D2A20" stroke="#314B38" stroke-width="1" />
+      <text x="14" y="16" fill="#B8D4C4" font-family="ui-sans-serif, system-ui, sans-serif" font-size="9" font-weight="600">Gemini · Groq · Ollama</text>
+    </g>
+  </g>
+
+  <!-- STAGE 4: Statistical Evaluation & Paired Resampling -->
+  <g transform="translate(730, 90)" filter="url(#shadow)">
+    <rect width="170" height="350" rx="12" fill="url(#card-grad)" stroke="#4A6E55" stroke-width="1.5" />
+    <rect x="0" y="0" width="170" height="42" rx="12" fill="#203426" />
+    <rect x="0" y="30" width="170" height="12" fill="#203426" />
+    <text x="14" y="26" fill="#C5ECD5" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="700" letter-spacing="0.5">04 · EVALUATION</text>
+    <rect x="122" y="11" width="36" height="20" rx="4" fill="#2E5039" />
+    <text x="128" y="25" fill="#8AF7BC" font-family="ui-monospace, monospace" font-size="9">95%</text>
+
+    <!-- Metric Cards -->
+    <g transform="translate(14, 54)">
+      <!-- Precision @ 1 -->
+      <rect width="142" height="48" rx="6" fill="#15231A" stroke="#2B4332" stroke-width="1" />
+      <text x="10" y="18" fill="#7D9987" font-family="ui-monospace, monospace" font-size="9">PRECISION @ 1</text>
+      <text x="10" y="38" fill="#5CE698" font-family="ui-monospace, monospace" font-size="18" font-weight="700">0.892</text>
+      <text x="74" y="38" fill="#4B6A56" font-family="ui-monospace, monospace" font-size="10">n=120</text>
+
+      <!-- Recall @ 5 -->
+      <g transform="translate(0, 56)">
+        <rect width="142" height="48" rx="6" fill="#15231A" stroke="#2B4332" stroke-width="1" />
+        <text x="10" y="18" fill="#7D9987" font-family="ui-monospace, monospace" font-size="9">RECALL @ 5</text>
+        <text x="10" y="38" fill="#5CE698" font-family="ui-monospace, monospace" font-size="18" font-weight="700">0.965</text>
+        <text x="74" y="38" fill="#4B6A56" font-family="ui-monospace, monospace" font-size="10">n=120</text>
+      </g>
+
+      <!-- Paired Bootstrap Delta Card -->
+      <g transform="translate(0, 112)">
+        <rect width="142" height="92" rx="6" fill="#1A271E" stroke="#3D6449" stroke-width="1" />
+        <text x="10" y="18" fill="#9FBDB0" font-family="ui-monospace, monospace" font-size="9">PAIRED EXPERIMENT</text>
+        <text x="10" y="33" fill="#E2B155" font-family="ui-monospace, monospace" font-size="10">depth-3 → depth-5</text>
+        <text x="10" y="55" fill="#7EF5B5" font-family="ui-monospace, monospace" font-size="16" font-weight="700">Δ +0.142</text>
+
+        <!-- Confidence interval visual bar -->
+        <g transform="translate(10, 64)">
+          <line x1="10" y1="8" x2="112" y2="8" stroke="#3A5543" stroke-width="2" />
+          <line x1="30" y1="8" x2="95" y2="8" stroke="#7EF5B5" stroke-width="4" stroke-linecap="round" />
+          <circle cx="62" cy="8" r="4" fill="#FFFEFA" />
+          <text x="15" y="24" fill="#88A392" font-family="ui-monospace, monospace" font-size="8">95% CI: [+0.08, +0.21]</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- Footer pill -->
+    <g transform="translate(14, 314)">
+      <rect width="142" height="24" rx="4" fill="#203326" />
+      <text x="14" y="16" fill="#85EAB3" font-family="ui-monospace, monospace" font-size="9">1,000 Resamples · Seed 0</text>
+    </g>
+  </g>
+
+  <!-- Bottom Metric Ticker Bar -->
+  <g transform="translate(40, 470)">
+    <rect width="880" height="44" rx="8" fill="#141E17" stroke="#253A2C" stroke-width="1" />
+
+    <g transform="translate(30, 14)">
+      <text x="0" y="14" fill="#6A8574" font-family="ui-monospace, monospace" font-size="10">GROUND TRUTH ANCHOR</text>
+      <text x="160" y="14" fill="#D3E6DB" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600">Persistent Element IDs</text>
+    </g>
+
+    <line x1="340" y1="8" x2="340" y2="36" stroke="#223326" stroke-width="1" />
+
+    <g transform="translate(370, 14)">
+      <text x="0" y="14" fill="#6A8574" font-family="ui-monospace, monospace" font-size="10">EVALUATION METRICS</text>
+      <text x="150" y="14" fill="#D3E6DB" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600">MRR · Precision@k · Recall@k</text>
+    </g>
+
+    <line x1="680" y1="8" x2="680" y2="36" stroke="#223326" stroke-width="1" />
+
+    <g transform="translate(710, 14)">
+      <text x="0" y="14" fill="#6A8574" font-family="ui-monospace, monospace" font-size="10">STATISTICAL RIGOR</text>
+      <text x="140" y="14" fill="#7EF5B5" font-family="ui-monospace, monospace" font-size="11" font-weight="700">Paired Bootstrap CIs</text>
+    </g>
+  </g>
+</svg>

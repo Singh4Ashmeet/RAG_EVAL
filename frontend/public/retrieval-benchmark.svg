@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="rb-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18241D" />
+      <stop offset="100%" stop-color="#101914" />
+    </linearGradient>
+    <linearGradient id="chart-area" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3FA66F" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#3FA66F" stop-opacity="0.0" />
+    </linearGradient>
+  </defs>
+  <rect width="480" height="320" rx="12" fill="url(#rb-bg)" />
+  <rect x="20" y="20" width="440" height="280" rx="8" stroke="#2B3C30" stroke-width="1" />
+
+  <!-- Metric Badges Row -->
+  <g transform="translate(40, 36)">
+    <g transform="translate(0, 0)">
+      <rect width="124" height="52" rx="6" fill="#142018" stroke="#2A4232" stroke-width="1" />
+      <text x="12" y="20" fill="#7D9987" font-family="ui-monospace, monospace" font-size="9">PRECISION @ 1</text>
+      <text x="12" y="42" fill="#5CE698" font-family="ui-monospace, monospace" font-size="18" font-weight="700">0.912</text>
+    </g>
+
+    <g transform="translate(138, 0)">
+      <rect width="124" height="52" rx="6" fill="#142018" stroke="#2A4232" stroke-width="1" />
+      <text x="12" y="20" fill="#7D9987" font-family="ui-monospace, monospace" font-size="9">RECALL @ 5</text>
+      <text x="12" y="42" fill="#5CE698" font-family="ui-monospace, monospace" font-size="18" font-weight="700">0.978</text>
+    </g>
+
+    <g transform="translate(276, 0)">
+      <rect width="124" height="52" rx="6" fill="#142018" stroke="#3A4E38" stroke-width="1" />
+      <text x="12" y="20" fill="#E2B155" font-family="ui-monospace, monospace" font-size="9">MEAN RECIPROCAL</text>
+      <text x="12" y="42" fill="#F0C773" font-family="ui-monospace, monospace" font-size="18" font-weight="700">0.945</text>
+    </g>
+  </g>
+
+  <!-- Precision Curve by Cutoff -->
+  <g transform="translate(40, 108)">
+    <text x="0" y="14" fill="#88A392" font-family="ui-monospace, monospace" font-size="10" font-weight="600">RETRIEVAL FIDELITY BY CUTOFF K (1, 3, 5)</text>
+
+    <!-- Chart Grid -->
+    <g transform="translate(0, 30)">
+      <line x1="30" y1="20" x2="390" y2="20" stroke="#233529" stroke-width="1" stroke-dasharray="3 3" />
+      <text x="10" y="24" fill="#50695B" font-family="ui-monospace, monospace" font-size="9">1.0</text>
+      <line x1="30" y1="60" x2="390" y2="60" stroke="#233529" stroke-width="1" stroke-dasharray="3 3" />
+      <text x="10" y="64" fill="#50695B" font-family="ui-monospace, monospace" font-size="9">0.8</text>
+      <line x1="30" y1="100" x2="390" y2="100" stroke="#233529" stroke-width="1" stroke-dasharray="3 3" />
+      <text x="10" y="104" fill="#50695B" font-family="ui-monospace, monospace" font-size="9">0.6</text>
+
+      <!-- Area -->
+      <polygon points="60,38 180,26 300,44 360,65 360,110 60,110" fill="url(#chart-area)" />
+      <!-- Line -->
+      <polyline points="60,38 180,26 300,44 360,65" fill="none" stroke="#5CD692" stroke-width="3" stroke-linecap="round" />
+
+      <!-- Nodes -->
+      <circle cx="60" cy="38" r="5" fill="#5CD692" stroke="#142018" stroke-width="2" />
+      <text x="46" y="125" fill="#88A392" font-family="ui-monospace, monospace" font-size="10">k = 1</text>
+      <text x="46" y="26" fill="#D3E6DB" font-family="ui-monospace, monospace" font-size="9">0.91</text>
+
+      <circle cx="180" cy="26" r="5" fill="#5CD692" stroke="#142018" stroke-width="2" />
+      <text x="166" y="125" fill="#88A392" font-family="ui-monospace, monospace" font-size="10">k = 3</text>
+      <text x="166" y="16" fill="#D3E6DB" font-family="ui-monospace, monospace" font-size="9">0.96</text>
+
+      <circle cx="300" cy="44" r="5" fill="#5CD692" stroke="#142018" stroke-width="2" />
+      <text x="286" y="125" fill="#88A392" font-family="ui-monospace, monospace" font-size="10">k = 5</text>
+      <text x="286" y="34" fill="#D3E6DB" font-family="ui-monospace, monospace" font-size="9">0.88</text>
+
+      <circle cx="360" cy="65" r="5" fill="#E2B155" stroke="#142018" stroke-width="2" />
+      <text x="346" y="125" fill="#88A392" font-family="ui-monospace, monospace" font-size="10">k = 10</text>
+      <text x="346" y="55" fill="#F0C773" font-family="ui-monospace, monospace" font-size="9">0.78</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="sec-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18241D" />
+      <stop offset="100%" stop-color="#101914" />
+    </linearGradient>
+  </defs>
+  <rect width="480" height="320" rx="12" fill="url(#sec-bg)" />
+  <rect x="20" y="20" width="440" height="280" rx="8" stroke="#2B3C30" stroke-width="1" />
+
+  <!-- Shield Icon and Header -->
+  <g transform="translate(40, 36)">
+    <rect width="400" height="48" rx="6" fill="#142018" stroke="#2A4232" stroke-width="1" />
+    <circle cx="28" cy="24" r="14" fill="#1F3526" />
+    <path d="M 28 16 L 35 19 V 25 C 35 29 28 32 28 32 C 28 32 21 29 21 25 V 19 Z" fill="#5CD692" />
+    <text x="52" y="24" fill="#F0F5F2" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="700">PRIVACY &amp; ENCRYPTION ARCHITECTURE</text>
+    <text x="52" y="38" fill="#759382" font-family="ui-monospace, monospace" font-size="9">Fernet Symmetric Key Cipher · Isolated SQLite Store</text>
+  </g>
+
+  <!-- Key Security Guarantees -->
+  <g transform="translate(40, 104)">
+    <!-- Guarantee 1 -->
+    <g transform="translate(0, 0)">
+      <rect width="400" height="44" rx="6" fill="#141E17" stroke="#253A2C" stroke-width="1" />
+      <rect x="12" y="12" width="20" height="20" rx="4" fill="#1C3023" />
+      <path d="M 17 22 L 20 25 L 27 18" stroke="#5CD692" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      <text x="40" y="22" fill="#E2EDE6" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600">Local Embedder Sandboxing</text>
+      <text x="40" y="34" fill="#6A8574" font-family="ui-monospace, monospace" font-size="9">Embeddings computed locally via Ollama. No vectors leave your server.</text>
+    </g>
+
+    <!-- Guarantee 2 -->
+    <g transform="translate(0, 54)">
+      <rect width="400" height="44" rx="6" fill="#141E17" stroke="#253A2C" stroke-width="1" />
+      <rect x="12" y="12" width="20" height="20" rx="4" fill="#1C3023" />
+      <path d="M 17 22 L 20 25 L 27 18" stroke="#5CD692" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      <text x="40" y="22" fill="#E2EDE6" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600">Encrypted Provider Credentials</text>
+      <text x="40" y="34" fill="#6A8574" font-family="ui-monospace, monospace" font-size="9">Gemini &amp; Groq keys encrypted at rest. Never displayed back in plaintext.</text>
+    </g>
+
+    <!-- Guarantee 3 -->
+    <g transform="translate(0, 108)">
+      <rect width="400" height="44" rx="6" fill="#141E17" stroke="#253A2C" stroke-width="1" />
+      <rect x="12" y="12" width="20" height="20" rx="4" fill="#1C3023" />
+      <path d="M 17 22 L 20 25 L 27 18" stroke="#5CD692" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      <text x="40" y="22" fill="#E2EDE6" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="600">Complete Workspace Erasure</text>
+      <text x="40" y="34" fill="#6A8574" font-family="ui-monospace, monospace" font-size="9">1-click cascading deletion permanently purges all documents and models.</text>
+    </g>
+  </g>
+</svg>

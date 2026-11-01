@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="c-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18241D" />
+      <stop offset="100%" stop-color="#101914" />
+    </linearGradient>
+    <linearGradient id="c-card" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#24342A" />
+      <stop offset="100%" stop-color="#1B2820" />
+    </linearGradient>
+  </defs>
+  <rect width="480" height="320" rx="12" fill="url(#c-bg)" />
+  <rect x="20" y="20" width="440" height="280" rx="8" stroke="#2B3C30" stroke-width="1" />
+
+  <!-- Document Header -->
+  <g transform="translate(40, 42)">
+    <rect width="400" height="48" rx="6" fill="url(#c-card)" stroke="#395140" stroke-width="1" />
+    <rect x="14" y="12" width="24" height="24" rx="4" fill="#182A1F" />
+    <path d="M 21 18 L 31 18 M 21 24 L 31 24 M 21 30 L 27 30" stroke="#5CD692" stroke-width="1.5" stroke-linecap="round" />
+    <text x="48" y="26" fill="#F0F5F2" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" font-weight="600">product_specs_v2.md</text>
+    <text x="48" y="40" fill="#759382" font-family="ui-monospace, monospace" font-size="10">SHA-256: 7f83b1657ff1fc53b92dc18148a1d65d</text>
+    <rect x="330" y="14" width="56" height="20" rx="4" fill="#203828" />
+    <text x="338" y="28" fill="#78E6AA" font-family="ui-monospace, monospace" font-size="9">INDEXED</text>
+  </g>
+
+  <!-- Stable Elements Slicing -->
+  <g transform="translate(40, 106)">
+    <text x="0" y="14" fill="#88A392" font-family="ui-monospace, monospace" font-size="10" font-weight="600" letter-spacing="0.5">DETERMINISTIC SOURCE ELEMENTS</text>
+
+    <!-- Element 1 -->
+    <g transform="translate(0, 26)">
+      <rect width="400" height="44" rx="6" fill="#141E17" stroke="#2A4031" stroke-width="1" />
+      <circle cx="20" cy="22" r="8" fill="#213527" />
+      <text x="17" y="26" fill="#5CD692" font-family="ui-monospace, monospace" font-size="10">1</text>
+      <text x="40" y="20" fill="#DBE8E0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">"System architecture requires distributed consensus protocol..."</text>
+      <text x="40" y="34" fill="#6A8574" font-family="ui-monospace, monospace" font-size="9">UUID: 3fa85f64-5717-4562-b3fc-2c963f66afa6 · Tokens: 124</text>
+    </g>
+
+    <!-- Element 2 -->
+    <g transform="translate(0, 78)">
+      <rect width="400" height="44" rx="6" fill="#141E17" stroke="#324F3B" stroke-width="1" />
+      <circle cx="20" cy="22" r="8" fill="#243C2C" />
+      <text x="17" y="26" fill="#5CD692" font-family="ui-monospace, monospace" font-size="10">2</text>
+      <text x="40" y="20" fill="#DBE8E0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">"Evaluation datasets map test questions to immutable element IDs..."</text>
+      <text x="40" y="34" fill="#6A8574" font-family="ui-monospace, monospace" font-size="9">UUID: 8b73a219-4822-4a01-9e12-887e59b20e5c · Tokens: 186</text>
+    </g>
+
+    <!-- Element 3 -->
+    <g transform="translate(0, 130)">
+      <rect width="400" height="44" rx="6" fill="#141E17" stroke="#2A4031" stroke-width="1" />
+      <circle cx="20" cy="22" r="8" fill="#213527" />
+      <text x="17" y="26" fill="#5CD692" font-family="ui-monospace, monospace" font-size="10">3</text>
+      <text x="40" y="20" fill="#DBE8E0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11">"Rechunking the corpus will never invalidate existing ground-truth..."</text>
+      <text x="40" y="34" fill="#6A8574" font-family="ui-monospace, monospace" font-size="9">UUID: c4f23e71-9103-4b35-86b1-91a0c44129b0 · Tokens: 142</text>
+    </g>
+  </g>
+</svg>

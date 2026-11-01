@@ -5,6 +5,13 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/api/v1/auth/me', route =>
     route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ detail: 'Sign in' }) }),
   )
+  await page.route('**/api/v1/auth/methods', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ email: false, google: false, github: true }),
+    }),
+  )
 })
 
 test('invite-only sign in is keyboard accessible and has no axe violations', async ({ page }) => {
