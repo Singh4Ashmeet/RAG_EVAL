@@ -393,8 +393,10 @@ def github_login(request: Request):
     state = secrets.token_urlsafe(32)
     response = RedirectResponse(
         "https://github.com/login/oauth/authorize?"
-        + httpx.QueryParams(
-            {"client_id": client_id, "scope": "read:user user:email", "state": state}
+        + str(
+            httpx.QueryParams(
+                {"client_id": client_id, "scope": "read:user user:email", "state": state}
+            )
         )
     )
     response.set_cookie(
