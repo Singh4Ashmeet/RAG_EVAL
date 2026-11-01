@@ -75,6 +75,8 @@ Open `http://127.0.0.1:5173`; API docs are at `http://127.0.0.1:8000/docs`. The 
 
 The workbench supports private document uploads, Ollama indexing and grounded asking, element-labeled immutable datasets, queued retrieval evaluations, paired retrieval-depth experiments, encrypted Gemini/Groq chat keys, and workspace deletion. Read the hosted [Terms](docs/hosted-terms.md) and [Privacy Notice](docs/hosted-privacy.md) before inviting beta users. It remains an early beta; validate PostgreSQL migrations and RLS on the target service, and add rate limits, abuse controls, backup expiry automation, and independent security review before broader access.
 
+For the Render Blueprint, generated `onrender.com` domain, OAuth setup, and required S3/Ollama services, see [the Render deployment guide](docs/render-deployment.md).
+
 ## Quickstart: ingest, index, retrieve, and answer
 
 Create a UTF-8 `.txt` or `.md` file, configure the environment above, and run this from the repository root:

@@ -10,6 +10,7 @@ Start with the root [README](../README.md) for project scope, installation, and 
 - [Findings and limitations](findings.md): verified capabilities, current gaps, and evidence still needed.
 - [Privacy and data handling](privacy.md): documents, prompts, vectors, reports, and configured model hosts.
 - [Development runner and CI/CD](ci-cd.md): start both local services and understand the GitHub Actions pipeline.
+- [Render deployment](render-deployment.md): deploy the hosted app and configure its external storage, model, and OAuth services.
 
 ## Project policies
 
