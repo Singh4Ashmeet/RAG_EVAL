@@ -1,0 +1,20 @@
+{
+  "track": "track_b",
+  "corpus_id": "rfc8259_json_standard",
+  "title": "RFC 8259: The JavaScript Object Notation (JSON) Data Interchange Format",
+  "filename": "rfc8259.txt",
+  "document_id": "doc_61a5378f4255c720",
+  "content_sha256": "61a5378f4255c720beb2a4b4a63b29540147c140f36988bf086291989b4cd2d7",
+  "source_url": "https://www.rfc-editor.org/rfc/rfc8259.txt",
+  "official_landing_page": "https://www.rfc-editor.org/rfc/rfc8259",
+  "rfc_number": 8259,
+  "standards_status": "Internet Standard (STD 90)",
+  "publisher": "Internet Engineering Task Force (IETF)",
+  "author": "T. Bray, Ed.",
+  "publication_date": "December 2017",
+  "retrieved_at": "2026-11-04T12:00:00Z",
+  "license_or_reuse_terms": "IETF Trust and the persons identified as the document authors. All rights reserved.",
+  "curator": "RAG_EVAL Curation Team",
+  "curation_notes": "Canonical RFC text downloaded byte-for-byte from rfc-editor.org. Used as external technical pilot corpus."
+}
+

@@ -3,11 +3,92 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime
+from enum import StrEnum
 from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 _SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
+
+
+class AnnotationStatus(StrEnum):
+    """Lifecycle and verification state of an evaluation case."""
+
+    VERIFIED = "verified"
+    PARTIALLY_ANNOTATED = "partially_annotated"
+    UNVERIFIED = "unverified"
+
+
+class Answerability(StrEnum):
+    """Whether the query is answerable from the designated corpus."""
+
+    ANSWERABLE = "answerable"
+    UNANSWERABLE = "unanswerable"
+    UNDETERMINED = "undetermined"
+
+
+class QuestionCategory(StrEnum):
+    """Structural or behavioral category of the evaluation query."""
+
+    DIRECT_FACTUAL = "direct_factual"
+    MULTI_PARAGRAPH = "multi_paragraph"
+    MULTI_EVIDENCE = "multi_evidence"
+    SPECIFIC_DETAIL = "specific_detail"
+    CROSS_DOCUMENT = "cross_document"
+    UNANSWERABLE = "unanswerable"
+    MISLEADING_TERMINOLOGY = "misleading_terminology"
+
+
+class Difficulty(StrEnum):
+    """Subjective retrieval and synthesis difficulty."""
+
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
+
+
+class CorpusTrack(StrEnum):
+    """Identifies the independent golden corpus track."""
+
+    TRACK_A = "track_a"
+    TRACK_B = "track_b"
+
+
+class AnnotationProvenance(BaseModel):
+    """Auditable provenance and verification metadata for an evaluation case."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    annotator: str = Field(..., min_length=1)
+    verified_at: datetime
+    source_documents: list[str] = Field(..., min_length=1)
+    verification_notes: str | None = None
+    evidence_references: list[str] = Field(default_factory=list)
+
+    @field_validator("annotator")
+    @classmethod
+    def validate_annotator(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("annotator cannot be whitespace-only.")
+        return value.strip()
+
+    @field_validator("source_documents")
+    @classmethod
+    def validate_source_documents(cls, values: list[str]) -> list[str]:
+        if any(not val.strip() for val in values):
+            raise ValueError("source_documents cannot contain empty or whitespace-only names.")
+        normalized = [val.strip() for val in values]
+        if len(normalized) != len(set(normalized)):
+            raise ValueError("source_documents cannot contain duplicates.")
+        return normalized
+
+    @field_validator("evidence_references")
+    @classmethod
+    def validate_evidence_references(cls, values: list[str]) -> list[str]:
+        if any(not val.strip() for val in values):
+            raise ValueError("evidence_references cannot contain empty strings.")
+        return [val.strip() for val in values]
 
 
 class EvaluationCase(BaseModel):
@@ -21,6 +102,14 @@ class EvaluationCase(BaseModel):
     relevant_element_ids: list[str] = Field(default_factory=list)
     reference_answer: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    # M3 annotation metadata: defaults ensure legacy records remain unverified
+    status: AnnotationStatus = Field(default=AnnotationStatus.UNVERIFIED)
+    answerability: Answerability = Field(default=Answerability.UNDETERMINED)
+    category: QuestionCategory | None = None
+    difficulty: Difficulty | None = None
+    provenance: AnnotationProvenance | None = None
+    track: CorpusTrack | None = None
 
     @field_validator("query_id", "query")
     @classmethod
@@ -57,16 +146,24 @@ class EvaluationCase(BaseModel):
         return value.strip() if value is not None else None
 
     @model_validator(mode="after")
-    def require_ground_truth(self) -> Self:
-        if (
-            not self.relevant_chunk_ids
-            and not self.relevant_element_ids
-            and self.reference_answer is None
-        ):
+    def validate_ground_truth_and_status(self) -> Self:
+        # Verified cases must carry explicit audit provenance
+        if self.status == AnnotationStatus.VERIFIED and self.provenance is None:
             raise ValueError(
-                "Each evaluation case must include relevant_chunk_ids, relevant_element_ids, "
-                "reference_answer, or a combination."
+                "Evaluation cases marked as verified must include verification provenance."
             )
+
+        # Answerable cases (or undetermined cases) must have at least one ground-truth label
+        if self.answerability != Answerability.UNANSWERABLE:
+            if (
+                not self.relevant_chunk_ids
+                and not self.relevant_element_ids
+                and self.reference_answer is None
+            ):
+                raise ValueError(
+                    "Each evaluation case must include relevant_chunk_ids, relevant_element_ids, "
+                    "reference_answer, or a combination unless answerability is unanswerable."
+                )
         return self
 
 
@@ -78,6 +175,7 @@ class EvaluationDataset(BaseModel):
     dataset_id: str = Field(..., min_length=1)
     sha256: str = Field(..., min_length=64, max_length=64)
     cases: list[EvaluationCase] = Field(..., min_length=1)
+    track: CorpusTrack | None = None
 
     @field_validator("dataset_id")
     @classmethod

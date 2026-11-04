@@ -1,0 +1,17 @@
+{
+  "track": "track_b",
+  "manifest_version": "1.0.0",
+  "description": "RFC 8259: The JavaScript Object Notation (JSON) Data Interchange Format (Standards Track).",
+  "documents": [
+    {
+      "filename": "rfc8259.txt",
+      "title": "RFC 8259: The JavaScript Object Notation (JSON) Data Interchange Format",
+      "sha256": "61a5378f4255c720beb2a4b4a63b29540147c140f36988bf086291989b4cd2d7",
+      "document_id": "doc_61a5378f4255c720",
+      "source_url": "https://www.rfc-editor.org/rfc/rfc8259.txt",
+      "license_or_reuse_terms": "IETF Trust and the persons identified as the document authors. All rights reserved.",
+      "retrieved_at": "2026-11-04T12:00:00Z"
+    }
+  ]
+}
+

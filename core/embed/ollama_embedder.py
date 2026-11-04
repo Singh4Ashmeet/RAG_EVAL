@@ -18,13 +18,25 @@ class OllamaEmbedder:
     response and checked on every subsequent call.
     """
 
-    def __init__(self, model: str, host: str | None = None, client: Any | None = None) -> None:
+    def __init__(
+        self,
+        model: str,
+        host: str | None = None,
+        client: Any | None = None,
+        *,
+        timeout: float | None = 120.0,
+    ) -> None:
         cleaned_model = model.strip()
         if not cleaned_model:
             raise EmbedderError("An Ollama embedding model must be configured.")
         self.model = cleaned_model
         self.model_id = f"ollama:{cleaned_model}"
-        self._client = client if client is not None else ollama.Client(host=host)
+        if client is not None:
+            self._client = client
+        elif timeout is not None:
+            self._client = ollama.Client(host=host, timeout=timeout)
+        else:
+            self._client = ollama.Client(host=host)
         self._dimension: int | None = None
 
     @property

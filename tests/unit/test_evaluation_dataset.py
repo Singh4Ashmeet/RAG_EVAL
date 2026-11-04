@@ -4,13 +4,24 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
 from core.errors import EvaluationError
-from eval.datasets import EvaluationCase, EvaluationDataset, load_jsonl_dataset
+from eval.datasets import (
+    AnnotationProvenance,
+    AnnotationStatus,
+    Answerability,
+    CorpusTrack,
+    Difficulty,
+    EvaluationCase,
+    EvaluationDataset,
+    QuestionCategory,
+    load_jsonl_dataset,
+)
 
 
 def record(**overrides: object) -> dict[str, object]:
@@ -92,4 +103,100 @@ def test_dataset_query_ids_must_be_unique() -> None:
                 EvaluationCase.model_validate(record()),
                 EvaluationCase.model_validate(record()),
             ],
+        )
+
+
+def test_legacy_record_defaults_to_unverified_and_undetermined() -> None:
+    case = EvaluationCase.model_validate(record())
+    assert case.status == AnnotationStatus.UNVERIFIED
+    assert case.answerability == Answerability.UNDETERMINED
+    assert case.category is None
+    assert case.difficulty is None
+    assert case.provenance is None
+    assert case.track is None
+
+
+def test_verified_case_requires_provenance() -> None:
+    with pytest.raises(ValidationError, match="must include verification provenance"):
+        EvaluationCase.model_validate(
+            record(
+                status="verified",
+                provenance=None,
+            )
+        )
+
+
+def test_verified_case_with_valid_provenance() -> None:
+    prov = AnnotationProvenance(
+        annotator="engineer-1",
+        verified_at=datetime.now(UTC),
+        source_documents=["doc_a.md"],
+        verification_notes="Manually verified against doc_a.",
+        evidence_references=["doc_a_e0001"],
+    )
+    case = EvaluationCase.model_validate(
+        record(
+            status=AnnotationStatus.VERIFIED,
+            answerability=Answerability.ANSWERABLE,
+            category=QuestionCategory.DIRECT_FACTUAL,
+            difficulty=Difficulty.EASY,
+            provenance=prov,
+            track=CorpusTrack.TRACK_A,
+        )
+    )
+    assert case.status == AnnotationStatus.VERIFIED
+    assert case.answerability == Answerability.ANSWERABLE
+    assert case.provenance is not None
+    assert case.provenance.annotator == "engineer-1"
+    assert case.track == CorpusTrack.TRACK_A
+
+
+def test_unanswerable_case_permits_empty_ground_truth() -> None:
+    case = EvaluationCase.model_validate(
+        {
+            "query_id": "q-unanswerable",
+            "query": "What is the secret recipe?",
+            "answerability": "unanswerable",
+            "category": "unanswerable",
+            "status": "unverified",
+        }
+    )
+    assert case.answerability == Answerability.UNANSWERABLE
+    assert case.relevant_chunk_ids == []
+    assert case.relevant_element_ids == []
+    assert case.reference_answer is None
+
+
+def test_extra_fields_forbidden_on_case_and_provenance() -> None:
+    with pytest.raises(ValidationError):
+        EvaluationCase.model_validate(record(extra_field="not_allowed"))
+
+    with pytest.raises(ValidationError):
+        AnnotationProvenance(
+            annotator="e1",
+            verified_at=datetime.now(UTC),
+            source_documents=["d.md"],
+            extra_provenance="forbidden",  # type: ignore[call-arg]
+        )
+
+
+def test_case_models_are_frozen() -> None:
+    case = EvaluationCase.model_validate(record())
+    with pytest.raises(ValidationError):
+        case.query = "new question"  # type: ignore[misc]
+
+
+def test_provenance_rejects_empty_fields_and_duplicate_docs() -> None:
+    with pytest.raises(ValidationError):
+        AnnotationProvenance(
+            annotator="   ",
+            verified_at=datetime.now(UTC),
+            source_documents=["doc.md"],
+        )
+
+    with pytest.raises(ValidationError, match="duplicates"):
+        AnnotationProvenance(
+            annotator="valid",
+            verified_at=datetime.now(UTC),
+            source_documents=["doc.md", "doc.md"],
         )

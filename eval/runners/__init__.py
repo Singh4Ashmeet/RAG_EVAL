@@ -1,5 +1,10 @@
 """Evaluation runner contracts and implementations."""
 
+from eval.runners.baseline import (
+    BaselineConfig,
+    BaselineRunManifest,
+    run_baseline,
+)
 from eval.runners.evaluate import (
     EvaluationReport,
     EvaluationRunner,
@@ -18,6 +23,8 @@ from eval.runners.run_sweep import (
 )
 
 __all__ = [
+    "BaselineConfig",
+    "BaselineRunManifest",
     "EvaluationReport",
     "EvaluationRunner",
     "EvaluationRunConfig",
@@ -30,4 +37,5 @@ __all__ = [
     "VariantComparison",
     "compare_evaluation_reports",
     "paired_bootstrap_interval",
+    "run_baseline",
 ]

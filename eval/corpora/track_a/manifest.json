@@ -1,0 +1,35 @@
+{
+  "track": "track_a",
+  "manifest_version": "1.0.0",
+  "description": "Internal RAG_EVAL technical documentation (architecture, hosted beta, runbook).",
+  "documents": [
+    {
+      "filename": "architecture.md",
+      "title": "RAG_EVAL System Architecture",
+      "sha256": "95ccdbb830bc758530bf226ef02af4e4ae0d5c71a792ad244d3da139d4e88dff",
+      "document_id": "doc_95ccdbb830bc7585",
+      "source_url": "file:///docs/architecture.md",
+      "license_or_reuse_terms": "Proprietary / Internal project documentation",
+      "retrieved_at": "2026-11-04T12:00:00Z"
+    },
+    {
+      "filename": "hosted-beta.md",
+      "title": "RAG_EVAL Hosted Beta Specification",
+      "sha256": "839c6457fbcaccfbf7a580a4cb714c7916be4e2860aba2219bb4c048a37fc696",
+      "document_id": "doc_839c6457fbcaccfb",
+      "source_url": "file:///docs/hosted-beta.md",
+      "license_or_reuse_terms": "Proprietary / Internal project documentation",
+      "retrieved_at": "2026-11-04T12:00:00Z"
+    },
+    {
+      "filename": "runbook.md",
+      "title": "RAG_EVAL Operational Runbook",
+      "sha256": "192da8a407960f8295538137a7e7e2174101a6ca47c0214b8ac5414ce50c94d5",
+      "document_id": "doc_192da8a407960f82",
+      "source_url": "file:///docs/runbook.md",
+      "license_or_reuse_terms": "Proprietary / Internal project documentation",
+      "retrieved_at": "2026-11-04T12:00:00Z"
+    }
+  ]
+}
+

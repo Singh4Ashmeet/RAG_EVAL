@@ -39,11 +39,16 @@ def load_jsonl_dataset(file_path: str | Path) -> EvaluationDataset:
                 f"Invalid evaluation record at {path}:{line_number}: {exc}"
             ) from exc
 
+    dataset_track = (
+        cases[0].track if cases and all(c.track == cases[0].track for c in cases) else None
+    )
+
     try:
         return EvaluationDataset(
             dataset_id=path.stem,
             sha256=hashlib.sha256(raw_bytes).hexdigest(),
             cases=cases,
+            track=dataset_track,
         )
     except ValidationError as exc:
         raise EvaluationError(f"Invalid evaluation dataset '{path}': {exc}") from exc

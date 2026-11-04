@@ -1,0 +1,34 @@
+{
+  "track": "track_a",
+  "corpus_id": "rag_eval_internal_docs",
+  "curation_date": "2026-11-04T12:00:00Z",
+  "curator": "RAG_EVAL Curation Team",
+  "description": "Internal project technical documentation used for Track A golden evaluation baseline.",
+  "documents": [
+    {
+      "filename": "architecture.md",
+      "canonical_repository_path": "docs/architecture.md",
+      "sha256": "95ccdbb830bc758530bf226ef02af4e4ae0d5c71a792ad244d3da139d4e88dff",
+      "document_id": "doc_95ccdbb830bc7585",
+      "title": "RAG_EVAL System Architecture",
+      "description": "System architecture, core data models, element extraction, and dual evaluation workflow."
+    },
+    {
+      "filename": "hosted-beta.md",
+      "canonical_repository_path": "docs/hosted-beta.md",
+      "sha256": "839c6457fbcaccfbf7a580a4cb714c7916be4e2860aba2219bb4c048a37fc696",
+      "document_id": "doc_839c6457fbcaccfb",
+      "title": "RAG_EVAL Hosted Beta Specification",
+      "description": "Hosted beta deployment, tenant isolation, authentication, and worker task execution."
+    },
+    {
+      "filename": "runbook.md",
+      "canonical_repository_path": "docs/runbook.md",
+      "sha256": "192da8a407960f8295538137a7e7e2174101a6ca47c0214b8ac5414ce50c94d5",
+      "document_id": "doc_192da8a407960f82",
+      "title": "RAG_EVAL Operational Runbook",
+      "description": "Operational troubleshooting, local development environment setup, database migrations, and operational commands."
+    }
+  ]
+}
+

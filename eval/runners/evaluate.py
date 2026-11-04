@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from statistics import fmean
@@ -10,7 +11,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from core.errors import EvaluationError, RAGEvalError
+from core.errors import EvaluationError
 from core.generate.pipeline import GroundedAnswerGenerator
 from core.generate.schema import AnswerCitation
 from core.llm.base import GenerationSettings
@@ -85,14 +86,19 @@ class EvaluationRunner:
         dataset: EvaluationDataset,
         retriever: Retriever,
         answerer: GroundedAnswerGenerator | None = None,
+        *,
+        on_query_complete: Callable[[int, int, QueryEvaluationResult], None] | None = None,
     ) -> EvaluationReport:
         """Run each query once through retrieval and optionally generate from that result."""
         query_results: list[QueryEvaluationResult] = []
         metric_values: dict[str, list[float]] = {}
+        total_cases = len(dataset.cases)
 
-        for case in dataset.cases:
+        for index, case in enumerate(dataset.cases, start=1):
             result = self._evaluate_case(case, retriever, answerer)
             query_results.append(result)
+            if on_query_complete is not None:
+                on_query_complete(index, total_cases, result)
             for name, value in result.retrieval_metrics.items():
                 metric_values.setdefault(f"retrieval.{name}", []).append(value)
             for name, value in result.answer_metrics.items():
@@ -183,7 +189,7 @@ class EvaluationRunner:
         try:
             retrieved_sources = retriever.retrieve(case.query, top_k=self.config.max_cutoff)
             retrieval_succeeded = True
-        except RAGEvalError as exc:
+        except Exception as exc:
             errors.append(f"retrieval: {exc}")
         finally:
             retrieval_duration_ms = max(0.0, (perf_counter() - retrieval_started) * 1000.0)
@@ -240,7 +246,7 @@ class EvaluationRunner:
                         "exact_match": exact_match(generated.answer, case.reference_answer),
                         "token_f1": token_f1(generated.answer, case.reference_answer),
                     }
-            except RAGEvalError as exc:
+            except Exception as exc:
                 errors.append(f"generation: {exc}")
             finally:
                 generation_duration_ms = max(0.0, (perf_counter() - generation_started) * 1000.0)

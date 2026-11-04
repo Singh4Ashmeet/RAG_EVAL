@@ -17,13 +17,25 @@ class OllamaLLMProvider:
     checked by the first request and reported as :class:`LLMError` on failure.
     """
 
-    def __init__(self, model: str, host: str | None = None, client: Any | None = None) -> None:
+    def __init__(
+        self,
+        model: str,
+        host: str | None = None,
+        client: Any | None = None,
+        *,
+        timeout: float | None = 180.0,
+    ) -> None:
         cleaned_model = model.strip()
         if not cleaned_model:
             raise LLMError("An Ollama generation model must be configured.")
         self.model = cleaned_model
         self.model_id = f"ollama:{cleaned_model}"
-        self._client = client if client is not None else ollama.Client(host=host)
+        if client is not None:
+            self._client = client
+        elif timeout is not None:
+            self._client = ollama.Client(host=host, timeout=timeout)
+        else:
+            self._client = ollama.Client(host=host)
 
     def generate(
         self,
