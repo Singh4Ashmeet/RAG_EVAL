@@ -22,6 +22,7 @@ def hosted_client(tmp_path: Path, monkeypatch) -> Iterator[tuple[TestClient, mai
 
     monkeypatch.setattr(Redis, "from_url", lambda _url: object())
     monkeypatch.setattr(Queue, "enqueue", lambda *_args, **_kwargs: "fake-job")
+    monkeypatch.setattr(Queue, "enqueue_call", lambda *_args, **_kwargs: "fake-job")
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -225,6 +226,14 @@ def test_ask_abstains_without_indexed_sources(hosted_client) -> None:
 def test_invitation_management_requires_owner_token(hosted_client, monkeypatch) -> None:
     client, _ = hosted_client
     monkeypatch.setenv("INVITATION_ADMIN_TOKEN", "owner-token")
+    import importlib
+
+    from core.config import clear_settings_cache
+
+    clear_settings_cache()
+    import apps.api.main as main_module
+
+    importlib.reload(main_module)
     assert client.get("/api/v1/invitations").status_code == 403
     headers = {"X-Admin-Token": "owner-token"}
     invited = client.post(

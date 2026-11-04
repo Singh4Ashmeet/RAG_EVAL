@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 
 import httpx
 from sqlalchemy import select, text
@@ -18,6 +17,7 @@ from apps.api.main import (
     Job,
     SessionLocal,
 )
+from core.config import get_settings
 from core.generate.pipeline import GroundedAnswerGenerator
 from core.llm.ollama_provider import OllamaLLMProvider
 from core.normalize.schema import Chunk
@@ -38,12 +38,13 @@ class HostedElementRetriever:
     def __init__(self, elements: list[CorpusElement], max_depth: int = 20) -> None:
         self.elements = elements
         self.max_depth = max_depth
-        self.model_id = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+        settings = get_settings()
+        self.model_id = settings.embedding_model
+        self.base_url = settings.embedding_base_url.rstrip("/")
 
     def retrieve(self, query: str, top_k: int = 10) -> list[SearchResult]:
-        base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
         response = httpx.post(
-            f"{base}/api/embed", json={"model": self.model_id, "input": query}, timeout=90
+            f"{self.base_url}/api/embed", json={"model": self.model_id, "input": query}, timeout=90
         )
         response.raise_for_status()
         query_vector = response.json()["embeddings"][0]
@@ -112,24 +113,25 @@ def index_document(workspace_id: str, document_id: str, job_id: str) -> dict[str
                 )
             )
             # Verify the private original is still present before indexing its derived elements.
-            if os.getenv("S3_BUCKET"):
+            settings = get_settings()
+            if settings.s3_bucket and settings.storage_backend == "s3":
                 import boto3
                 from botocore.config import Config
 
-                endpoint = os.getenv("S3_ENDPOINT_URL")
+                endpoint = settings.s3_endpoint_url
                 options = {
                     "endpoint_url": endpoint,
-                    "region_name": os.getenv("AWS_REGION", "us-east-1"),
+                    "region_name": settings.s3_region,
                 }
                 if endpoint:
                     options["config"] = Config(s3={"addressing_style": "path"})
                 boto3.client("s3", **options).head_object(
-                    Bucket=os.environ["S3_BUCKET"], Key=doc.storage_key
+                    Bucket=settings.s3_bucket, Key=doc.storage_key
                 )
             elif not (PRIVATE_DATA / doc.storage_key).is_file():
                 raise FileNotFoundError("Original source file no longer exists.")
-            base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
-            model = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+            base = settings.embedding_base_url.rstrip("/")
+            model = settings.embedding_model
             texts = [element.text for element in elements]
             if texts:
                 response = httpx.post(
@@ -211,13 +213,14 @@ def evaluate_dataset(
                 sha256=revision.sha256,
                 cases=json.loads(revision.cases_json),
             )
+            settings = get_settings()
             config = EvaluationRunConfig(cutoffs=tuple(cutoffs))
             retriever = HostedElementRetriever(elements)
             answerer = GroundedAnswerGenerator(
                 retriever,
                 OllamaLLMProvider(
-                    model=os.getenv("OLLAMA_CHAT_MODEL", "llama3.2:3b"),
-                    host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+                    model=settings.chat_model,
+                    host=settings.chat_base_url,
                 ),
                 top_k=config.max_cutoff,
             )
@@ -323,11 +326,12 @@ def run_experiment(
             variants = []
             for item in payload["variants"]:
                 retriever = HostedElementRetriever(elements, item["retrieval_depth"])
+                settings = get_settings()
                 answerer = GroundedAnswerGenerator(
                     retriever,
                     OllamaLLMProvider(
-                        model=os.getenv("OLLAMA_CHAT_MODEL", "llama3.2:3b"),
-                        host=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+                        model=settings.chat_model,
+                        host=settings.chat_base_url,
                     ),
                     top_k=evaluation_config.max_cutoff,
                 )
