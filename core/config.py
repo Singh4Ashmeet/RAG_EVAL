@@ -161,6 +161,23 @@ class Settings(BaseSettings):
         validation_alias="GROQ_CHAT_MODEL",
     )
 
+    # =========================================================================
+    # Provider Fallback
+    # =========================================================================
+    fallback_enabled: bool = Field(
+        default=False,
+        validation_alias="FALLBACK_ENABLED",
+        description="Enable automatic fallback to alternative providers on failure",
+    )
+    fallback_providers: str = Field(
+        default="",
+        validation_alias="FALLBACK_PROVIDERS",
+        description=(
+            "Comma-separated list of fallback providers in priority order "
+            "(e.g., 'gemini,groq,ollama')"
+        ),
+    )
+
     @field_validator("embedding_base_url", "chat_base_url", mode="after")
     @classmethod
     def validate_remote_urls_in_production(cls, v: str, info) -> str:
