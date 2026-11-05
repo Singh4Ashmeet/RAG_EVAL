@@ -178,6 +178,55 @@ class Settings(BaseSettings):
         ),
     )
 
+    # =========================================================================
+    # Provider Retry
+    # =========================================================================
+    retry_enabled: bool = Field(
+        default=True,
+        validation_alias="RETRY_ENABLED",
+        description="Enable retry for transient provider failures",
+    )
+    retry_max_attempts: int = Field(
+        default=3,
+        validation_alias="RETRY_MAX_ATTEMPTS",
+        ge=1,
+        le=10,
+        description="Maximum generation attempts per provider (including initial attempt)",
+    )
+    retry_base_delay_seconds: float = Field(
+        default=1.0,
+        validation_alias="RETRY_BASE_DELAY_SECONDS",
+        ge=0.0,
+        le=60.0,
+        description="Initial backoff delay in seconds",
+    )
+    retry_max_delay_seconds: float = Field(
+        default=10.0,
+        validation_alias="RETRY_MAX_DELAY_SECONDS",
+        ge=0.0,
+        le=300.0,
+        description="Maximum backoff delay cap in seconds",
+    )
+    retry_exponential_base: float = Field(
+        default=2.0,
+        validation_alias="RETRY_EXPONENTIAL_BASE",
+        ge=1.0,
+        le=5.0,
+        description="Exponential base for backoff calculation",
+    )
+    retry_jitter_enabled: bool = Field(
+        default=True,
+        validation_alias="RETRY_JITTER_ENABLED",
+        description="Apply jitter to prevent synchronized retry storms",
+    )
+    retry_timeout_seconds: float = Field(
+        default=30.0,
+        validation_alias="RETRY_TIMEOUT_SECONDS",
+        ge=1.0,
+        le=300.0,
+        description="Maximum total time budget for all retry attempts per provider",
+    )
+
     @field_validator("embedding_base_url", "chat_base_url", mode="after")
     @classmethod
     def validate_remote_urls_in_production(cls, v: str, info) -> str:
