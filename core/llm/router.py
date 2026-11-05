@@ -1,18 +1,20 @@
 """Provider registry for LLM chat and embedding providers.
 
-Supports fallback and retry mechanisms.
+Supports fallback, retry, and circuit breaker mechanisms.
 """
 
 from __future__ import annotations
 
 import logging
 import random
+import threading
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from core.errors import LLMError
 from core.llm.base import GenerationSettings, LLMProvider
+from core.llm.metrics import get_metrics_collector
 
 if TYPE_CHECKING:
     from core.config import Settings
@@ -40,9 +42,18 @@ class ProviderFallbackExhaustedError(LLMError):
         self.failed_providers = failed_providers or []
 
 
-# Cache for provider instances
+class CircuitBreakerOpenError(LLMError):
+    """Raised when a request is attempted against a provider whose circuit breaker is open."""
+
+    def __init__(self, provider_name: str, message: str | None = None) -> None:
+        super().__init__(message or f"Circuit breaker is OPEN for provider '{provider_name}'")
+        self.provider_name = provider_name
+
+
+# Cache for provider instances and circuit breakers
 _chat_provider_cache: dict[str, LLMProvider] = {}
 _embedding_provider_cache: dict[str, LLMProvider] = {}
+_circuit_breakers: dict[str, CircuitBreaker] = {}
 
 
 @dataclass
@@ -56,6 +67,276 @@ class RetryPolicy:
     exponential_base: float = 2.0
     jitter_enabled: bool = True
     timeout_seconds: float = 30.0
+
+
+class CircuitBreakerState:
+    """Circuit breaker states."""
+
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+
+
+@dataclass
+class CircuitBreakerPolicy:
+    """Configuration for circuit breaker behavior."""
+
+    enabled: bool = True
+    failure_threshold: int = 5
+    recovery_timeout_seconds: float = 30.0
+    half_open_max_calls: int = 1
+    window_seconds: float = 60.0
+
+
+class CircuitBreaker:
+    """
+    Thread-safe circuit breaker for provider failure isolation.
+
+    Implements a three-state circuit breaker:
+    - CLOSED: Normal operation, requests allowed, failures tracked
+    - OPEN: Requests rejected immediately, recovery timer started
+    - HALF_OPEN: Limited probe requests allowed to test recovery
+
+    Thread-safe using threading.Lock. Never holds lock across external HTTP calls.
+    """
+
+    def __init__(
+        self,
+        provider_name: str,
+        policy: CircuitBreakerPolicy,
+        clock: Any = None,
+    ) -> None:
+        self._provider_name = provider_name
+        self._policy = policy
+        self._clock = clock or time.monotonic
+        self._lock = threading.Lock()
+        self._state = CircuitBreakerState.CLOSED
+        self._failure_count = 0
+        self._success_count = 0
+        self._half_open_calls = 0
+        self._last_failure_time: float | None = None
+        self._last_state_change = self._clock()
+
+    @property
+    def state(self) -> str:
+        with self._lock:
+            self._check_state_transition_locked()
+            return self._state
+
+    @property
+    def provider_name(self) -> str:
+        return self._provider_name
+
+    def _is_failure_recoverable(self, exc: Exception) -> bool:
+        """Determine if an exception counts as a circuit breaker failure."""
+        if isinstance(exc, ProviderFallbackExhaustedError) and exc.__cause__ is not None:
+            return _is_recoverable_error(exc.__cause__)
+        return _is_recoverable_error(exc)
+
+    def _check_state_transition_locked(self) -> None:
+        """Transition from OPEN to HALF_OPEN if recovery timeout has elapsed."""
+        if self._state == CircuitBreakerState.OPEN:
+            now = self._clock()
+            if now - self._last_state_change >= self._policy.recovery_timeout_seconds:
+                self._state = CircuitBreakerState.HALF_OPEN
+                self._half_open_calls = 0
+                self._success_count = 0
+                self._last_state_change = now
+                logger.info(
+                    "Circuit breaker HALF_OPEN for provider %s, allowing probe requests",
+                    self._provider_name,
+                )
+
+    def allow_request(self) -> bool:
+        """
+        Check if a request is allowed to proceed.
+        If HALF_OPEN, increments probe count if capacity available.
+        """
+        if not self._policy.enabled:
+            return True
+
+        with self._lock:
+            self._check_state_transition_locked()
+
+            if self._state == CircuitBreakerState.CLOSED:
+                return True
+
+            if self._state == CircuitBreakerState.OPEN:
+                return False
+
+            if self._state == CircuitBreakerState.HALF_OPEN:
+                if self._half_open_calls < self._policy.half_open_max_calls:
+                    self._half_open_calls += 1
+                    collector = get_metrics_collector()
+                    collector.record_half_open_probe(self._provider_name)
+                    return True
+                return False
+
+            return False
+
+    def can_execute(self) -> bool:
+        """Query if a request can be executed without incrementing probe calls."""
+        if not self._policy.enabled:
+            return True
+
+        with self._lock:
+            self._check_state_transition_locked()
+            if self._state == CircuitBreakerState.CLOSED:
+                return True
+            if self._state == CircuitBreakerState.OPEN:
+                return False
+            if self._state == CircuitBreakerState.HALF_OPEN:
+                return self._half_open_calls < self._policy.half_open_max_calls
+            return False
+
+    def record_success(self) -> None:
+        """Record a successful provider request."""
+        if not self._policy.enabled:
+            return
+
+        with self._lock:
+            self._check_state_transition_locked()
+            now = self._clock()
+
+            if self._state == CircuitBreakerState.HALF_OPEN:
+                self._success_count += 1
+                if self._success_count >= self._policy.half_open_max_calls:
+                    self._state = CircuitBreakerState.CLOSED
+                    self._failure_count = 0
+                    self._success_count = 0
+                    self._half_open_calls = 0
+                    self._last_state_change = now
+                    logger.info(
+                        "Circuit breaker CLOSED for provider %s after successful recovery",
+                        self._provider_name,
+                    )
+            elif self._state == CircuitBreakerState.CLOSED:
+                self._failure_count = 0
+
+    def record_failure(self, exc: Exception) -> None:
+        """Record a failed provider request if recoverable."""
+        if not self._policy.enabled:
+            return
+
+        if not self._is_failure_recoverable(exc):
+            return
+
+        with self._lock:
+            self._check_state_transition_locked()
+            now = self._clock()
+            self._last_failure_time = now
+
+            if self._state == CircuitBreakerState.HALF_OPEN:
+                self._state = CircuitBreakerState.OPEN
+                self._failure_count = self._policy.failure_threshold
+                self._half_open_calls = 0
+                self._success_count = 0
+                self._last_state_change = now
+                collector = get_metrics_collector()
+                collector.record_circuit_opening(self._provider_name)
+                logger.warning(
+                    "Circuit breaker returned to OPEN for provider %s after probe failure: %s",
+                    self._provider_name,
+                    exc,
+                )
+            elif self._state == CircuitBreakerState.CLOSED:
+                self._failure_count += 1
+                if self._failure_count >= self._policy.failure_threshold:
+                    self._state = CircuitBreakerState.OPEN
+                    self._last_state_change = now
+                    collector = get_metrics_collector()
+                    collector.record_circuit_opening(self._provider_name)
+                    logger.warning(
+                        "Circuit breaker OPEN for provider %s after %d consecutive failures",
+                        self._provider_name,
+                        self._failure_count,
+                    )
+
+    def reset(self) -> None:
+        """Reset the circuit breaker to clean CLOSED state."""
+        with self._lock:
+            self._state = CircuitBreakerState.CLOSED
+            self._failure_count = 0
+            self._success_count = 0
+            self._half_open_calls = 0
+            self._last_failure_time = None
+            self._last_state_change = self._clock()
+
+    def get_stats(self) -> dict[str, Any]:
+        """Get current circuit breaker statistics."""
+        with self._lock:
+            self._check_state_transition_locked()
+            return {
+                "provider": self._provider_name,
+                "state": self._state,
+                "failure_count": self._failure_count,
+                "success_count": self._success_count,
+                "half_open_calls": self._half_open_calls,
+                "last_failure_time": self._last_failure_time,
+                "last_state_change": self._last_state_change,
+            }
+
+
+class CircuitBreakerProvider(LLMProvider):
+    """Wraps an LLMProvider with circuit breaker protection."""
+
+    def __init__(
+        self,
+        provider: LLMProvider,
+        circuit_breaker: CircuitBreaker,
+        provider_name: str,
+    ) -> None:
+        self._provider = provider
+        self._circuit_breaker = circuit_breaker
+        self._provider_name = provider_name
+
+    @property
+    def model_id(self) -> str:
+        return getattr(self._provider, "model_id", f"unknown:{self._provider_name}")
+
+    def generate(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+    ) -> str:
+        if not self._circuit_breaker.allow_request():
+            collector = get_metrics_collector()
+            collector.record_circuit_rejection(self._provider_name, self.model_id)
+            raise CircuitBreakerOpenError(
+                self._provider_name,
+                f"Circuit breaker is OPEN for provider '{self._provider_name}'",
+            )
+
+        start_time = time.monotonic()
+        try:
+            response = self._provider.generate(
+                system_prompt,
+                user_prompt,
+                settings=settings,
+            )
+            duration = time.monotonic() - start_time
+            self._circuit_breaker.record_success()
+            collector = get_metrics_collector()
+            collector.record_success(
+                provider_name=self._provider_name,
+                model_id=self.model_id,
+                latency=duration,
+                response=response,
+            )
+            return response
+        except Exception as exc:
+            duration = time.monotonic() - start_time
+            self._circuit_breaker.record_failure(exc)
+            collector = get_metrics_collector()
+            collector.record_failure(
+                provider_name=self._provider_name,
+                model_id=self.model_id,
+                latency=duration,
+                error=exc,
+            )
+            raise
 
 
 class RetryProvider(LLMProvider):
@@ -111,6 +392,9 @@ class RetryProvider(LLMProvider):
                 if not self._policy.enabled or not _is_recoverable_error(exc):
                     raise
 
+                collector = get_metrics_collector()
+                collector.record_retry(self._provider_name, self.model_id)
+
                 # Do not sleep after final attempt
                 if attempt == self._policy.max_attempts - 1:
                     break
@@ -145,6 +429,8 @@ class RetryProvider(LLMProvider):
                 time.sleep(actual_delay)
 
         # All retry attempts exhausted
+        collector = get_metrics_collector()
+        collector.record_retry_exhaustion(self._provider_name, self.model_id)
         logger.error(
             "Provider %s: All %d retry attempts exhausted, last error: %s",
             self._provider_name,
@@ -226,6 +512,11 @@ class FallbackProvider(LLMProvider):
                     exc,
                 )
 
+                if idx < len(providers_to_try) - 1:
+                    next_name = providers_to_try[idx + 1][0]
+                    collector = get_metrics_collector()
+                    collector.record_fallback(name, next_name, str(exc))
+
         # All providers failed
         logger.error("All %d providers failed: %s", len(providers_to_try), failed_providers)
         msg = (
@@ -280,6 +571,7 @@ def _extract_retry_after(exc: Exception) -> float | None:
     if retry_after_val is None:
         return None
 
+    # Try numeric seconds
     try:
         val = float(retry_after_val)
         if val >= 0:
@@ -287,6 +579,7 @@ def _extract_retry_after(exc: Exception) -> float | None:
     except (ValueError, TypeError):
         pass
 
+    # Try HTTP-date format
     try:
         from datetime import UTC, datetime
         from email.utils import parsedate_to_datetime
@@ -303,6 +596,9 @@ def _extract_retry_after(exc: Exception) -> float | None:
 
 def _is_recoverable_error(exc: Exception) -> bool:
     """Determine if an exception represents a recoverable/transient error."""
+    if isinstance(exc, CircuitBreakerOpenError):
+        return True
+
     if isinstance(exc, ProviderFallbackExhaustedError):
         if exc.__cause__ is not None:
             return _is_recoverable_error(exc.__cause__)
@@ -373,6 +669,17 @@ def _parse_fallback_providers(value: str) -> list[str]:
     return [p.strip() for p in value.split(",") if p.strip()]
 
 
+def _get_circuit_breaker_policy(settings: Settings) -> CircuitBreakerPolicy:
+    """Extract circuit breaker policy from settings."""
+    return CircuitBreakerPolicy(
+        enabled=settings.circuit_breaker_enabled,
+        failure_threshold=settings.circuit_breaker_failure_threshold,
+        recovery_timeout_seconds=settings.circuit_breaker_recovery_timeout_seconds,
+        half_open_max_calls=settings.circuit_breaker_half_open_max_calls,
+        window_seconds=settings.circuit_breaker_window_seconds,
+    )
+
+
 def _get_retry_policy(settings: Settings) -> RetryPolicy:
     """Extract retry policy from settings."""
     return RetryPolicy(
@@ -384,6 +691,17 @@ def _get_retry_policy(settings: Settings) -> RetryPolicy:
         jitter_enabled=settings.retry_jitter_enabled,
         timeout_seconds=settings.retry_timeout_seconds,
     )
+
+
+def get_circuit_breaker(provider_name: str, settings: Settings | None = None) -> CircuitBreaker:
+    """Get or create circuit breaker for the given provider."""
+    if provider_name not in _circuit_breakers:
+        from core.config import get_settings
+
+        st = settings or get_settings()
+        policy = _get_circuit_breaker_policy(st)
+        _circuit_breakers[provider_name] = CircuitBreaker(provider_name, policy)
+    return _circuit_breakers[provider_name]
 
 
 def _create_raw_provider(provider_name: str, settings: Settings) -> LLMProvider:
@@ -423,9 +741,18 @@ def _create_raw_provider(provider_name: str, settings: Settings) -> LLMProvider:
 def _wrap_provider_pipeline(
     provider_name: str, raw_provider: LLMProvider, settings: Settings
 ) -> LLMProvider:
-    """Wrap raw provider with retry layer."""
+    """Wrap raw provider with retry and circuit breaker layers."""
+    provider = raw_provider
+
+    # 1. Retry layer
     retry_policy = _get_retry_policy(settings)
-    return RetryProvider(raw_provider, retry_policy, provider_name)
+    provider = RetryProvider(provider, retry_policy, provider_name)
+
+    # 2. Circuit breaker layer
+    cb = get_circuit_breaker(provider_name, settings)
+    provider = CircuitBreakerProvider(provider, cb, provider_name)
+
+    return provider
 
 
 def get_chat_provider(provider_name: str | None = None) -> LLMProvider:
@@ -469,6 +796,7 @@ def get_chat_provider(provider_name: str | None = None) -> LLMProvider:
         provider = wrapped_primary
 
     _chat_provider_cache[cache_key] = provider
+    # Also support direct lookup by provider_name for caching tests
     _chat_provider_cache[provider_name] = provider
     return provider
 
@@ -486,7 +814,6 @@ def get_embedding_provider(provider_name: str | None = None):
     from core.config import get_settings
 
     settings = get_settings()
-
     provider_name = provider_name or settings.embedding_provider
 
     cache_key = f"embedding:{provider_name}"
@@ -511,6 +838,8 @@ def get_embedding_provider(provider_name: str | None = None):
 
 
 def clear_provider_cache() -> None:
-    """Clear provider caches (for testing)."""
+    """Clear provider caches, circuit breakers, and metrics (for testing)."""
     _chat_provider_cache.clear()
     _embedding_provider_cache.clear()
+    _circuit_breakers.clear()
+    get_metrics_collector().reset()

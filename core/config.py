@@ -227,7 +227,43 @@ class Settings(BaseSettings):
         description="Maximum total time budget for all retry attempts per provider",
     )
 
-    @field_validator("embedding_base_url", "chat_base_url", mode="after")
+    # =========================================================================
+    # Provider Circuit Breaker
+    # =========================================================================
+    circuit_breaker_enabled: bool = Field(
+        default=True,
+        validation_alias="CIRCUIT_BREAKER_ENABLED",
+        description="Enable circuit breaker for provider failure isolation",
+    )
+    circuit_breaker_failure_threshold: int = Field(
+        default=5,
+        validation_alias="CIRCUIT_BREAKER_FAILURE_THRESHOLD",
+        ge=1,
+        le=100,
+        description="Number of consecutive provider failures before opening circuit",
+    )
+    circuit_breaker_recovery_timeout_seconds: float = Field(
+        default=30.0,
+        validation_alias="CIRCUIT_BREAKER_RECOVERY_TIMEOUT_SECONDS",
+        ge=1.0,
+        le=3600.0,
+        description="Seconds to wait before attempting recovery (HALF_OPEN state)",
+    )
+    circuit_breaker_half_open_max_calls: int = Field(
+        default=1,
+        validation_alias="CIRCUIT_BREAKER_HALF_OPEN_MAX_CALLS",
+        ge=1,
+        le=10,
+        description="Maximum probe calls allowed in HALF_OPEN state",
+    )
+    circuit_breaker_window_seconds: float = Field(
+        default=60.0,
+        validation_alias="CIRCUIT_BREAKER_WINDOW_SECONDS",
+        ge=1.0,
+        le=3600.0,
+        description="Rolling window in seconds for failure counting",
+    )
+
     @classmethod
     def validate_remote_urls_in_production(cls, v: str, info) -> str:
         if info.data.get("app_env") == "production" and v.startswith("http://localhost"):

@@ -386,6 +386,22 @@ def health():
     return {"status": "ok", "service": "rag_eval"}
 
 
+@app.get("/api/v1/llm/metrics")
+def get_llm_metrics():
+    """Get provider operational metrics and observability statistics."""
+    from core.llm.metrics import get_metrics_collector
+
+    return get_metrics_collector().get_metrics()
+
+
+@app.get("/api/v1/llm/health")
+def get_llm_health():
+    """Get provider health status based on circuit breaker states."""
+    from core.llm.metrics import get_metrics_collector
+
+    return get_metrics_collector().get_health()
+
+
 @app.get("/terms.html", include_in_schema=False)
 def hosted_terms():
     return FileResponse(
