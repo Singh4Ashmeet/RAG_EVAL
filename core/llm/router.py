@@ -88,6 +88,53 @@ class CircuitBreakerPolicy:
     window_seconds: float = 60.0
 
 
+class CircuitBreakerPermit:
+    """Represents an execution permit granted by the circuit breaker for one request."""
+
+    def __init__(
+        self,
+        breaker: CircuitBreaker,
+        state: str,
+        epoch: int,
+        is_probe: bool,
+    ) -> None:
+        self.breaker = breaker
+        self.state = state
+        self.epoch = epoch
+        self.is_probe = is_probe
+        self._resolved = False
+        self._lock = threading.Lock()
+
+    @property
+    def is_resolved(self) -> bool:
+        with self._lock:
+            return self._resolved
+
+    def record_success(self) -> None:
+        """Resolve this permit as a successful request."""
+        with self._lock:
+            if self._resolved:
+                return
+            self._resolved = True
+        self.breaker._resolve_success(self)
+
+    def record_failure(self, exc: Exception) -> None:
+        """Resolve this permit as a failed request."""
+        with self._lock:
+            if self._resolved:
+                return
+            self._resolved = True
+        self.breaker._resolve_failure(self, exc)
+
+    def release(self) -> None:
+        """Release this permit if execution was aborted, cancelled, or interrupted."""
+        with self._lock:
+            if self._resolved:
+                return
+            self._resolved = True
+        self.breaker._resolve_release(self)
+
+
 class CircuitBreaker:
     """
     Thread-safe circuit breaker for provider failure isolation.
@@ -111,6 +158,7 @@ class CircuitBreaker:
         self._clock = clock or time.monotonic
         self._lock = threading.Lock()
         self._state = CircuitBreakerState.CLOSED
+        self._epoch = 0
         self._failure_count = 0
         self._success_count = 0
         self._half_open_calls = 0
@@ -139,6 +187,7 @@ class CircuitBreaker:
             now = self._clock()
             if now - self._last_state_change >= self._policy.recovery_timeout_seconds:
                 self._state = CircuitBreakerState.HALF_OPEN
+                self._epoch += 1
                 self._half_open_calls = 0
                 self._success_count = 0
                 self._last_state_change = now
@@ -147,32 +196,55 @@ class CircuitBreaker:
                     self._provider_name,
                 )
 
-    def allow_request(self) -> bool:
+    def acquire_permit(self) -> CircuitBreakerPermit | None:
         """
-        Check if a request is allowed to proceed.
-        If HALF_OPEN, increments probe count if capacity available.
+        Atomically check state and acquire an execution permit.
+        Returns a CircuitBreakerPermit if allowed, or None if rejected.
         """
         if not self._policy.enabled:
-            return True
+            return CircuitBreakerPermit(
+                breaker=self,
+                state=CircuitBreakerState.CLOSED,
+                epoch=self._epoch,
+                is_probe=False,
+            )
 
         with self._lock:
             self._check_state_transition_locked()
 
             if self._state == CircuitBreakerState.CLOSED:
-                return True
+                return CircuitBreakerPermit(
+                    breaker=self,
+                    state=CircuitBreakerState.CLOSED,
+                    epoch=self._epoch,
+                    is_probe=False,
+                )
 
             if self._state == CircuitBreakerState.OPEN:
-                return False
+                return None
 
             if self._state == CircuitBreakerState.HALF_OPEN:
                 if self._half_open_calls < self._policy.half_open_max_calls:
                     self._half_open_calls += 1
                     collector = get_metrics_collector()
                     collector.record_half_open_probe(self._provider_name)
-                    return True
-                return False
+                    return CircuitBreakerPermit(
+                        breaker=self,
+                        state=CircuitBreakerState.HALF_OPEN,
+                        epoch=self._epoch,
+                        is_probe=True,
+                    )
+                return None
 
-            return False
+            return None
+
+    def allow_request(self) -> bool:
+        """
+        Check if a request is allowed to proceed.
+        Acquires a permit if allowed.
+        """
+        permit = self.acquire_permit()
+        return permit is not None
 
     def can_execute(self) -> bool:
         """Query if a request can be executed without incrementing probe calls."""
@@ -189,19 +261,27 @@ class CircuitBreaker:
                 return self._half_open_calls < self._policy.half_open_max_calls
             return False
 
-    def record_success(self) -> None:
-        """Record a successful provider request."""
+    def _resolve_success(self, permit: CircuitBreakerPermit) -> None:
+        """Resolve a successful probe or closed request from its permit."""
         if not self._policy.enabled:
             return
 
         with self._lock:
-            self._check_state_transition_locked()
-            now = self._clock()
+            if permit.epoch != self._epoch:
+                logger.debug(
+                    "Ignoring stale probe success for provider %s (permit epoch %d != current %d)",
+                    self._provider_name,
+                    permit.epoch,
+                    self._epoch,
+                )
+                return
 
+            now = self._clock()
             if self._state == CircuitBreakerState.HALF_OPEN:
                 self._success_count += 1
                 if self._success_count >= self._policy.half_open_max_calls:
                     self._state = CircuitBreakerState.CLOSED
+                    self._epoch += 1
                     self._failure_count = 0
                     self._success_count = 0
                     self._half_open_calls = 0
@@ -213,13 +293,121 @@ class CircuitBreaker:
             elif self._state == CircuitBreakerState.CLOSED:
                 self._failure_count = 0
 
-    def record_failure(self, exc: Exception) -> None:
-        """Record a failed provider request if recoverable."""
+    def _resolve_failure(self, permit: CircuitBreakerPermit, exc: Exception) -> None:
+        """Resolve a failed probe or closed request from its permit."""
         if not self._policy.enabled:
             return
 
-        if not self._is_failure_recoverable(exc):
+        is_recoverable = self._is_failure_recoverable(exc)
+
+        with self._lock:
+            if permit.epoch != self._epoch:
+                logger.debug(
+                    "Ignoring stale probe failure for provider %s (permit epoch %d != current %d)",
+                    self._provider_name,
+                    permit.epoch,
+                    self._epoch,
+                )
+                return
+
+            now = self._clock()
+            self._last_failure_time = now
+
+            if self._state == CircuitBreakerState.HALF_OPEN:
+                if is_recoverable:
+                    self._state = CircuitBreakerState.OPEN
+                    self._epoch += 1
+                    self._failure_count = self._policy.failure_threshold
+                    self._half_open_calls = 0
+                    self._success_count = 0
+                    self._last_state_change = now
+                    collector = get_metrics_collector()
+                    collector.record_circuit_opening(self._provider_name)
+                    logger.warning(
+                        "Circuit breaker returned to OPEN for provider %s after probe failure: %s",
+                        self._provider_name,
+                        exc,
+                    )
+                else:
+                    # Non-recoverable error in HALF_OPEN: release probe permit
+                    if self._half_open_calls > 0:
+                        self._half_open_calls -= 1
+                    logger.info(
+                        "Probe for provider %s hit non-recoverable error %s; permit released",
+                        self._provider_name,
+                        exc,
+                    )
+            elif self._state == CircuitBreakerState.CLOSED:
+                if is_recoverable:
+                    self._failure_count += 1
+                    if self._failure_count >= self._policy.failure_threshold:
+                        self._state = CircuitBreakerState.OPEN
+                        self._epoch += 1
+                        self._last_state_change = now
+                        collector = get_metrics_collector()
+                        collector.record_circuit_opening(self._provider_name)
+                        logger.warning(
+                            "Circuit breaker OPEN for provider %s after %d consecutive failures",
+                            self._provider_name,
+                            self._failure_count,
+                        )
+
+    def _resolve_release(self, permit: CircuitBreakerPermit) -> None:
+        """Release an unresolved permit due to abort, cancellation, or exception."""
+        if not self._policy.enabled:
             return
+
+        with self._lock:
+            if permit.epoch != self._epoch:
+                return
+
+            if self._state == CircuitBreakerState.HALF_OPEN and permit.is_probe:
+                if self._half_open_calls > 0:
+                    self._half_open_calls -= 1
+                logger.info(
+                    "Probe permit released for provider %s due to cancellation or exception",
+                    self._provider_name,
+                )
+
+    def record_success(self, permit: CircuitBreakerPermit | None = None) -> None:
+        """Record a successful provider request."""
+        if permit is not None:
+            permit.record_success()
+            return
+
+        if not self._policy.enabled:
+            return
+
+        with self._lock:
+            self._check_state_transition_locked()
+            now = self._clock()
+
+            if self._state == CircuitBreakerState.HALF_OPEN:
+                self._success_count += 1
+                if self._success_count >= self._policy.half_open_max_calls:
+                    self._state = CircuitBreakerState.CLOSED
+                    self._epoch += 1
+                    self._failure_count = 0
+                    self._success_count = 0
+                    self._half_open_calls = 0
+                    self._last_state_change = now
+                    logger.info(
+                        "Circuit breaker CLOSED for provider %s after successful recovery",
+                        self._provider_name,
+                    )
+            elif self._state == CircuitBreakerState.CLOSED:
+                self._failure_count = 0
+
+    def record_failure(self, exc: Exception, permit: CircuitBreakerPermit | None = None) -> None:
+        """Record a failed provider request if recoverable."""
+        if permit is not None:
+            permit.record_failure(exc)
+            return
+
+        if not self._policy.enabled:
+            return
+
+        is_recoverable = self._is_failure_recoverable(exc)
 
         with self._lock:
             self._check_state_transition_locked()
@@ -227,35 +415,48 @@ class CircuitBreaker:
             self._last_failure_time = now
 
             if self._state == CircuitBreakerState.HALF_OPEN:
-                self._state = CircuitBreakerState.OPEN
-                self._failure_count = self._policy.failure_threshold
-                self._half_open_calls = 0
-                self._success_count = 0
-                self._last_state_change = now
-                collector = get_metrics_collector()
-                collector.record_circuit_opening(self._provider_name)
-                logger.warning(
-                    "Circuit breaker returned to OPEN for provider %s after probe failure: %s",
-                    self._provider_name,
-                    exc,
-                )
-            elif self._state == CircuitBreakerState.CLOSED:
-                self._failure_count += 1
-                if self._failure_count >= self._policy.failure_threshold:
+                if is_recoverable:
                     self._state = CircuitBreakerState.OPEN
+                    self._epoch += 1
+                    self._failure_count = self._policy.failure_threshold
+                    self._half_open_calls = 0
+                    self._success_count = 0
                     self._last_state_change = now
                     collector = get_metrics_collector()
                     collector.record_circuit_opening(self._provider_name)
                     logger.warning(
-                        "Circuit breaker OPEN for provider %s after %d consecutive failures",
+                        "Circuit breaker returned to OPEN for provider %s after probe failure: %s",
                         self._provider_name,
-                        self._failure_count,
+                        exc,
                     )
+                else:
+                    if self._half_open_calls > 0:
+                        self._half_open_calls -= 1
+                    logger.info(
+                        "Probe for provider %s hit non-recoverable error %s; permit released",
+                        self._provider_name,
+                        exc,
+                    )
+            elif self._state == CircuitBreakerState.CLOSED:
+                if is_recoverable:
+                    self._failure_count += 1
+                    if self._failure_count >= self._policy.failure_threshold:
+                        self._state = CircuitBreakerState.OPEN
+                        self._epoch += 1
+                        self._last_state_change = now
+                        collector = get_metrics_collector()
+                        collector.record_circuit_opening(self._provider_name)
+                        logger.warning(
+                            "Circuit breaker OPEN for provider %s after %d consecutive failures",
+                            self._provider_name,
+                            self._failure_count,
+                        )
 
     def reset(self) -> None:
         """Reset the circuit breaker to clean CLOSED state."""
         with self._lock:
             self._state = CircuitBreakerState.CLOSED
+            self._epoch += 1
             self._failure_count = 0
             self._success_count = 0
             self._half_open_calls = 0
@@ -301,7 +502,8 @@ class CircuitBreakerProvider(LLMProvider):
         *,
         settings: GenerationSettings,
     ) -> str:
-        if not self._circuit_breaker.allow_request():
+        permit = self._circuit_breaker.acquire_permit()
+        if permit is None:
             collector = get_metrics_collector()
             collector.record_circuit_rejection(self._provider_name, self.model_id)
             raise CircuitBreakerOpenError(
@@ -317,7 +519,7 @@ class CircuitBreakerProvider(LLMProvider):
                 settings=settings,
             )
             duration = time.monotonic() - start_time
-            self._circuit_breaker.record_success()
+            permit.record_success()
             collector = get_metrics_collector()
             collector.record_success(
                 provider_name=self._provider_name,
@@ -326,16 +528,19 @@ class CircuitBreakerProvider(LLMProvider):
                 response=response,
             )
             return response
-        except Exception as exc:
+        except BaseException as exc:
             duration = time.monotonic() - start_time
-            self._circuit_breaker.record_failure(exc)
-            collector = get_metrics_collector()
-            collector.record_failure(
-                provider_name=self._provider_name,
-                model_id=self.model_id,
-                latency=duration,
-                error=exc,
-            )
+            if isinstance(exc, Exception):
+                permit.record_failure(exc)
+                collector = get_metrics_collector()
+                collector.record_failure(
+                    provider_name=self._provider_name,
+                    model_id=self.model_id,
+                    latency=duration,
+                    error=exc,
+                )
+            else:
+                permit.release()
             raise
 
 
