@@ -387,7 +387,7 @@ def health():
 
 
 @app.get("/api/v1/llm/metrics")
-def get_llm_metrics():
+def get_llm_metrics(account=Depends(current_account)):
     """Get provider operational metrics and observability statistics."""
     from core.llm.metrics import get_metrics_collector
 
@@ -395,7 +395,7 @@ def get_llm_metrics():
 
 
 @app.get("/api/v1/llm/health")
-def get_llm_health():
+def get_llm_health(account=Depends(current_account)):
     """Get provider health status based on circuit breaker states."""
     from core.llm.metrics import get_metrics_collector
 

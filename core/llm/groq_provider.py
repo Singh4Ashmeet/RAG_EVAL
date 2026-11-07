@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 from groq import AsyncGroq, Groq
 
 from core.errors import LLMError
-from core.llm.base import GenerationSettings
+from core.llm.base import GenerationResponse, GenerationSettings
 
 
 class ProviderAuthenticationError(LLMError):
@@ -45,6 +47,8 @@ class GroqLLMProvider:
         base_url: str | None = None,
         *,
         timeout: float | None = 60.0,
+        client: Any | None = None,
+        async_client: Any | None = None,
     ) -> None:
         cleaned_model = model.strip()
         if not cleaned_model:
@@ -58,13 +62,22 @@ class GroqLLMProvider:
         self._base_url = base_url.rstrip("/") if base_url else None
         self._timeout = timeout
 
-        # Initialize Groq clients
-        client_config = {"api_key": self._api_key}
-        if self._base_url:
-            client_config["base_url"] = self._base_url
+        # Initialize Groq clients (allow injection for testing)
+        if client is not None:
+            self._client = client
+        else:
+            client_config = {"api_key": self._api_key}
+            if self._base_url:
+                client_config["base_url"] = self._base_url
+            self._client = Groq(**client_config, timeout=timeout, max_retries=0)
 
-        self._client = Groq(**client_config, timeout=timeout)
-        self._async_client = AsyncGroq(**client_config, timeout=timeout)
+        if async_client is not None:
+            self._async_client = async_client
+        else:
+            async_client_config = {"api_key": self._api_key}
+            if self._base_url:
+                async_client_config["base_url"] = self._base_url
+            self._async_client = AsyncGroq(**async_client_config, timeout=timeout, max_retries=0)
 
     def _handle_error(self, exc: Exception) -> LLMError:
         """Convert provider exceptions to normalized errors."""
@@ -103,14 +116,44 @@ class GroqLLMProvider:
         else:
             return LLMError(f"Groq error: {exc}")
 
-    def generate(
+    def _extract_token_usage(self, response: Any) -> tuple[int | None, int | None, int | None]:
+        """Extract token usage from Groq response.
+
+        Returns (input_tokens, output_tokens, total_tokens).
+        """
+        usage = getattr(response, "usage", None)
+        if usage is None:
+            return None, None, None
+
+        def _normalize_token_count(value: Any) -> int | None:
+            if value is None:
+                return None
+            try:
+                ival = int(value)
+                if ival < 0:
+                    return None
+                return ival
+            except (ValueError, TypeError):
+                return None
+
+        input_tokens = _normalize_token_count(getattr(usage, "prompt_tokens", None))
+        output_tokens = _normalize_token_count(getattr(usage, "completion_tokens", None))
+        total_tokens = _normalize_token_count(getattr(usage, "total_tokens", None))
+
+        # If total_tokens is missing but we have both input and output, compute it
+        if total_tokens is None and input_tokens is not None and output_tokens is not None:
+            total_tokens = input_tokens + output_tokens
+
+        return input_tokens, output_tokens, total_tokens
+
+    def generate_with_metadata(
         self,
         system_prompt: str,
         user_prompt: str,
         *,
         settings: GenerationSettings,
-    ) -> str:
-        """Generate a non-streaming chat response from system and user prompts."""
+    ) -> GenerationResponse:
+        """Generate a non-streaming chat response with token usage metadata."""
         if not system_prompt.strip() or not user_prompt.strip():
             raise LLMError("System and user prompts must be non-empty.")
 
@@ -134,16 +177,34 @@ class GroqLLMProvider:
         if not isinstance(content, str) or not content.strip():
             raise LLMError("Groq returned an empty response.")
 
-        return content.strip()
+        input_tokens, output_tokens, total_tokens = self._extract_token_usage(response)
 
-    async def generate_async(
+        return GenerationResponse(
+            text=content.strip(),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
+        )
+
+    def generate(
         self,
         system_prompt: str,
         user_prompt: str,
         *,
         settings: GenerationSettings,
     ) -> str:
-        """Async version of generate for async contexts."""
+        """Generate a non-streaming chat response from system and user prompts."""
+        response = self.generate_with_metadata(system_prompt, user_prompt, settings=settings)
+        return response.text
+
+    async def generate_with_metadata_async(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+    ) -> GenerationResponse:
+        """Async version of generate_with_metadata for async contexts."""
         if not system_prompt.strip() or not user_prompt.strip():
             raise LLMError("System and user prompts must be non-empty.")
 
@@ -167,4 +228,24 @@ class GroqLLMProvider:
         if not isinstance(content, str) or not content.strip():
             raise LLMError("Groq returned an empty response.")
 
-        return content.strip()
+        input_tokens, output_tokens, total_tokens = self._extract_token_usage(response)
+
+        return GenerationResponse(
+            text=content.strip(),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
+        )
+
+    async def generate_async(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+    ) -> str:
+        """Async version of generate for async contexts."""
+        response = await self.generate_with_metadata_async(
+            system_prompt, user_prompt, settings=settings
+        )
+        return response.text

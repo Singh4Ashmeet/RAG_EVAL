@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 from google import genai
 from google.genai import types
 
 from core.errors import LLMError
-from core.llm.base import GenerationSettings
+from core.llm.base import GenerationResponse, GenerationSettings
 
 
 class ProviderAuthenticationError(LLMError):
@@ -46,6 +48,8 @@ class GeminiLLMProvider:
         base_url: str | None = None,
         *,
         timeout: float | None = 60.0,
+        client: Any | None = None,
+        async_client: Any | None = None,
     ) -> None:
         cleaned_model = model.strip()
         if not cleaned_model:
@@ -59,15 +63,22 @@ class GeminiLLMProvider:
         self._base_url = base_url.rstrip("/") if base_url else None
         self._timeout = timeout
 
-        # Initialize the GenAI client
-        client_config = {"api_key": self._api_key}
-        if self._base_url:
-            # For Vertex AI or custom endpoints
-            client_config = {"api_key": self._api_key, "http_options": {"base_url": self._base_url}}
+        # Initialize the GenAI client (allow injection for testing)
+        if client is not None:
+            self._client = client
+            self._async_client = async_client if async_client is not None else client
         else:
             client_config = {"api_key": self._api_key}
-
-        self._client = genai.Client(**client_config)
+            if self._base_url:
+                # For Vertex AI or custom endpoints
+                client_config = {
+                    "api_key": self._api_key,
+                    "http_options": {"base_url": self._base_url},
+                }
+            else:
+                client_config = {"api_key": self._api_key}
+            self._client = genai.Client(**client_config)
+            self._async_client = genai.Client(**client_config)
 
     def _handle_error(self, exc: Exception) -> LLMError:
         """Convert provider exceptions to normalized errors."""
@@ -108,14 +119,46 @@ class GeminiLLMProvider:
         else:
             return LLMError(f"Gemini error: {exc}")
 
-    def generate(
+    def _extract_token_usage(self, response: Any) -> tuple[int | None, int | None, int | None]:
+        """Extract token usage from Gemini response.
+
+        Returns (input_tokens, output_tokens, total_tokens).
+        """
+        usage_metadata = getattr(response, "usage_metadata", None)
+        if usage_metadata is None:
+            return None, None, None
+
+        def _normalize_token_count(value: Any) -> int | None:
+            if value is None:
+                return None
+            try:
+                ival = int(value)
+                if ival < 0:
+                    return None
+                return ival
+            except (ValueError, TypeError):
+                return None
+
+        input_tokens = _normalize_token_count(getattr(usage_metadata, "prompt_token_count", None))
+        output_tokens = _normalize_token_count(
+            getattr(usage_metadata, "candidates_token_count", None)
+        )
+        total_tokens = _normalize_token_count(getattr(usage_metadata, "total_token_count", None))
+
+        # If total_tokens is missing but we have both input and output, compute it
+        if total_tokens is None and input_tokens is not None and output_tokens is not None:
+            total_tokens = input_tokens + output_tokens
+
+        return input_tokens, output_tokens, total_tokens
+
+    def generate_with_metadata(
         self,
         system_prompt: str,
         user_prompt: str,
         *,
         settings: GenerationSettings,
-    ) -> str:
-        """Generate a non-streaming chat response from system and user prompts."""
+    ) -> GenerationResponse:
+        """Generate a non-streaming chat response with token usage metadata."""
         if not system_prompt.strip() or not user_prompt.strip():
             raise LLMError("System and user prompts must be non-empty.")
 
@@ -140,16 +183,34 @@ class GeminiLLMProvider:
         if not text or not text.strip():
             raise LLMError("Gemini returned an empty response.")
 
-        return text.strip()
+        input_tokens, output_tokens, total_tokens = self._extract_token_usage(response)
 
-    async def generate_async(
+        return GenerationResponse(
+            text=text.strip(),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
+        )
+
+    def generate(
         self,
         system_prompt: str,
         user_prompt: str,
         *,
         settings: GenerationSettings,
     ) -> str:
-        """Async version of generate for async contexts."""
+        """Generate a non-streaming chat response from system and user prompts."""
+        response = self.generate_with_metadata(system_prompt, user_prompt, settings=settings)
+        return response.text
+
+    async def generate_with_metadata_async(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+    ) -> GenerationResponse:
+        """Async version of generate_with_metadata for async contexts."""
         if not system_prompt.strip() or not user_prompt.strip():
             raise LLMError("System and user prompts must be non-empty.")
 
@@ -171,4 +232,24 @@ class GeminiLLMProvider:
         if not text or not text.strip():
             raise LLMError("Gemini returned an empty response.")
 
-        return text.strip()
+        input_tokens, output_tokens, total_tokens = self._extract_token_usage(response)
+
+        return GenerationResponse(
+            text=text.strip(),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
+        )
+
+    async def generate_async(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+    ) -> str:
+        """Async version of generate for async contexts."""
+        response = await self.generate_with_metadata_async(
+            system_prompt, user_prompt, settings=settings
+        )
+        return response.text

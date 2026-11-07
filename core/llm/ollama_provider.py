@@ -7,7 +7,7 @@ from typing import Any
 import ollama
 
 from core.errors import LLMError
-from core.llm.base import GenerationSettings
+from core.llm.base import GenerationResponse, GenerationSettings
 
 
 class OllamaLLMProvider:
@@ -37,14 +37,14 @@ class OllamaLLMProvider:
         else:
             self._client = ollama.Client(host=host)
 
-    def generate(
+    def generate_with_metadata(
         self,
         system_prompt: str,
         user_prompt: str,
         *,
         settings: GenerationSettings,
-    ) -> str:
-        """Return a complete assistant message for the supplied prompts."""
+    ) -> GenerationResponse:
+        """Return a complete assistant message with token usage metadata."""
         if not system_prompt.strip() or not user_prompt.strip():
             raise LLMError("System and user prompts must be non-empty.")
 
@@ -68,4 +68,46 @@ class OllamaLLMProvider:
         content = getattr(message, "content", None)
         if not isinstance(content, str) or not content.strip():
             raise LLMError(f"Ollama model '{self.model}' returned an empty response.")
-        return content.strip()
+
+        # Extract token usage from Ollama response
+        # Ollama returns: prompt_eval_count (input), eval_count (output)
+        input_tokens = getattr(response, "prompt_eval_count", None)
+        output_tokens = getattr(response, "eval_count", None)
+
+        # Normalize: convert to int if present and valid, otherwise None
+        def _normalize_token_count(value: Any) -> int | None:
+            if value is None:
+                return None
+            try:
+                ival = int(value)
+                if ival < 0:
+                    return None
+                return ival
+            except (ValueError, TypeError):
+                return None
+
+        input_tokens = _normalize_token_count(input_tokens)
+        output_tokens = _normalize_token_count(output_tokens)
+
+        # total_tokens: only compute if both are valid integers
+        total_tokens = None
+        if input_tokens is not None and output_tokens is not None:
+            total_tokens = input_tokens + output_tokens
+
+        return GenerationResponse(
+            text=content.strip(),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
+        )
+
+    def generate(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+    ) -> str:
+        """Return a complete assistant message for the supplied prompts."""
+        response = self.generate_with_metadata(system_prompt, user_prompt, settings=settings)
+        return response.text

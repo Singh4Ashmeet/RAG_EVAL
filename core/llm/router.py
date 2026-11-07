@@ -13,13 +13,39 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from core.errors import LLMError
-from core.llm.base import GenerationSettings, LLMProvider
+from core.llm.base import GenerationResponse, GenerationSettings, LLMProvider
 from core.llm.metrics import get_metrics_collector
 
 if TYPE_CHECKING:
     from core.config import Settings
 
 logger = logging.getLogger(__name__)
+
+
+def _call_generate_with_metadata(
+    provider: LLMProvider,
+    system_prompt: str,
+    user_prompt: str,
+    *,
+    settings: GenerationSettings,
+) -> GenerationResponse:
+    """Call provider's metadata-aware generation method if available,
+    otherwise wrap string response.
+
+    This compatibility layer supports both metadata-aware providers (with
+    generate_with_metadata) and legacy providers (with only generate). For
+    legacy providers, the string response is wrapped in a GenerationResponse
+    with token fields set to None.
+    """
+    if hasattr(provider, "generate_with_metadata"):
+        return provider.generate_with_metadata(
+            system_prompt,
+            user_prompt,
+            settings=settings,
+        )
+    # Legacy provider: call generate() and wrap in GenerationResponse
+    text = provider.generate(system_prompt, user_prompt, settings=settings)
+    return GenerationResponse(text=text)
 
 
 class ProviderNotConfiguredError(Exception):
@@ -495,13 +521,13 @@ class CircuitBreakerProvider(LLMProvider):
     def model_id(self) -> str:
         return getattr(self._provider, "model_id", f"unknown:{self._provider_name}")
 
-    def generate(
+    def generate_with_metadata(
         self,
         system_prompt: str,
         user_prompt: str,
         *,
         settings: GenerationSettings,
-    ) -> str:
+    ) -> GenerationResponse:
         permit = self._circuit_breaker.acquire_permit()
         if permit is None:
             collector = get_metrics_collector()
@@ -513,7 +539,8 @@ class CircuitBreakerProvider(LLMProvider):
 
         start_time = time.monotonic()
         try:
-            response = self._provider.generate(
+            response = _call_generate_with_metadata(
+                self._provider,
                 system_prompt,
                 user_prompt,
                 settings=settings,
@@ -525,7 +552,9 @@ class CircuitBreakerProvider(LLMProvider):
                 provider_name=self._provider_name,
                 model_id=self.model_id,
                 latency=duration,
-                response=response,
+                input_tokens=response.input_tokens,
+                output_tokens=response.output_tokens,
+                total_tokens=response.total_tokens,
             )
             return response
         except BaseException as exc:
@@ -542,6 +571,16 @@ class CircuitBreakerProvider(LLMProvider):
             else:
                 permit.release()
             raise
+
+    def generate(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+    ) -> str:
+        response = self.generate_with_metadata(system_prompt, user_prompt, settings=settings)
+        return response.text
 
 
 class RetryProvider(LLMProvider):
@@ -561,13 +600,13 @@ class RetryProvider(LLMProvider):
     def model_id(self) -> str:
         return getattr(self._provider, "model_id", f"unknown:{self._provider_name}")
 
-    def generate(
+    def generate_with_metadata(
         self,
         system_prompt: str,
         user_prompt: str,
         *,
         settings: GenerationSettings,
-    ) -> str:
+    ) -> GenerationResponse:
         start_time = time.monotonic()
         last_error: Exception | None = None
 
@@ -585,7 +624,8 @@ class RetryProvider(LLMProvider):
                     break
 
             try:
-                return self._provider.generate(
+                return _call_generate_with_metadata(
+                    self._provider,
                     system_prompt,
                     user_prompt,
                     settings=settings,
@@ -651,6 +691,16 @@ class RetryProvider(LLMProvider):
             failed_providers=[f"{self._provider_name}: {type(last_error).__name__}"],
         ) from last_error
 
+    def generate(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+    ) -> str:
+        response = self.generate_with_metadata(system_prompt, user_prompt, settings=settings)
+        return response.text
+
 
 class FallbackProvider(LLMProvider):
     """Wraps primary and fallback LLMProviders to handle automatic failover."""
@@ -671,13 +721,13 @@ class FallbackProvider(LLMProvider):
     def model_id(self) -> str:
         return getattr(self._primary_provider, "model_id", f"unknown:{self._primary_name}")
 
-    def generate(
+    def generate_with_metadata(
         self,
         system_prompt: str,
         user_prompt: str,
         *,
         settings: GenerationSettings,
-    ) -> str:
+    ) -> GenerationResponse:
         failed_providers: list[str] = []
         last_error: Exception | None = None
 
@@ -695,7 +745,9 @@ class FallbackProvider(LLMProvider):
             try:
                 if idx > 0:
                     logger.warning("Attempting fallback to provider %s (fallback %d)", name, idx)
-                return provider.generate(system_prompt, user_prompt, settings=settings)
+                return _call_generate_with_metadata(
+                    provider, system_prompt, user_prompt, settings=settings
+                )
             except Exception as exc:
                 last_error = exc
                 failed_providers.append(f"{name}: {type(exc).__name__}")
@@ -732,6 +784,16 @@ class FallbackProvider(LLMProvider):
             msg,
             failed_providers=failed_providers,
         ) from last_error
+
+    def generate(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+    ) -> str:
+        response = self.generate_with_metadata(system_prompt, user_prompt, settings=settings)
+        return response.text
 
 
 def _calculate_backoff(
@@ -859,6 +921,7 @@ def _is_recoverable_error(exc: Exception) -> bool:
         "timeout",
         "connection",
         "overloaded",
+        "transient",
     ]
     for kw in recoverable_keywords:
         if kw in exc_str:

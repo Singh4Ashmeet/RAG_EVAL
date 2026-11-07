@@ -2,9 +2,30 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from dataclasses import dataclass, field
+from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+@dataclass(frozen=True)
+class GenerationResponse:
+    """Standardized generation response carrying text and optional token metadata.
+
+    Missing token fields remain None. Zero is a valid token count.
+    total_tokens is computed from input_tokens + output_tokens when both are provided.
+    """
+
+    text: str
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+    provider_metadata: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.input_tokens is not None and self.output_tokens is not None:
+            if self.total_tokens is None:
+                object.__setattr__(self, "total_tokens", self.input_tokens + self.output_tokens)
 
 
 class GenerationSettings(BaseModel):

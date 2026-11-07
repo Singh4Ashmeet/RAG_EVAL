@@ -73,6 +73,7 @@ class ProviderMetrics:
         latency_seconds: float,
         input_tokens: int | None = None,
         output_tokens: int | None = None,
+        total_tokens: int | None = None,
     ) -> None:
         with self._lock:
             self.total_requests += 1
@@ -80,12 +81,21 @@ class ProviderMetrics:
             self._latencies.append(latency_seconds)
             self.last_success_time = time.monotonic()
 
-            if input_tokens is not None or output_tokens is not None:
-                inp = input_tokens or 0
-                out = output_tokens or 0
-                self.input_tokens = (self.input_tokens or 0) + inp
-                self.output_tokens = (self.output_tokens or 0) + out
-                self.total_tokens = (self.total_tokens or 0) + (inp + out)
+            # Record input tokens if provided
+            if input_tokens is not None:
+                self.input_tokens = (self.input_tokens or 0) + input_tokens
+            # Record output tokens if provided
+            if output_tokens is not None:
+                self.output_tokens = (self.output_tokens or 0) + output_tokens
+
+            # Handle total_tokens:
+            # - If explicit total_tokens provided, use it (even if input/output missing)
+            # - Else if both input and output provided, compute sum
+            # - Else leave as None (missing)
+            if total_tokens is not None:
+                self.total_tokens = (self.total_tokens or 0) + total_tokens
+            elif input_tokens is not None and output_tokens is not None:
+                self.total_tokens = (self.total_tokens or 0) + input_tokens + output_tokens
 
     def record_failure(
         self,
@@ -160,9 +170,18 @@ class ProviderMetrics:
                 "p95_ms": round(p95_sec * 1000, 2),
             }
 
-    def compute_cost_estimate(self, pricing_map: dict[str, dict[str, float]]) -> float | None:
+    def compute_cost_estimate(
+        self, pricing_map: dict[str, dict[str, float]]
+    ) -> tuple[float | None, bool]:
+        """Compute cost estimate and whether it's a partial cost.
+
+        Returns:
+            tuple[float | None, bool]: (estimated_cost_usd, is_partial)
+                - estimated_cost_usd: None if pricing unknown or usage completely missing
+                - is_partial: True if only input OR only output usage available (partial cost)
+        """
         if self.input_tokens is None and self.output_tokens is None:
-            return None
+            return None, False
 
         # Look up pricing by model_id or provider_name
         pricing = pricing_map.get(self.model_id)
@@ -172,14 +191,19 @@ class ProviderMetrics:
             pricing = pricing_map.get(bare_model) or pricing_map.get(self.provider_name)
 
         if not pricing:
-            return None
+            return None, False
 
         inp_price_per_m = pricing.get("input", 0.0)
         out_price_per_m = pricing.get("output", 0.0)
 
         inp_cost = ((self.input_tokens or 0) / 1_000_000.0) * inp_price_per_m
         out_cost = ((self.output_tokens or 0) / 1_000_000.0) * out_price_per_m
-        return round(inp_cost + out_cost, 6)
+        total_cost = round(inp_cost + out_cost, 6)
+
+        # Cost is partial if only one of input/output has usage data
+        is_partial = (self.input_tokens is None) != (self.output_tokens is None)
+
+        return total_cost, is_partial
 
     def to_dict(self, pricing_map: dict[str, dict[str, float]] | None = None) -> dict[str, Any]:
         with self._lock:
@@ -190,11 +214,12 @@ class ProviderMetrics:
             success_rate = round(succ / total, 4) if total > 0 else 0.0
 
         latency_stats = self.get_latency_stats()
-        cost_est = (
+        cost_est_tuple = (
             self.compute_cost_estimate(pricing_map or DEFAULT_MODEL_PRICING)
             if pricing_map or DEFAULT_MODEL_PRICING
-            else None
+            else (None, False)
         )
+        cost_est, is_partial = cost_est_tuple
 
         with self._lock:
             data = {
@@ -226,6 +251,7 @@ class ProviderMetrics:
                     "estimated_cost_usd": cost_est,
                     "currency": "USD",
                     "is_estimate": True,
+                    "is_partial": is_partial,
                 },
                 "last_success_time": self.last_success_time,
                 "last_failure_time": self.last_failure_time,
@@ -272,6 +298,7 @@ class ProviderMetricsCollector:
         latency: float = 0.0,
         input_tokens: int | None = None,
         output_tokens: int | None = None,
+        total_tokens: int | None = None,
         response: Any = None,
     ) -> None:
         try:
@@ -280,6 +307,7 @@ class ProviderMetricsCollector:
                 latency_seconds=latency,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
+                total_tokens=total_tokens,
             )
         except Exception as exc:
             logger.debug("Failed to record metric success: %s", exc)
