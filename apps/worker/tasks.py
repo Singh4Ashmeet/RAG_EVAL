@@ -19,7 +19,7 @@ from apps.api.main import (
 )
 from core.config import get_settings
 from core.generate.pipeline import GroundedAnswerGenerator
-from core.llm.ollama_provider import OllamaLLMProvider
+from core.llm.router import get_chat_provider
 from core.normalize.schema import Chunk
 from core.retrieval.schema import RetrievalStrategy, SearchResult
 from eval.datasets.schema import EvaluationDataset
@@ -218,10 +218,7 @@ def evaluate_dataset(
             retriever = HostedElementRetriever(elements)
             answerer = GroundedAnswerGenerator(
                 retriever,
-                OllamaLLMProvider(
-                    model=settings.chat_model,
-                    host=settings.chat_base_url,
-                ),
+                get_chat_provider(settings.chat_provider),
                 top_k=config.max_cutoff,
             )
             report = EvaluationRunner(config).run(dataset, retriever, answerer)
@@ -329,10 +326,7 @@ def run_experiment(
                 settings = get_settings()
                 answerer = GroundedAnswerGenerator(
                     retriever,
-                    OllamaLLMProvider(
-                        model=settings.chat_model,
-                        host=settings.chat_base_url,
-                    ),
+                    get_chat_provider(settings.chat_provider),
                     top_k=evaluation_config.max_cutoff,
                 )
                 variants.append(
