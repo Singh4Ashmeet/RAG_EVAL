@@ -157,6 +157,7 @@ class GeminiLLMProvider:
         user_prompt: str,
         *,
         settings: GenerationSettings,
+        timeout: float | None = None,
     ) -> GenerationResponse:
         """Generate a non-streaming chat response with token usage metadata."""
         if not system_prompt.strip() or not user_prompt.strip():
@@ -166,14 +167,21 @@ class GeminiLLMProvider:
         # Gemini expects a single conversation with user/assistant roles
         full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
+        # Build config with timeout if provided
+        config = types.GenerateContentConfig(
+            temperature=settings.temperature,
+            max_output_tokens=settings.max_tokens,
+        )
+        if timeout is not None:
+            # Gemini timeout is in milliseconds
+            timeout_ms = int(timeout * 1000)
+            config.http_options = types.HttpOptions(timeout=timeout_ms)
+
         try:
             response = self._client.models.generate_content(
                 model=self.model,
                 contents=full_prompt,
-                config=types.GenerateContentConfig(
-                    temperature=settings.temperature,
-                    max_output_tokens=settings.max_tokens,
-                ),
+                config=config,
             )
         except Exception as exc:
             raise self._handle_error(exc) from exc

@@ -152,6 +152,7 @@ class GroqLLMProvider:
         user_prompt: str,
         *,
         settings: GenerationSettings,
+        timeout: float | None = None,
     ) -> GenerationResponse:
         """Generate a non-streaming chat response with token usage metadata."""
         if not system_prompt.strip() or not user_prompt.strip():
@@ -169,6 +170,7 @@ class GroqLLMProvider:
                 temperature=settings.temperature,
                 max_tokens=settings.max_tokens,
                 stream=False,
+                timeout=timeout,
             )
         except Exception as exc:
             raise self._handle_error(exc) from exc

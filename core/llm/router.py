@@ -6,6 +6,7 @@ Supports fallback, retry, and circuit breaker mechanisms.
 from __future__ import annotations
 
 import logging
+import math
 import random
 import threading
 import time
@@ -22,12 +23,96 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True, slots=True)
+class GenerationDeadline:
+    """Immutable absolute deadline based on monotonic time.
+
+    Represents a single deadline for an entire logical generation request,
+    shared across retries, circuit breaker, and fallback providers.
+    """
+
+    _expiration_monotonic: float
+
+    @classmethod
+    def after(cls, timeout_seconds: float) -> GenerationDeadline:
+        """Create a deadline from a timeout duration.
+
+        Args:
+            timeout_seconds: Timeout in seconds. Must be positive and finite.
+
+        Returns:
+            GenerationDeadline instance.
+
+        Raises:
+            ValueError: If timeout_seconds is not positive or not finite.
+        """
+        if not isinstance(timeout_seconds, (int, float)):
+            raise ValueError(
+                f"timeout_seconds must be a number, got {type(timeout_seconds).__name__}"
+            )
+        if not math.isfinite(timeout_seconds):
+            raise ValueError("timeout_seconds must be finite")
+        if timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be positive")
+        return cls(_expiration_monotonic=time.monotonic() + timeout_seconds)
+
+    @classmethod
+    def from_expiration(cls, expiration_monotonic: float) -> GenerationDeadline:
+        """Create a deadline from an absolute monotonic expiration timestamp.
+
+        This is an internal method for sharing the exact same deadline across wrappers.
+
+        Args:
+            expiration_monotonic: Absolute monotonic timestamp when the deadline expires.
+
+        Returns:
+            GenerationDeadline instance.
+        """
+        return cls(_expiration_monotonic=expiration_monotonic)
+
+    def remaining_seconds(self) -> float:
+        """Return remaining seconds until deadline, clamped at zero.
+
+        Returns:
+            Remaining seconds as a non-negative float.
+        """
+        remaining = self._expiration_monotonic - time.monotonic()
+        return max(0.0, remaining)
+
+    @property
+    def expired(self) -> bool:
+        """Check if the deadline has passed.
+
+        Returns:
+            True if deadline has expired, False otherwise.
+        """
+        return time.monotonic() >= self._expiration_monotonic
+
+    def check_or_raise(self, context: str = "deadline") -> None:
+        """Check deadline and raise if expired.
+
+        Args:
+            context: Description of what is checking the deadline (for error message).
+
+        Raises:
+            ProviderDeadlineExceededError: If the deadline has expired.
+        """
+        if self.expired:
+            overrun = self._expiration_monotonic - time.monotonic()
+            # Clamp overrun to zero to avoid negative values due to floating-point precision
+            overrun = max(0.0, overrun)
+            raise ProviderDeadlineExceededError(
+                f"{context}: deadline exceeded after {overrun:.2f}s overrun"
+            )
+
+
 def _call_generate_with_metadata(
     provider: LLMProvider,
     system_prompt: str,
     user_prompt: str,
     *,
     settings: GenerationSettings,
+    deadline: GenerationDeadline | None = None,
 ) -> GenerationResponse:
     """Call provider's metadata-aware generation method if available,
     otherwise wrap string response.
@@ -36,8 +121,42 @@ def _call_generate_with_metadata(
     generate_with_metadata) and legacy providers (with only generate). For
     legacy providers, the string response is wrapped in a GenerationResponse
     with token fields set to None.
+
+    If a deadline is provided, the remaining time is used to enforce a timeout
+    on the provider SDK call.
     """
+    # Calculate remaining timeout for the provider SDK call
+    remaining_timeout = None
+    if deadline is not None:
+        remaining = deadline.remaining_seconds()
+        if remaining <= 0:
+            deadline.check_or_raise("_call_generate_with_metadata")
+        remaining_timeout = remaining
+
+    # First, try to call the internal deadline-aware method if available.
+    # Wrapper providers (RetryProvider, CircuitBreakerProvider, FallbackProvider)
+    # implement this method to propagate the deadline without creating a new one.
+    if hasattr(provider, "_generate_with_metadata_with_deadline"):
+        return provider._generate_with_metadata_with_deadline(
+            system_prompt,
+            user_prompt,
+            settings=settings,
+            deadline=deadline,
+        )
+
+    # Fall back to public generate_with_metadata with timeout.
+    # This handles raw providers (Ollama, Gemini, Groq) and legacy providers.
     if hasattr(provider, "generate_with_metadata"):
+        import inspect
+
+        sig = inspect.signature(provider.generate_with_metadata)
+        if "timeout" in sig.parameters:
+            return provider.generate_with_metadata(
+                system_prompt,
+                user_prompt,
+                settings=settings,
+                timeout=remaining_timeout,
+            )
         return provider.generate_with_metadata(
             system_prompt,
             user_prompt,
@@ -74,6 +193,16 @@ class CircuitBreakerOpenError(LLMError):
     def __init__(self, provider_name: str, message: str | None = None) -> None:
         super().__init__(message or f"Circuit breaker is OPEN for provider '{provider_name}'")
         self.provider_name = provider_name
+
+
+class ProviderDeadlineExceededError(LLMError):
+    """Raised when a generation request exceeds its absolute deadline.
+
+    This is not a recoverable error - it indicates the overall deadline
+    for the logical request has been exceeded.
+    """
+
+    pass
 
 
 # Cache for provider instances and circuit breakers
@@ -527,7 +656,39 @@ class CircuitBreakerProvider(LLMProvider):
         user_prompt: str,
         *,
         settings: GenerationSettings,
+        timeout: float | None = None,
+        deadline: GenerationDeadline | None = None,
     ) -> GenerationResponse:
+        # If a deadline is already provided (from outer wrapper), use it.
+        # Otherwise create a fresh deadline for this logical request.
+        if deadline is None:
+            effective_timeout = timeout if timeout is not None else self._get_default_timeout()
+            deadline = GenerationDeadline.after(effective_timeout)
+        return self._generate_with_metadata_with_deadline(
+            system_prompt, user_prompt, settings=settings, deadline=deadline
+        )
+
+    def _get_default_timeout(self) -> float:
+        # Try to get timeout from the wrapped provider's retry policy if available
+        if hasattr(self._provider, "_policy"):
+            return self._provider._policy.timeout_seconds
+        # Default to a reasonable timeout
+        return 30.0
+
+    def _generate_with_metadata_with_deadline(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+        deadline: GenerationDeadline | None = None,
+    ) -> GenerationResponse:
+        # Allow deadline injection for testing; otherwise create fresh deadline
+        if deadline is None:
+            deadline = GenerationDeadline.after(self._get_default_timeout())
+        # Check deadline before acquiring permit
+        deadline.check_or_raise("circuit breaker")
+
         permit = self._circuit_breaker.acquire_permit()
         if permit is None:
             collector = get_metrics_collector()
@@ -544,6 +705,7 @@ class CircuitBreakerProvider(LLMProvider):
                 system_prompt,
                 user_prompt,
                 settings=settings,
+                deadline=deadline,
             )
             duration = time.monotonic() - start_time
             permit.record_success()
@@ -606,22 +768,41 @@ class RetryProvider(LLMProvider):
         user_prompt: str,
         *,
         settings: GenerationSettings,
+        timeout: float | None = None,
+        deadline: GenerationDeadline | None = None,
     ) -> GenerationResponse:
-        start_time = time.monotonic()
+        # If a deadline is already provided (from outer wrapper), use it.
+        # Otherwise create a fresh deadline for this logical request.
+        if deadline is None:
+            effective_timeout = timeout if timeout is not None else self._policy.timeout_seconds
+            deadline = GenerationDeadline.after(effective_timeout)
+        return self._generate_with_metadata_with_deadline(
+            system_prompt, user_prompt, settings=settings, deadline=deadline
+        )
+
+    def _generate_with_metadata_with_deadline(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+        deadline: GenerationDeadline | None = None,
+    ) -> GenerationResponse:
+        # Allow deadline injection for testing; otherwise create fresh deadline
+        if deadline is None:
+            deadline = GenerationDeadline.after(self._policy.timeout_seconds)
         last_error: Exception | None = None
 
         for attempt in range(self._policy.max_attempts):
-            # Check deadline before attempt (if not initial attempt)
-            if attempt > 0:
-                elapsed = time.monotonic() - start_time
-                if elapsed >= self._policy.timeout_seconds:
-                    logger.warning(
-                        "Provider %s: Deadline exceeded after %d attempts, %.2fs elapsed",
-                        self._provider_name,
-                        attempt,
-                        elapsed,
-                    )
-                    break
+            # Check deadline before attempt (including initial attempt)
+            if deadline.expired:
+                logger.warning(
+                    "Provider %s: Shared deadline exceeded before attempt %d/%d",
+                    self._provider_name,
+                    attempt + 1,
+                    self._policy.max_attempts,
+                )
+                deadline.check_or_raise("retry")
 
             try:
                 return _call_generate_with_metadata(
@@ -629,6 +810,7 @@ class RetryProvider(LLMProvider):
                     system_prompt,
                     user_prompt,
                     settings=settings,
+                    deadline=deadline,
                 )
             except Exception as exc:
                 last_error = exc
@@ -655,25 +837,28 @@ class RetryProvider(LLMProvider):
                     retry_after=retry_after,
                 )
 
-                # Check deadline with planned sleep
-                elapsed = time.monotonic() - start_time
-                remaining = self._policy.timeout_seconds - elapsed
+                # Check shared deadline with planned sleep
+                remaining = deadline.remaining_seconds()
                 if remaining <= 0:
                     break
                 actual_delay = min(delay, remaining)
 
                 logger.warning(
-                    "Provider %s: Attempt %d/%d failed (%.2fs), retrying in %.2fs: %s",
+                    "Provider %s: Attempt %d/%d failed, retrying in %.2fs "
+                    "(deadline remaining: %.2fs): %s",
                     self._provider_name,
                     attempt + 1,
                     self._policy.max_attempts,
-                    elapsed,
                     actual_delay,
+                    remaining,
                     exc,
                 )
                 time.sleep(actual_delay)
 
-        # All retry attempts exhausted
+        # All retry attempts exhausted or deadline exceeded
+        if deadline.expired:
+            deadline.check_or_raise("retry exhaustion")
+
         collector = get_metrics_collector()
         collector.record_retry_exhaustion(self._provider_name, self.model_id)
         logger.error(
@@ -727,7 +912,40 @@ class FallbackProvider(LLMProvider):
         user_prompt: str,
         *,
         settings: GenerationSettings,
+        timeout: float | None = None,
+        deadline: GenerationDeadline | None = None,
     ) -> GenerationResponse:
+        # If a deadline is already provided (from outer wrapper), use it.
+        # Otherwise create a fresh deadline for this logical request.
+        if deadline is None:
+            effective_timeout = timeout if timeout is not None else self._get_default_timeout()
+            deadline = GenerationDeadline.after(effective_timeout)
+        return self._generate_with_metadata_with_deadline(
+            system_prompt, user_prompt, settings=settings, deadline=deadline
+        )
+
+    def _get_default_timeout(self) -> float:
+        # Try to get timeout from the wrapped providers' retry policies
+        for provider in [self._primary_provider] + self._fallback_providers:
+            current = provider
+            while hasattr(current, "_provider"):
+                if hasattr(current, "_policy"):
+                    return current._policy.timeout_seconds
+                current = current._provider
+        # Default to a reasonable timeout
+        return 30.0
+
+    def _generate_with_metadata_with_deadline(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+        deadline: GenerationDeadline | None = None,
+    ) -> GenerationResponse:
+        # Allow deadline injection for testing; otherwise create fresh deadline
+        if deadline is None:
+            deadline = GenerationDeadline.after(self._get_default_timeout())
         failed_providers: list[str] = []
         last_error: Exception | None = None
 
@@ -742,11 +960,14 @@ class FallbackProvider(LLMProvider):
                 providers_to_try.append((name, provider))
 
         for idx, (name, provider) in enumerate(providers_to_try):
+            # Check shared deadline before each provider attempt
+            deadline.check_or_raise(f"fallback before provider {name}")
+
             try:
                 if idx > 0:
                     logger.warning("Attempting fallback to provider %s (fallback %d)", name, idx)
                 return _call_generate_with_metadata(
-                    provider, system_prompt, user_prompt, settings=settings
+                    provider, system_prompt, user_prompt, settings=settings, deadline=deadline
                 )
             except Exception as exc:
                 last_error = exc
@@ -863,6 +1084,10 @@ def _extract_retry_after(exc: Exception) -> float | None:
 
 def _is_recoverable_error(exc: Exception) -> bool:
     """Determine if an exception represents a recoverable/transient error."""
+    # Deadline exceeded is never recoverable - it's a hard limit for the logical request
+    if isinstance(exc, ProviderDeadlineExceededError):
+        return False
+
     if isinstance(exc, CircuitBreakerOpenError):
         return True
 
@@ -1012,11 +1237,11 @@ def _wrap_provider_pipeline(
     """Wrap raw provider with retry and circuit breaker layers."""
     provider = raw_provider
 
-    # 1. Retry layer
+    # 1. Retry layer (inner)
     retry_policy = _get_retry_policy(settings)
     provider = RetryProvider(provider, retry_policy, provider_name)
 
-    # 2. Circuit breaker layer
+    # 2. Circuit breaker layer (outer)
     cb = get_circuit_breaker(provider_name, settings)
     provider = CircuitBreakerProvider(provider, cb, provider_name)
 

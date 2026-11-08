@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import ollama
 
 from core.errors import LLMError
 from core.llm.base import GenerationResponse, GenerationSettings
+
+logger = logging.getLogger(__name__)
 
 
 class OllamaLLMProvider:
@@ -43,13 +46,42 @@ class OllamaLLMProvider:
         user_prompt: str,
         *,
         settings: GenerationSettings,
+        timeout: float | None = None,
     ) -> GenerationResponse:
         """Return a complete assistant message with token usage metadata."""
         if not system_prompt.strip() or not user_prompt.strip():
             raise LLMError("System and user prompts must be non-empty.")
 
+        # Determine effective timeout: explicit timeout > client's configured timeout > None
+        effective_timeout = timeout
+        if effective_timeout is None:
+            # Try to get timeout from the client's underlying httpx client
+            if hasattr(self._client, "_client") and hasattr(self._client._client, "timeout"):
+                effective_timeout = self._client._client.timeout
+
+        # Create a client with the effective timeout for this request
+        # We need to create a new client if the timeout differs from the client's timeout
+        owns_client = False
+        if effective_timeout is not None:
+            # Check if the client is a real ollama.Client (has _client attribute with timeout)
+            if hasattr(self._client, "_client") and hasattr(self._client._client, "timeout"):
+                client_timeout = self._client._client.timeout
+                if effective_timeout != client_timeout:
+                    # Create a new client with the effective timeout
+                    # base_url is an httpx.URL object, convert to string
+                    base_url = str(self._client._client.base_url)
+                    client = ollama.Client(host=base_url, timeout=effective_timeout)
+                    owns_client = True
+                else:
+                    client = self._client
+            else:
+                # Fake client or client without _client attribute - use as is
+                client = self._client
+        else:
+            client = self._client
+
         try:
-            response = self._client.chat(
+            response = client.chat(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -63,6 +95,20 @@ class OllamaLLMProvider:
             )
         except Exception as exc:
             raise LLMError(f"Ollama chat request failed for model '{self.model}': {exc}") from exc
+        finally:
+            # Clean up request-specific client if we created one
+            if owns_client and hasattr(client, "_client") and hasattr(client._client, "close"):
+                try:
+                    client._client.close()
+                except Exception:
+                    # Cleanup errors are logged but do not mask the original generation
+                    # exception (if any) or the successful response.
+                    # This follows the principle that resource cleanup should not
+                    # override the primary operation's outcome.
+                    logger.exception(
+                        "Failed to close request-specific Ollama client for model %s",
+                        self.model,
+                    )
 
         message = getattr(response, "message", None)
         content = getattr(message, "content", None)
