@@ -43,3 +43,13 @@ class GenerationError(RAGEvalError):
 
 class EvaluationError(RAGEvalError):
     """Raised when evaluation data or report handling is invalid."""
+
+
+class ProviderDeadlineExceededError(LLMError):
+    """Raised when a generation request exceeds its absolute deadline.
+
+    This is not a recoverable error - it indicates the overall
+    deadline for the logical request has been exceeded.
+    """
+
+    pass

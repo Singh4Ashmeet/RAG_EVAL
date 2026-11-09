@@ -7,6 +7,8 @@ from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from core.llm.deadline import GenerationDeadline
+
 
 @dataclass(frozen=True)
 class GenerationResponse:
@@ -54,4 +56,71 @@ class LLMProvider(Protocol):
         settings: GenerationSettings,
     ) -> str:
         """Generate non-streaming text or raise a provider-specific domain error."""
+        ...
+
+
+@runtime_checkable
+class AsyncCloseable(Protocol):
+    """Protocol for resources that support asynchronous cleanup."""
+
+    async def aclose(self) -> None:
+        """Release asynchronous resources. Must be idempotent."""
+        ...
+
+
+@runtime_checkable
+class AsyncLLMProvider(AsyncCloseable, Protocol):
+    """Async contract for LLM generation with deadline propagation.
+
+    This protocol defines the asynchronous generation interface with deadline
+    propagation support. Implementations must be safe for concurrent use
+    and must not store request-specific state in instance attributes.
+
+    The `generate_async` method is NOT part of this protocol; it is a
+    convenience method that implementations may optionally provide.
+    """
+
+    @property
+    def model_id(self) -> str:
+        """Stable provider/model label to record with generated output."""
+        ...
+
+    async def generate_with_metadata_async(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        settings: GenerationSettings,
+        timeout: float | None = None,  # noqa: ASYNC109
+        deadline: GenerationDeadline | None = None,
+    ) -> GenerationResponse:
+        """Generate a non-streaming chat response with token usage metadata.
+
+        Args:
+            system_prompt: System instruction for the model.
+            user_prompt: User message for the model.
+            settings: Generation parameters (temperature, max_tokens).
+            timeout: Optional relative timeout in seconds. Used only when
+                `deadline` is not provided. If both are supplied, `deadline`
+                takes precedence and `timeout` is ignored.
+            deadline: Absolute deadline for the entire logical request.
+                Propagated through all wrapper layers. If not provided,
+                a deadline is created from `timeout` if given.
+
+        Returns:
+            GenerationResponse with text and token metadata.
+
+        Raises:
+            ProviderDeadlineExceededError: If the deadline expires before
+                or during generation.
+            LLMError: If the provider request fails for other reasons.
+        """
+        ...
+
+    async def aclose(self) -> None:
+        """Release asynchronous resources. Must be idempotent.
+
+        Called during application shutdown to release provider-specific
+        resources such as connection pools or client sessions.
+        """
         ...

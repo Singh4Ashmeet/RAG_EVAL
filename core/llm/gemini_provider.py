@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import httpx
 from google import genai
 from google.genai import types
 
-from core.errors import LLMError
+from core.errors import LLMError, ProviderDeadlineExceededError
 from core.llm.base import GenerationResponse, GenerationSettings
+from core.llm.deadline import GenerationDeadline
+
+logger = logging.getLogger(__name__)
 
 
 class ProviderAuthenticationError(LLMError):
@@ -110,7 +114,7 @@ class GeminiLLMProvider:
             return ProviderUnavailableError("Gemini request timed out")
         elif isinstance(exc, httpx.RequestError):
             return ProviderUnavailableError(f"Gemini connection failed: {exc}")
-        elif "API key" in str(exc) or "API_KEY" in str(exc):
+        elif "API key" in str(exc).lower() or "API_KEY" in str(exc).lower():
             return ProviderAuthenticationError("Gemini authentication failed: invalid API key")
         elif "quota" in str(exc).lower() or "rate limit" in str(exc).lower():
             return ProviderRateLimitError(f"Gemini rate limit: {exc}")
@@ -217,25 +221,63 @@ class GeminiLLMProvider:
         user_prompt: str,
         *,
         settings: GenerationSettings,
+        timeout: float | None = None,  # noqa: ASYNC109
+        deadline: GenerationDeadline | None = None,
     ) -> GenerationResponse:
-        """Async version of generate_with_metadata for async contexts."""
+        """Async version of generate_with_metadata with deadline propagation."""
         if not system_prompt.strip() or not user_prompt.strip():
             raise LLMError("System and user prompts must be non-empty.")
 
+        # Handle deadline
+        if deadline is not None:
+            if deadline.expired:
+                raise ProviderDeadlineExceededError(
+                    "generate_with_metadata_async: deadline exceeded"
+                )
+            remaining = deadline.remaining_seconds()
+            if remaining <= 0:
+                raise ProviderDeadlineExceededError(
+                    "generate_with_metadata_async: deadline exceeded"
+                )
+            # Use the remaining deadline as the timeout for this request
+            request_timeout = remaining
+        else:
+            # No deadline provided, use explicit timeout if given
+            request_timeout = timeout
+
+        if request_timeout is not None and request_timeout <= 0:
+            raise ProviderDeadlineExceededError(
+                "generate_with_metadata_async: timeout must be positive"
+            )
+
         full_prompt = f"{system_prompt}\n\n{user_prompt}"
+
+        # Build config with timeout if provided
+        config = types.GenerateContentConfig(
+            temperature=settings.temperature,
+            max_output_tokens=settings.max_tokens,
+        )
+        if request_timeout is not None:
+            # Gemini timeout is in milliseconds
+            timeout_ms = int(request_timeout * 1000)
+            config.http_options = types.HttpOptions(timeout=timeout_ms)
 
         try:
             response = await self._async_client.models.generate_content(
                 model=self.model,
                 contents=full_prompt,
-                config=types.GenerateContentConfig(
-                    temperature=settings.temperature,
-                    max_output_tokens=settings.max_tokens,
-                ),
+                config=config,
             )
         except Exception as exc:
             raise self._handle_error(exc) from exc
 
+        # Check deadline again after response
+        if deadline is not None and deadline.expired:
+            raise ProviderDeadlineExceededError(
+                "generate_with_metadata_async: deadline exceeded after response"
+            )
+
+        # Extract text from response
         text = response.text
         if not text or not text.strip():
             raise LLMError("Gemini returned an empty response.")
@@ -255,9 +297,22 @@ class GeminiLLMProvider:
         user_prompt: str,
         *,
         settings: GenerationSettings,
+        timeout: float | None = None,  # noqa: ASYNC109
+        deadline: GenerationDeadline | None = None,
     ) -> str:
         """Async version of generate for async contexts."""
         response = await self.generate_with_metadata_async(
-            system_prompt, user_prompt, settings=settings
+            system_prompt, user_prompt, settings=settings, timeout=timeout, deadline=deadline
         )
         return response.text
+
+    async def aclose(self) -> None:
+        """Release async client resources. Idempotent."""
+        if hasattr(self._async_client, "aclose"):
+            try:
+                await self._async_client.aclose()
+            except Exception:
+                logger.exception(
+                    "Failed to close Gemini async client for model %s",
+                    self.model,
+                )

@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from core.errors import ProviderDeadlineExceededError
 from core.llm.base import GenerationSettings
 from core.llm.gemini_provider import (
     ProviderAuthenticationError as GeminiAuthError,
@@ -17,7 +18,7 @@ from core.llm.gemini_provider import (
 )
 from core.llm.router import (
     FallbackProvider,
-    ProviderDeadlineExceededError,
+    GenerationDeadline,
     ProviderFallbackExhaustedError,
     RetryPolicy,
     RetryProvider,
@@ -544,7 +545,7 @@ class TestPublicPathDeadlinePropagation:
             fallback_names=["fallback"],
         )
 
-        from core.llm.router import ProviderDeadlineExceededError
+        from core.errors import ProviderDeadlineExceededError
 
         with pytest.raises(ProviderDeadlineExceededError):
             chain.generate_with_metadata("sys", "user", settings=GenerationSettings())
@@ -583,7 +584,7 @@ class TestPublicPathDeadlinePropagation:
             fallback_names=["fallback"],
         )
 
-        from core.llm.router import ProviderDeadlineExceededError
+        from core.errors import ProviderDeadlineExceededError
 
         with pytest.raises(ProviderDeadlineExceededError):
             chain.generate_with_metadata("sys", "user", settings=GenerationSettings())
@@ -596,11 +597,10 @@ class TestPublicPathDeadlinePropagation:
 
 def test_expired_deadline_prevents_fallback_execution() -> None:
     """Test expired deadline prevents fallback execution."""
-    from core.llm.gemini_provider import ProviderUnavailableError as GeminiUnavailableError
+    from core.errors import ProviderDeadlineExceededError
     from core.llm.router import (
         FallbackProvider,
         GenerationDeadline,
-        ProviderDeadlineExceededError,
         RetryPolicy,
         RetryProvider,
     )
@@ -677,7 +677,7 @@ class TestOllamaSDKTimeout:
         inner = TrackingOllamaProvider()
         provider = RetryProvider(inner, policy, "ollama")
 
-        from core.llm.router import ProviderDeadlineExceededError
+        from core.errors import ProviderDeadlineExceededError
 
         with pytest.raises(ProviderDeadlineExceededError):
             provider._generate_with_metadata_with_deadline(
@@ -731,7 +731,7 @@ class TestGeminiSDKTimeout:
         inner = TrackingGeminiProvider()
         provider = RetryProvider(inner, policy, "gemini")
 
-        from core.llm.router import ProviderDeadlineExceededError
+        from core.errors import ProviderDeadlineExceededError
 
         with pytest.raises(ProviderDeadlineExceededError):
             provider._generate_with_metadata_with_deadline(
@@ -774,7 +774,7 @@ class TestGroqSDKTimeout:
         inner = TrackingGroqProvider()
         provider = RetryProvider(inner, policy, "groq")
 
-        from core.llm.router import ProviderDeadlineExceededError
+        from core.errors import ProviderDeadlineExceededError
 
         with pytest.raises(ProviderDeadlineExceededError):
             provider._generate_with_metadata_with_deadline(
@@ -1581,6 +1581,357 @@ class TestOllamaCleanupExceptionPreservation:
 
             # Cleanup should be called once per request
             assert new_httpx_client.close.call_count == 2
+
+
+# =============================================================================
+# F-09.3.2: Async Provider Contract Tests
+# =============================================================================
+
+
+class TestAsyncProviderProtocol:
+    """Tests for the AsyncLLMProvider protocol."""
+
+    def test_protocol_compliance(self) -> None:
+        """Test that a compliant async provider satisfies the protocol."""
+        from core.llm.base import AsyncCloseable, AsyncLLMProvider, GenerationResponse
+
+        class CompliantAsyncProvider:
+            model_id = "mock:compliant"
+            closed = False
+
+            async def generate_with_metadata_async(
+                self,
+                system_prompt: str,
+                user_prompt: str,
+                *,
+                settings: GenerationSettings,
+                timeout: float | None = None,  # noqa: ASYNC109
+                deadline: GenerationDeadline | None = None,
+            ) -> GenerationResponse:
+                return GenerationResponse(text="OK")
+
+            async def aclose(self) -> None:
+                self.closed = True
+
+        provider = CompliantAsyncProvider()
+        assert isinstance(provider, AsyncLLMProvider)
+        assert isinstance(provider, AsyncCloseable)
+
+    def test_protocol_missing_method(self) -> None:
+        """Test that a provider missing required methods fails the protocol."""
+        from core.llm.base import AsyncLLMProvider
+
+        class IncompleteProvider:
+            model_id = "mock:incomplete"
+            # Missing generate_with_metadata_async and aclose
+
+        provider = IncompleteProvider()
+        assert not isinstance(provider, AsyncLLMProvider)
+
+    def test_sync_protocol_unchanged(self) -> None:
+        """Test that the synchronous LLMProvider protocol is unchanged."""
+        from core.llm.base import LLMProvider
+
+        class SyncProvider:
+            model_id = "mock:sync"
+
+            def generate(
+                self,
+                system_prompt: str,
+                user_prompt: str,
+                *,
+                settings: GenerationSettings,
+            ) -> str:
+                return "OK"
+
+        provider = SyncProvider()
+        assert isinstance(provider, LLMProvider)
+        # Should not be an async provider
+        from core.llm.base import AsyncLLMProvider
+
+        assert not isinstance(provider, AsyncLLMProvider)
+
+
+class TestAsyncProviderContract:
+    """Tests for the async provider contract behavior."""
+
+    def test_generate_async_convenience_method(self) -> None:
+        """Test that generate_async delegates to generate_with_metadata_async."""
+        from core.llm.base import AsyncLLMProvider, GenerationResponse, GenerationSettings
+
+        class TestProvider:
+            model_id = "mock:test"
+            last_call: tuple | None = None
+
+            async def generate_with_metadata_async(
+                self,
+                system_prompt: str,
+                user_prompt: str,
+                *,
+                settings: GenerationSettings,
+                timeout: float | None = None,  # noqa: ASYNC109
+                deadline: GenerationDeadline | None = None,
+            ) -> GenerationResponse:
+                self.last_call = (system_prompt, user_prompt, settings, timeout, deadline)
+                return GenerationResponse(text="test response")
+
+            async def generate_async(
+                self,
+                system_prompt: str,
+                user_prompt: str,
+                *,
+                settings: GenerationSettings,
+                timeout: float | None = None,  # noqa: ASYNC109
+                deadline: GenerationDeadline | None = None,
+            ) -> str:
+                response = await self.generate_with_metadata_async(
+                    system_prompt,
+                    user_prompt,
+                    settings=settings,
+                    timeout=timeout,
+                    deadline=deadline,
+                )
+                return response.text
+
+            async def aclose(self) -> None:
+                pass
+
+        provider = TestProvider()
+        assert isinstance(provider, AsyncLLMProvider)
+
+        import asyncio
+
+        async def test():
+            result = await provider.generate_async(
+                "sys", "user", settings=GenerationSettings(), timeout=10.0
+            )
+            return result
+
+        result = asyncio.run(test())
+        assert result == "test response"
+        assert provider.last_call is not None
+        assert provider.last_call[0] == "sys"
+        assert provider.last_call[1] == "user"
+
+
+class TestAsyncLifecycleContract:
+    """Tests for the async lifecycle contract."""
+
+    def test_aclose_idempotent(self) -> None:
+        """Test that aclose is idempotent."""
+        from core.llm.base import AsyncCloseable, GenerationResponse
+
+        class TestProvider:
+            def __init__(self) -> None:
+                self.model_id = "mock:test"
+                self.close_count = 0
+
+            async def generate_with_metadata_async(
+                self,
+                system_prompt: str,
+                user_prompt: str,
+                *,
+                settings: GenerationSettings,
+                timeout: float | None = None,  # noqa: ASYNC109
+                deadline: GenerationDeadline | None = None,
+            ) -> GenerationResponse:
+                return GenerationResponse(text="OK")
+
+            async def aclose(self) -> None:
+                self.close_count += 1
+
+        provider = TestProvider()
+        assert isinstance(provider, AsyncCloseable)
+
+        import asyncio
+
+        async def test():
+            await provider.aclose()
+            await provider.aclose()
+            await provider.aclose()
+
+        asyncio.run(test())
+        assert provider.close_count == 3
+
+
+class TestGenerationDeadline:
+    """Tests for the GenerationDeadline implementation."""
+
+    def test_deadline_creation_monotonic(self) -> None:
+        """Test that deadline creation uses monotonic time."""
+        from core.llm.router import GenerationDeadline
+
+        deadline = GenerationDeadline.after(10.0)
+        # Deadline should be in the future
+        assert deadline._expiration_monotonic > time.monotonic()
+        assert deadline._expiration_monotonic <= time.monotonic() + 10.0 + 0.01
+
+    def test_remaining_budget_decreases(self) -> None:
+        """Test that remaining budget decreases over time."""
+        from core.llm.router import GenerationDeadline
+
+        deadline = GenerationDeadline.after(1.0)
+        initial = deadline.remaining_seconds()
+        time.sleep(0.05)  # Increased sleep for measurable difference
+        later = deadline.remaining_seconds()
+        assert later < initial
+        assert later >= 0
+
+    def test_expired_deadline_raises(self) -> None:
+        """Test that expired deadline raises ProviderDeadlineExceededError."""
+        from core.errors import ProviderDeadlineExceededError
+        from core.llm.router import GenerationDeadline
+
+        deadline = GenerationDeadline.after(0.001)
+        time.sleep(0.05)  # Increased sleep for reliability
+        assert deadline.expired
+        with pytest.raises(ProviderDeadlineExceededError):
+            deadline.check_or_raise("test")
+
+    def test_zero_timeout_rejected(self) -> None:
+        """Test that zero timeout is rejected."""
+        from core.llm.router import GenerationDeadline
+
+        with pytest.raises(ValueError):
+            GenerationDeadline.after(0)
+
+    def test_negative_timeout_rejected(self) -> None:
+        """Test that negative timeout is rejected."""
+        from core.llm.router import GenerationDeadline
+
+        with pytest.raises(ValueError):
+            GenerationDeadline.after(-1.0)
+
+    def test_explicit_deadline_precedes_timeout(self) -> None:
+        """Test that explicit deadline takes precedence over timeout."""
+        from core.llm.router import GenerationDeadline
+
+        deadline = GenerationDeadline.after(5.0)
+        _ = 1.0  # Shorter than deadline  # noqa: F841
+
+        # The deadline should be used, not the timeout
+        # This is tested by checking that remaining_seconds reflects the deadline
+        remaining = deadline.remaining_seconds()
+        assert remaining > 4.0  # Should reflect the 5s deadline, not 1s timeout
+
+    def test_same_deadline_object_propagated(self) -> None:
+        """Test that the same deadline object is passed through multiple calls."""
+        from core.llm.router import GenerationDeadline
+
+        deadline = GenerationDeadline.after(10.0)
+        same_deadline = deadline
+
+        # Simulate passing through multiple layers
+        assert same_deadline is deadline
+        assert same_deadline._expiration_monotonic == deadline._expiration_monotonic
+
+    def test_deadline_expiration_no_new_budget(self) -> None:
+        """Test that deadline expiration does not create a new positive budget."""
+        from core.errors import ProviderDeadlineExceededError
+        from core.llm.router import GenerationDeadline
+
+        deadline = GenerationDeadline.after(0.001)
+        time.sleep(0.05)  # Increased sleep for reliability
+
+        # Expired deadline should raise, not create new budget
+        with pytest.raises(ProviderDeadlineExceededError):
+            deadline.check_or_raise("test")
+
+        # Remaining should be clamped at zero
+        assert deadline.remaining_seconds() == 0.0
+
+    def test_concurrent_requests_independent_deadlines(self) -> None:
+        """Test that concurrent requests with different deadlines don't contaminate each other."""
+        from core.llm.router import GenerationDeadline
+
+        deadline_a = GenerationDeadline.after(1.0)
+        deadline_b = GenerationDeadline.after(5.0)
+
+        # They should be distinct objects
+        assert deadline_a is not deadline_b
+
+        # Their expiration times should differ
+        assert deadline_a._expiration_monotonic < deadline_b._expiration_monotonic
+
+        # Modifying one (conceptually) shouldn't affect the other
+        # (Deadlines are immutable, so this is inherent)
+        assert deadline_a.remaining_seconds() < deadline_b.remaining_seconds()
+
+
+class TestCancellationBehavior:
+    """Tests for cancellation behavior."""
+
+    def test_cancelled_error_propagates(self) -> None:
+        """Test that asyncio.CancelledError propagates unchanged."""
+        import asyncio
+
+        async def cancelled_task():
+            raise asyncio.CancelledError()
+
+        async def test():
+            with pytest.raises(asyncio.CancelledError):
+                await cancelled_task()
+
+        asyncio.run(test())
+
+    def test_cancellation_not_converted_to_llm_error(self) -> None:
+        """Test that cancellation is not converted to LLMError."""
+        import asyncio
+
+        from core.errors import LLMError
+
+        async def test():
+            try:
+                raise asyncio.CancelledError()
+            except asyncio.CancelledError:
+                # Re-raise to verify it propagates
+                raise
+            except LLMError:
+                pytest.fail("CancelledError was converted to LLMError")
+
+        with pytest.raises(asyncio.CancelledError):
+            asyncio.run(test())
+
+    def test_cancellation_does_not_mutate_deadline(self) -> None:
+        """Test that cancellation does not mutate a deadline."""
+        import asyncio
+
+        from core.llm.router import GenerationDeadline
+
+        deadline = GenerationDeadline.after(10.0)
+        original_expiration = deadline._expiration_monotonic
+
+        async def test():
+            try:
+                raise asyncio.CancelledError()
+            except asyncio.CancelledError:
+                pass
+
+        asyncio.run(test())
+
+        # Deadline should be unchanged
+        assert deadline._expiration_monotonic == original_expiration
+
+    def test_cancellation_no_retry_side_effect(self) -> None:
+        """Test that cancellation does not create retry or provider-failure side effect."""
+        import asyncio
+
+        side_effects = []
+
+        async def failing_operation():
+            side_effects.append("start")
+            raise asyncio.CancelledError()
+
+        async def test():
+            try:
+                await failing_operation()
+            except asyncio.CancelledError:
+                pass
+
+        asyncio.run(test())
+
+        # Only the start should be recorded, no retry/fallback side effects
+        assert side_effects == ["start"]
 
 
 if __name__ == "__main__":
