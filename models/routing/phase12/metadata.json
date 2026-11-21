@@ -1,0 +1,59 @@
+{
+  "model_version": "phase12-v1.0.0",
+  "confidence_threshold": 0.7,
+  "classes": [
+    "bm25",
+    "dense",
+    "hybrid"
+  ],
+  "feature_config": {
+    "vectorizer": "TfidfVectorizer",
+    "ngram_range": [
+      1,
+      2
+    ],
+    "max_features": 1000
+  },
+  "classifier_config": {
+    "algorithm": "LogisticRegression",
+    "C": 5.0
+  },
+  "extra_metadata": {
+    "created_at": "2026-11-21T16:49:28.626057+00:00",
+    "train_examples_count": 220,
+    "train_total_count": 319,
+    "val_examples_count": 79,
+    "validation_metrics": {
+      "accuracy": 0.6709,
+      "macro_f1": 0.4342,
+      "confusion_matrix": [
+        [
+          47,
+          2,
+          0
+        ],
+        [
+          11,
+          5,
+          1
+        ],
+        [
+          7,
+          5,
+          1
+        ]
+      ],
+      "classes": [
+        "bm25",
+        "dense",
+        "hybrid"
+      ]
+    },
+    "confidence_stats": {
+      "min": 0.4199,
+      "median": 0.808,
+      "mean": 0.7589,
+      "max": 0.928
+    }
+  }
+}

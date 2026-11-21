@@ -1,0 +1,76 @@
+{
+  "dataset_name": "Phase 11 Independent Routing Dataset",
+  "dataset_version": "1.0.0",
+  "created_at": "2026-11-21T15:39:10.856986+00:00",
+  "generation_seed": 42,
+  "total_examples": 523,
+  "split_counts": {
+    "train": 319,
+    "validation": 109,
+    "test": 95
+  },
+  "document_splits": {
+    "train": [
+      "architecture.md",
+      "benchmarks.md",
+      "hosted-beta.md",
+      "hosted-terms.md",
+      "incident_log.txt",
+      "product_evaluation.docx",
+      "render-deployment.md",
+      "rfc8259.txt"
+    ],
+    "validation": [
+      "findings.md",
+      "hosted-privacy.md",
+      "operations_guide.pdf",
+      "reference_guide.md",
+      "runbook.md"
+    ],
+    "test": [
+      "README.md",
+      "ci-cd.md",
+      "privacy.md",
+      "system_spec.md"
+    ]
+  },
+  "oracle_distribution": {
+    "bm25": 216,
+    "ambiguous": 124,
+    "dense": 92,
+    "no_clear_winner": 43,
+    "hybrid": 48
+  },
+  "category_distribution": {
+    "numerical": 41,
+    "direct_factual": 75,
+    "multi_step": 17,
+    "specific_detail": 289,
+    "procedural": 12,
+    "configuration": 12,
+    "technical_identifier": 77
+  },
+  "length_distribution": {
+    "short": 0,
+    "medium": 523,
+    "long": 0
+  },
+  "source_document_count": 17,
+  "files": {
+    "routing_dataset.jsonl": "08a7f3b5ff30d6376c8e9763c24eccb368d13653066471ecc4995b104d0f93fc",
+    "train.jsonl": "8c2792b7c317ecea9a03f6bc70e57592cee73d853f67f4760368c319f88f5f94",
+    "validation.jsonl": "2d96770d7d79ee08c9b9fd61cb31bc54a8ffcfbac2c0066b5a138ef82fea0d28",
+    "test.jsonl": "81df8369f08a12a62b405e9affa031ee7c45cf59555201433be9e3b804aa891e",
+    "oracle_labels.jsonl": "fa9380e3ed4e0f137a0a9562bfdab55d4c1a5b720200df28740c2d25144dd048",
+    "leakage_report.json": "ab19232133ab9fba7a2dd68de14338a17dc0c2678e7794fe38f5d377d31d7687"
+  },
+  "leakage_summary": {
+    "status": "PASS",
+    "protected_queries_count": 121,
+    "exact_matches_found": 0,
+    "normalized_matches_found": 0,
+    "fuzzy_matches_found": 0,
+    "max_fuzzy_similarity": 0.0,
+    "source_separation_verified": true
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "audit_timestamp": "2026-11-21T15:41:27.424391+00:00",
+  "protected_queries_count": 121,
+  "evaluated_queries_count": 523,
+  "exact_matches_found": 0,
+  "normalized_matches_found": 0,
+  "fuzzy_matches_found": 0,
+  "max_fuzzy_similarity": 0.0,
+  "fuzzy_threshold": 0.7,
+  "source_separation_verified": true,
+  "protected_dataset_isolation_verified": true,
+  "status": "PASS",
+  "diagnostics": []
+}

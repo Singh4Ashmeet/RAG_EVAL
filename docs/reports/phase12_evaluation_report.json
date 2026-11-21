@@ -1,0 +1,212 @@
+{
+  "phase": 12,
+  "verdict": "PHASE 12 COMPLETE \u2014 LEARNED ROUTER EXPERIMENTAL, BASELINE RETAINED",
+  "confidence_threshold": 0.70,
+  "model_version": "phase12-v1.0.0",
+  "classifier": {
+    "architecture": "TF-IDF (1-2 ngrams, max_features=1000, sublinear_tf) + LogisticRegression(C=5.0)",
+    "training_samples": 220,
+    "validation_samples": 79,
+    "validation_accuracy": 0.6709,
+    "validation_macro_f1": 0.4342,
+    "validation_per_class_f1": {
+      "bm25": 0.8246,
+      "dense": 0.3448,
+      "hybrid": 0.1333
+    }
+  },
+  "benchmarks": {
+    "Phase 11 Test (Held-Out)": {
+      "total_queries": 95,
+      "baseline": {
+        "hit_at_1": 0.5789,
+        "hit_at_3": 0.8316,
+        "hit_at_5": 0.9263,
+        "mrr_at_5": 0.7142,
+        "recall_at_5": 0.9263,
+        "mean_latency_ms": 37.81,
+        "median_latency_ms": 36.50
+      },
+      "learned_raw": {
+        "hit_at_1": 0.5474,
+        "hit_at_3": 0.7368,
+        "hit_at_5": 0.8632,
+        "mrr_at_5": 0.6640,
+        "recall_at_5": 0.8632,
+        "mean_latency_ms": 20.10,
+        "median_latency_ms": 3.52,
+        "wins_vs_baseline": 10,
+        "losses_vs_baseline": 29,
+        "unchanged_vs_baseline": 56
+      },
+      "learned_gated": {
+        "hit_at_1": 0.6105,
+        "hit_at_3": 0.8000,
+        "hit_at_5": 0.9368,
+        "mrr_at_5": 0.7249,
+        "recall_at_5": 0.9368,
+        "mean_latency_ms": 29.98,
+        "median_latency_ms": 36.10,
+        "wins_vs_baseline": 4,
+        "losses_vs_baseline": 4,
+        "unchanged_vs_baseline": 87,
+        "fallback_rate": 0.7368,
+        "route_distribution": {"bm25": 14, "hybrid": 74, "dense": 7}
+      }
+    },
+    "Track A (Historical Control)": {
+      "total_queries": 14,
+      "baseline": {
+        "hit_at_1": 0.6429,
+        "hit_at_3": 0.9286,
+        "hit_at_5": 1.0000,
+        "mrr_at_5": 0.7917,
+        "recall_at_5": 0.9643,
+        "mean_latency_ms": 49.21,
+        "median_latency_ms": 48.10
+      },
+      "learned_raw": {
+        "hit_at_1": 0.7143,
+        "hit_at_3": 0.8571,
+        "hit_at_5": 0.9286,
+        "mrr_at_5": 0.8036,
+        "recall_at_5": 0.9286,
+        "mean_latency_ms": 7.54,
+        "median_latency_ms": 3.10,
+        "wins_vs_baseline": 2,
+        "losses_vs_baseline": 3,
+        "unchanged_vs_baseline": 9
+      },
+      "learned_gated": {
+        "hit_at_1": 0.6429,
+        "hit_at_3": 0.9286,
+        "hit_at_5": 0.9286,
+        "mrr_at_5": 0.7738,
+        "recall_at_5": 0.9286,
+        "mean_latency_ms": 25.79,
+        "median_latency_ms": 23.50,
+        "wins_vs_baseline": 0,
+        "losses_vs_baseline": 1,
+        "unchanged_vs_baseline": 13,
+        "fallback_rate": 0.4286,
+        "route_distribution": {"bm25": 8, "hybrid": 6}
+      }
+    },
+    "Track B (Primary Benchmark)": {
+      "total_queries": 52,
+      "baseline": {
+        "hit_at_1": 0.3846,
+        "hit_at_3": 0.5962,
+        "hit_at_5": 0.7308,
+        "mrr_at_5": 0.5115,
+        "recall_at_5": 0.6763,
+        "mean_latency_ms": 53.64,
+        "median_latency_ms": 52.80
+      },
+      "learned_raw": {
+        "hit_at_1": 0.4038,
+        "hit_at_3": 0.5769,
+        "hit_at_5": 0.6731,
+        "mrr_at_5": 0.5019,
+        "recall_at_5": 0.6122,
+        "mean_latency_ms": 10.28,
+        "median_latency_ms": 3.20,
+        "wins_vs_baseline": 6,
+        "losses_vs_baseline": 8,
+        "unchanged_vs_baseline": 38
+      },
+      "learned_gated": {
+        "hit_at_1": 0.3846,
+        "hit_at_3": 0.5577,
+        "hit_at_5": 0.6923,
+        "mrr_at_5": 0.4933,
+        "recall_at_5": 0.6378,
+        "mean_latency_ms": 23.43,
+        "median_latency_ms": 14.10,
+        "wins_vs_baseline": 4,
+        "losses_vs_baseline": 6,
+        "unchanged_vs_baseline": 42,
+        "fallback_rate": 0.3846,
+        "route_distribution": {"bm25": 28, "hybrid": 20, "dense": 4}
+      }
+    },
+    "Track C (Adversarial/Hard)": {
+      "total_queries": 30,
+      "baseline": {
+        "hit_at_1": 0.9000,
+        "hit_at_3": 0.9667,
+        "hit_at_5": 1.0000,
+        "mrr_at_5": 0.9500,
+        "recall_at_5": 0.9500,
+        "mean_latency_ms": 22.07,
+        "median_latency_ms": 21.50
+      },
+      "learned_raw": {
+        "hit_at_1": 0.9667,
+        "hit_at_3": 1.0000,
+        "hit_at_5": 1.0000,
+        "mrr_at_5": 0.9833,
+        "recall_at_5": 0.9833,
+        "mean_latency_ms": 2.97,
+        "median_latency_ms": 2.50,
+        "wins_vs_baseline": 2,
+        "losses_vs_baseline": 0,
+        "unchanged_vs_baseline": 28
+      },
+      "learned_gated": {
+        "hit_at_1": 0.9000,
+        "hit_at_3": 0.9667,
+        "hit_at_5": 1.0000,
+        "mrr_at_5": 0.9500,
+        "recall_at_5": 0.9500,
+        "mean_latency_ms": 12.36,
+        "median_latency_ms": 11.20,
+        "wins_vs_baseline": 0,
+        "losses_vs_baseline": 0,
+        "unchanged_vs_baseline": 30,
+        "fallback_rate": 0.4667,
+        "route_distribution": {"bm25": 16, "hybrid": 14}
+      }
+    },
+    "Track D (Abstention Safety)": {
+      "total_queries": 25,
+      "abstention_rate": 1.0000,
+      "abstention_safe": true,
+      "baseline": {
+        "hit_at_1": 0.0000,
+        "hit_at_3": 0.0000,
+        "hit_at_5": 0.0000,
+        "mrr_at_5": 0.0000,
+        "recall_at_5": 0.0000,
+        "mean_latency_ms": 26.68,
+        "median_latency_ms": 26.10
+      },
+      "learned_raw": {
+        "hit_at_1": 0.0000,
+        "hit_at_3": 0.0000,
+        "hit_at_5": 0.0000,
+        "mrr_at_5": 0.0000,
+        "recall_at_5": 0.0000,
+        "mean_latency_ms": 4.89,
+        "median_latency_ms": 3.10,
+        "wins_vs_baseline": 0,
+        "losses_vs_baseline": 0,
+        "unchanged_vs_baseline": 25
+      },
+      "learned_gated": {
+        "hit_at_1": 0.0000,
+        "hit_at_3": 0.0000,
+        "hit_at_5": 0.0000,
+        "mrr_at_5": 0.0000,
+        "recall_at_5": 0.0000,
+        "mean_latency_ms": 15.22,
+        "median_latency_ms": 14.50,
+        "wins_vs_baseline": 0,
+        "losses_vs_baseline": 0,
+        "unchanged_vs_baseline": 25,
+        "fallback_rate": 0.4000,
+        "route_distribution": {"bm25": 15, "hybrid": 10}
+      }
+    }
+  }
+}
