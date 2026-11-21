@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 from core.errors import RetrievalError
 from core.hyde.retriever import HyDERetriever
+from core.normalize.schema import Chunk
 from core.retrieval.base import Retriever
 from core.retrieval.bm25 import BM25Retriever
 from core.retrieval.dense import DenseRetriever
@@ -20,41 +21,47 @@ def _rrf_fusion(
     results_list: list[list[SearchResult]],
     k: int = 60,
     top_k: int = 10,
+    weights: list[float] | None = None,
 ) -> list[SearchResult]:
     """Combine multiple result lists using Reciprocal Rank Fusion (RRF).
 
-    RRF(d) = sum(1 / (k + rank_i(d))) for each ranking i where d appears.
+    RRF(d) = sum(w_i / (k + rank_i(d))) for each ranking i where d appears.
+    When weights is None, all rankings are equally weighted (w_i = 1.0).
+    Ties are broken deterministically by chunk_id.
     """
+    if weights is not None and len(weights) != len(results_list):
+        raise RetrievalError("weights must have the same length as results_list.")
+
+    effective_weights = weights if weights is not None else [1.0] * len(results_list)
+
     # Build rank maps (1-indexed ranks) for each result list
     rank_maps: list[dict[str, int]] = []
     for results in results_list:
         ranks = {r.chunk.chunk_id: r.rank + 1 for r in results}
         rank_maps.append(ranks)
 
-    # All unique chunk IDs
-    all_chunk_ids: set[str] = set()
-    for ranks in rank_maps:
-        all_chunk_ids.update(ranks.keys())
+    # All unique chunk IDs (sorted for deterministic iteration)
+    all_chunk_ids: list[str] = sorted({cid for ranks in rank_maps for cid in ranks})
 
     # Get chunk objects (from first result list that has it)
-    chunk_map = {}
+    chunk_map: dict[str, Chunk] = {}
     for results in results_list:
         for r in results:
             if r.chunk.chunk_id not in chunk_map:
                 chunk_map[r.chunk.chunk_id] = r.chunk
 
     # Compute RRF scores
-    rrf_scores = []
+    rrf_scores: list[tuple[str, float]] = []
     for chunk_id in all_chunk_ids:
         score = 0.0
-        for ranks in rank_maps:
+        for i, ranks in enumerate(rank_maps):
             if chunk_id in ranks:
-                score += 1.0 / (k + ranks[chunk_id])
+                score += effective_weights[i] / (k + ranks[chunk_id])
         if score > 0:
             rrf_scores.append((chunk_id, score))
 
-    # Sort by RRF score descending
-    rrf_scores.sort(key=lambda x: x[1], reverse=True)
+    # Sort by RRF score descending, breaking ties deterministically by chunk_id
+    rrf_scores.sort(key=lambda x: (-x[1], x[0]))
 
     # Build results
     results = []
@@ -84,6 +91,7 @@ class HybridRetriever(Retriever):
         fusion_method: FusionMethod = "rrf",
         rrf_k: int = 100,
         candidate_k: int = 20,
+        weights: list[float] | None = None,
     ) -> None:
         self.dense_retriever = dense_retriever
         self.bm25_retriever = bm25_retriever
@@ -92,6 +100,7 @@ class HybridRetriever(Retriever):
         self.fusion_method = fusion_method
         self.rrf_k = rrf_k
         self.candidate_k = candidate_k
+        self.weights = weights
 
         if fusion_method == "rrf":
             if rrf_k < 1:
@@ -129,6 +138,7 @@ class HybridRetriever(Retriever):
                 results_list,
                 k=self.rrf_k,
                 top_k=top_k,
+                weights=self.weights,
             )
 
             return fused
@@ -158,6 +168,7 @@ class HybridRetriever(Retriever):
             "fusion_method": self.fusion_method,
             "rrf_k": self.rrf_k if self.fusion_method == "rrf" else None,
             "candidate_k": self.candidate_k,
+            "weights": self.weights,
             "dense_stats": dense_stats,
             "bm25_stats": bm25_stats,
             "splade_stats": splade_stats,

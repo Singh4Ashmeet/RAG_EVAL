@@ -1,0 +1,1311 @@
+{
+  "phase": 14,
+  "timestamp": "2026-11-21T18:08:55Z",
+  "decision": "BASELINE_RETAINED",
+  "baseline_config": {
+    "rrf_k": 100,
+    "candidate_k": 20,
+    "final_k": 5,
+    "dense_weight": 1.0,
+    "bm25_weight": 1.0
+  },
+  "baseline_metrics": {
+    "Track A": {
+      "total_queries": 14,
+      "hit_at_1": 0.6429,
+      "hit_at_3": 0.9286,
+      "hit_at_5": 1.0,
+      "mrr_at_5": 0.7917,
+      "recall_at_5": 1.0,
+      "mean_latency_ms": 22.68,
+      "p50_latency_ms": 21.83,
+      "p95_latency_ms": 33.17
+    },
+    "Track B": {
+      "total_queries": 52,
+      "hit_at_1": 0.3846,
+      "hit_at_3": 0.5962,
+      "hit_at_5": 0.7308,
+      "mrr_at_5": 0.5115,
+      "recall_at_5": 0.7019,
+      "mean_latency_ms": 25.56,
+      "p50_latency_ms": 25.44,
+      "p95_latency_ms": 27.99
+    },
+    "Track C": {
+      "total_queries": 30,
+      "hit_at_1": 1.0,
+      "hit_at_3": 1.0,
+      "hit_at_5": 1.0,
+      "mrr_at_5": 1.0,
+      "recall_at_5": 1.0,
+      "mean_latency_ms": 11.7,
+      "p50_latency_ms": 9.35,
+      "p95_latency_ms": 19.75
+    },
+    "Track D": {
+      "total_queries": 25,
+      "abstention_safe": 25,
+      "false_answer_rate": 0.0
+    }
+  },
+  "rrf_forensics": {
+    "total_queries_analyzed": 121,
+    "failure_patterns": {
+      "BOTH_OK": 82,
+      "E_ABSTENTION": 25,
+      "A_DENSE_WINS_RRF_LOSES": 6,
+      "C_BOTH_RETRIEVE_FUSION_MISORDERS": 5,
+      "E_ABSENT_BOTH": 2,
+      "B_BM25_WINS_RRF_LOSES": 1
+    },
+    "dense_wins_rrf_loses": [
+      {
+        "query_id": "track_b_q10",
+        "query": "Which four whitespace characters are permitted in JSON text grammar?",
+        "track": "Track B",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0011"
+        ],
+        "dense_rank": 4,
+        "bm25_rank": null,
+        "dense_rrf_contribution": 0.00961538,
+        "bm25_rrf_contribution": 0.0,
+        "combined_rrf_score": 0.00961538,
+        "final_rank": null,
+        "correct_retrieved": false,
+        "correct_demoted": true,
+        "rank_displacement": null,
+        "failure_pattern": "A_DENSE_WINS_RRF_LOSES"
+      },
+      {
+        "query_id": "track_b_q13",
+        "query": "Which RFC does RFC 8259 obsolete according to its header metadata?",
+        "track": "Track B",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0000"
+        ],
+        "dense_rank": 8,
+        "bm25_rank": null,
+        "dense_rrf_contribution": 0.00925926,
+        "bm25_rrf_contribution": 0.0,
+        "combined_rrf_score": 0.00925926,
+        "final_rank": null,
+        "correct_retrieved": false,
+        "correct_demoted": true,
+        "rank_displacement": null,
+        "failure_pattern": "A_DENSE_WINS_RRF_LOSES"
+      },
+      {
+        "query_id": "track_b_q26",
+        "query": "Does the JSON number grammar permit leading zeros in integer values?",
+        "track": "Track B",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0014"
+        ],
+        "dense_rank": 4,
+        "bm25_rank": null,
+        "dense_rrf_contribution": 0.00961538,
+        "bm25_rrf_contribution": 0.0,
+        "combined_rrf_score": 0.00961538,
+        "final_rank": null,
+        "correct_retrieved": false,
+        "correct_demoted": true,
+        "rank_displacement": null,
+        "failure_pattern": "A_DENSE_WINS_RRF_LOSES"
+      },
+      {
+        "query_id": "track_b_q28",
+        "query": "What exact range of integers is guaranteed to be interoperable without precision loss?",
+        "track": "Track B",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0014"
+        ],
+        "dense_rank": 6,
+        "bm25_rank": null,
+        "dense_rrf_contribution": 0.00943396,
+        "bm25_rrf_contribution": 0.0,
+        "combined_rrf_score": 0.00943396,
+        "final_rank": null,
+        "correct_retrieved": false,
+        "correct_demoted": true,
+        "rank_displacement": null,
+        "failure_pattern": "A_DENSE_WINS_RRF_LOSES"
+      },
+      {
+        "query_id": "track_b_q46",
+        "query": "Which BCP document reference was removed in Appendix A of RFC 8259?",
+        "track": "Track B",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0027"
+        ],
+        "dense_rank": 4,
+        "bm25_rank": null,
+        "dense_rrf_contribution": 0.00961538,
+        "bm25_rrf_contribution": 0.0,
+        "combined_rrf_score": 0.00961538,
+        "final_rank": null,
+        "correct_retrieved": false,
+        "correct_demoted": true,
+        "rank_displacement": null,
+        "failure_pattern": "A_DENSE_WINS_RRF_LOSES"
+      },
+      {
+        "query_id": "track_b_q47",
+        "query": "Which errata IDs were applied to the text of RFC 8259 according to Appendix A?",
+        "track": "Track B",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0027"
+        ],
+        "dense_rank": 2,
+        "bm25_rank": null,
+        "dense_rrf_contribution": 0.00980392,
+        "bm25_rrf_contribution": 0.0,
+        "combined_rrf_score": 0.00980392,
+        "final_rank": null,
+        "correct_retrieved": false,
+        "correct_demoted": true,
+        "rank_displacement": null,
+        "failure_pattern": "A_DENSE_WINS_RRF_LOSES"
+      }
+    ],
+    "bm25_wins_rrf_loses": [
+      {
+        "query_id": "track_b_q42",
+        "query": "What risk arises when different software systems parse large numbers exceeding 64-bit float limits?",
+        "track": "Track B",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0025"
+        ],
+        "dense_rank": null,
+        "bm25_rank": 13,
+        "dense_rrf_contribution": 0.0,
+        "bm25_rrf_contribution": 0.00884956,
+        "combined_rrf_score": 0.00884956,
+        "final_rank": null,
+        "correct_retrieved": false,
+        "correct_demoted": true,
+        "rank_displacement": null,
+        "failure_pattern": "B_BM25_WINS_RRF_LOSES"
+      }
+    ],
+    "both_retrieve_fusion_misorders": [
+      {
+        "query_id": "track_b_q15",
+        "query": "Is the reference to ECMA-404 in RFC 8259 normative or informative?",
+        "track": "Track B",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0009"
+        ],
+        "dense_rank": 9,
+        "bm25_rank": 20,
+        "dense_rrf_contribution": 0.00917431,
+        "bm25_rrf_contribution": 0.00833333,
+        "combined_rrf_score": 0.01750765,
+        "final_rank": null,
+        "correct_retrieved": false,
+        "correct_demoted": true,
+        "rank_displacement": null,
+        "failure_pattern": "C_BOTH_RETRIEVE_FUSION_MISORDERS"
+      },
+      {
+        "query_id": "track_b_q27",
+        "query": "What IEEE 754 precision is recommended for interoperable JSON number implementations?",
+        "track": "Track B",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0014"
+        ],
+        "dense_rank": 18,
+        "bm25_rank": 19,
+        "dense_rrf_contribution": 0.00847458,
+        "bm25_rrf_contribution": 0.00840336,
+        "combined_rrf_score": 0.01687794,
+        "final_rank": null,
+        "correct_retrieved": false,
+        "correct_demoted": true,
+        "rank_displacement": null,
+        "failure_pattern": "C_BOTH_RETRIEVE_FUSION_MISORDERS"
+      },
+      {
+        "query_id": "track_b_q41",
+        "query": "What denial of service vulnerability can affect parsers when reading untrusted JSON?",
+        "track": "Track B",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0024"
+        ],
+        "dense_rank": 1,
+        "bm25_rank": 16,
+        "dense_rrf_contribution": 0.00990099,
+        "bm25_rrf_contribution": 0.00862069,
+        "combined_rrf_score": 0.01852168,
+        "final_rank": null,
+        "correct_retrieved": false,
+        "correct_demoted": true,
+        "rank_displacement": null,
+        "failure_pattern": "C_BOTH_RETRIEVE_FUSION_MISORDERS"
+      },
+      {
+        "query_id": "track_b_q45",
+        "query": "What was changed in Section 8.1 between RFC 7159 and RFC 8259?",
+        "track": "Track B",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0027"
+        ],
+        "dense_rank": 6,
+        "bm25_rank": 11,
+        "dense_rrf_contribution": 0.00943396,
+        "bm25_rrf_contribution": 0.00900901,
+        "combined_rrf_score": 0.01844297,
+        "final_rank": null,
+        "correct_retrieved": false,
+        "correct_demoted": true,
+        "rank_displacement": null,
+        "failure_pattern": "C_BOTH_RETRIEVE_FUSION_MISORDERS"
+      },
+      {
+        "query_id": "track_b_q51",
+        "query": "What document defines the ABNF grammar notation used throughout RFC 8259?",
+        "track": "Track B",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0007"
+        ],
+        "dense_rank": 12,
+        "bm25_rank": 15,
+        "dense_rrf_contribution": 0.00892857,
+        "bm25_rrf_contribution": 0.00869565,
+        "combined_rrf_score": 0.01762422,
+        "final_rank": null,
+        "correct_retrieved": false,
+        "correct_demoted": true,
+        "rank_displacement": null,
+        "failure_pattern": "C_BOTH_RETRIEVE_FUSION_MISORDERS"
+      }
+    ]
+  },
+  "configurations_tested": [
+    {
+      "config_name": "rrf_k=20_ck=20",
+      "rrf_k": 20,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 1.0,
+      "bm25_weight": 1.0,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 22.14,
+          "p50_latency_ms": 21.51,
+          "p95_latency_ms": 24.42
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5769,
+          "hit_at_5": 0.75,
+          "mrr_at_5": 0.5128,
+          "recall_at_5": 0.7212,
+          "mean_latency_ms": 28.65,
+          "p50_latency_ms": 28.06,
+          "p95_latency_ms": 34.5
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 10.16,
+          "p50_latency_ms": 10.01,
+          "p95_latency_ms": 11.69
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 1,
+      "losses": 1,
+      "unchanged": 119,
+      "net_wins": 0,
+      "p13_fixed": [
+        "track_b_q41"
+      ],
+      "p13_regressed": [],
+      "p13_fixed_count": 1,
+      "p13_regressed_count": 0,
+      "mean_latency_ms": 21.92,
+      "p50_latency_ms": 24.9,
+      "p95_latency_ms": 33.96
+    },
+    {
+      "config_name": "rrf_k=40_ck=20",
+      "rrf_k": 40,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 1.0,
+      "bm25_weight": 1.0,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 21.99,
+          "p50_latency_ms": 22.01,
+          "p95_latency_ms": 23.73
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5769,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5099,
+          "recall_at_5": 0.7019,
+          "mean_latency_ms": 26.3,
+          "p50_latency_ms": 25.83,
+          "p95_latency_ms": 29.25
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.56,
+          "p50_latency_ms": 9.47,
+          "p95_latency_ms": 10.5
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 0,
+      "losses": 1,
+      "unchanged": 120,
+      "net_wins": -1,
+      "p13_fixed": [],
+      "p13_regressed": [],
+      "p13_fixed_count": 0,
+      "p13_regressed_count": 0,
+      "mean_latency_ms": 20.44,
+      "p50_latency_ms": 24.56,
+      "p95_latency_ms": 28.28
+    },
+    {
+      "config_name": "rrf_k=60_ck=20",
+      "rrf_k": 60,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 1.0,
+      "bm25_weight": 1.0,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 22.13,
+          "p50_latency_ms": 20.97,
+          "p95_latency_ms": 32.9
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5962,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5115,
+          "recall_at_5": 0.7019,
+          "mean_latency_ms": 27.43,
+          "p50_latency_ms": 25.76,
+          "p95_latency_ms": 30.5
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.39,
+          "p50_latency_ms": 9.41,
+          "p95_latency_ms": 10.22
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 0,
+      "losses": 0,
+      "unchanged": 121,
+      "net_wins": 0,
+      "p13_fixed": [],
+      "p13_regressed": [],
+      "p13_fixed_count": 0,
+      "p13_regressed_count": 0,
+      "mean_latency_ms": 21.02,
+      "p50_latency_ms": 24.5,
+      "p95_latency_ms": 29.89
+    },
+    {
+      "config_name": "rrf_k=80_ck=20",
+      "rrf_k": 80,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 1.0,
+      "bm25_weight": 1.0,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 21.95,
+          "p50_latency_ms": 21.35,
+          "p95_latency_ms": 26.08
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5962,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5115,
+          "recall_at_5": 0.7019,
+          "mean_latency_ms": 26.42,
+          "p50_latency_ms": 26.02,
+          "p95_latency_ms": 32.07
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.26,
+          "p50_latency_ms": 9.15,
+          "p95_latency_ms": 10.28
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 0,
+      "losses": 0,
+      "unchanged": 121,
+      "net_wins": 0,
+      "p13_fixed": [],
+      "p13_regressed": [],
+      "p13_fixed_count": 0,
+      "p13_regressed_count": 0,
+      "mean_latency_ms": 20.41,
+      "p50_latency_ms": 24.66,
+      "p95_latency_ms": 28.26
+    },
+    {
+      "config_name": "rrf_k=100_ck=20",
+      "rrf_k": 100,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 1.0,
+      "bm25_weight": 1.0,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 22.29,
+          "p50_latency_ms": 21.15,
+          "p95_latency_ms": 28.42
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5962,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5115,
+          "recall_at_5": 0.7019,
+          "mean_latency_ms": 27.24,
+          "p50_latency_ms": 26.22,
+          "p95_latency_ms": 36.98
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 11.05,
+          "p50_latency_ms": 9.28,
+          "p95_latency_ms": 18.29
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 0,
+      "losses": 0,
+      "unchanged": 121,
+      "net_wins": 0,
+      "p13_fixed": [],
+      "p13_regressed": [],
+      "p13_fixed_count": 0,
+      "p13_regressed_count": 0,
+      "mean_latency_ms": 21.46,
+      "p50_latency_ms": 25.3,
+      "p95_latency_ms": 30.86
+    },
+    {
+      "config_name": "rrf_k=150_ck=20",
+      "rrf_k": 150,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 1.0,
+      "bm25_weight": 1.0,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 23.09,
+          "p50_latency_ms": 22.59,
+          "p95_latency_ms": 28.82
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5962,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5115,
+          "recall_at_5": 0.7019,
+          "mean_latency_ms": 25.86,
+          "p50_latency_ms": 25.65,
+          "p95_latency_ms": 29.07
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.23,
+          "p50_latency_ms": 9.07,
+          "p95_latency_ms": 10.6
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 0,
+      "losses": 0,
+      "unchanged": 121,
+      "net_wins": 0,
+      "p13_fixed": [],
+      "p13_regressed": [],
+      "p13_fixed_count": 0,
+      "p13_regressed_count": 0,
+      "mean_latency_ms": 20.26,
+      "p50_latency_ms": 24.63,
+      "p95_latency_ms": 28.11
+    },
+    {
+      "config_name": "rrf_k=200_ck=20",
+      "rrf_k": 200,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 1.0,
+      "bm25_weight": 1.0,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 21.86,
+          "p50_latency_ms": 21.85,
+          "p95_latency_ms": 23.04
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5962,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5115,
+          "recall_at_5": 0.7019,
+          "mean_latency_ms": 26.79,
+          "p50_latency_ms": 26.06,
+          "p95_latency_ms": 31.79
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.58,
+          "p50_latency_ms": 9.31,
+          "p95_latency_ms": 12.56
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 0,
+      "losses": 0,
+      "unchanged": 121,
+      "net_wins": 0,
+      "p13_fixed": [],
+      "p13_regressed": [],
+      "p13_fixed_count": 0,
+      "p13_regressed_count": 0,
+      "mean_latency_ms": 20.69,
+      "p50_latency_ms": 24.98,
+      "p95_latency_ms": 30.13
+    },
+    {
+      "config_name": "rrf_k=20_ck=10",
+      "rrf_k": 20,
+      "candidate_k": 10,
+      "final_k": 5,
+      "dense_weight": 1.0,
+      "bm25_weight": 1.0,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 21.69,
+          "p50_latency_ms": 21.58,
+          "p95_latency_ms": 23.06
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5962,
+          "hit_at_5": 0.6923,
+          "mrr_at_5": 0.5029,
+          "recall_at_5": 0.6635,
+          "mean_latency_ms": 25.69,
+          "p50_latency_ms": 25.36,
+          "p95_latency_ms": 27.09
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.57,
+          "p50_latency_ms": 9.23,
+          "p95_latency_ms": 11.37
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 0,
+      "losses": 2,
+      "unchanged": 119,
+      "net_wins": -2,
+      "p13_fixed": [],
+      "p13_regressed": [
+        "track_b_q25",
+        "track_b_q44"
+      ],
+      "p13_fixed_count": 0,
+      "p13_regressed_count": 2,
+      "mean_latency_ms": 20.07,
+      "p50_latency_ms": 24.52,
+      "p95_latency_ms": 26.53
+    },
+    {
+      "config_name": "rrf_k=20_ck=20",
+      "rrf_k": 20,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 1.0,
+      "bm25_weight": 1.0,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 22.18,
+          "p50_latency_ms": 22.14,
+          "p95_latency_ms": 26.35
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5769,
+          "hit_at_5": 0.75,
+          "mrr_at_5": 0.5128,
+          "recall_at_5": 0.7212,
+          "mean_latency_ms": 25.86,
+          "p50_latency_ms": 25.33,
+          "p95_latency_ms": 29.36
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.95,
+          "p50_latency_ms": 9.73,
+          "p95_latency_ms": 12.07
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 1,
+      "losses": 1,
+      "unchanged": 119,
+      "net_wins": 0,
+      "p13_fixed": [
+        "track_b_q41"
+      ],
+      "p13_regressed": [],
+      "p13_fixed_count": 1,
+      "p13_regressed_count": 0,
+      "mean_latency_ms": 20.35,
+      "p50_latency_ms": 24.42,
+      "p95_latency_ms": 28.11
+    },
+    {
+      "config_name": "rrf_k=20_ck=30",
+      "rrf_k": 20,
+      "candidate_k": 30,
+      "final_k": 5,
+      "dense_weight": 1.0,
+      "bm25_weight": 1.0,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 21.76,
+          "p50_latency_ms": 21.6,
+          "p95_latency_ms": 23.18
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5769,
+          "hit_at_5": 0.75,
+          "mrr_at_5": 0.5128,
+          "recall_at_5": 0.7212,
+          "mean_latency_ms": 25.73,
+          "p50_latency_ms": 25.31,
+          "p95_latency_ms": 28.03
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.65,
+          "p50_latency_ms": 9.53,
+          "p95_latency_ms": 10.98
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 2,
+      "losses": 2,
+      "unchanged": 117,
+      "net_wins": 0,
+      "p13_fixed": [
+        "track_b_q41",
+        "track_b_q47"
+      ],
+      "p13_regressed": [
+        "track_b_q25"
+      ],
+      "p13_fixed_count": 2,
+      "p13_regressed_count": 1,
+      "mean_latency_ms": 20.13,
+      "p50_latency_ms": 24.65,
+      "p95_latency_ms": 27.73
+    },
+    {
+      "config_name": "rrf_k=20_ck=50",
+      "rrf_k": 20,
+      "candidate_k": 50,
+      "final_k": 5,
+      "dense_weight": 1.0,
+      "bm25_weight": 1.0,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 22.52,
+          "p50_latency_ms": 22.56,
+          "p95_latency_ms": 26.48
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5769,
+          "hit_at_5": 0.75,
+          "mrr_at_5": 0.5128,
+          "recall_at_5": 0.7212,
+          "mean_latency_ms": 25.87,
+          "p50_latency_ms": 25.43,
+          "p95_latency_ms": 29.37
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.75,
+          "p50_latency_ms": 9.41,
+          "p95_latency_ms": 14.1
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 2,
+      "losses": 2,
+      "unchanged": 117,
+      "net_wins": 0,
+      "p13_fixed": [
+        "track_b_q41",
+        "track_b_q47"
+      ],
+      "p13_regressed": [
+        "track_b_q25"
+      ],
+      "p13_fixed_count": 2,
+      "p13_regressed_count": 1,
+      "mean_latency_ms": 20.35,
+      "p50_latency_ms": 24.5,
+      "p95_latency_ms": 28.77
+    },
+    {
+      "config_name": "rrf_k=20_ck=20_d0.25_b0.75",
+      "rrf_k": 20,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 0.25,
+      "bm25_weight": 0.75,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.5714,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.756,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 22.07,
+          "p50_latency_ms": 21.8,
+          "p95_latency_ms": 26.54
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5962,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5119,
+          "recall_at_5": 0.6731,
+          "mean_latency_ms": 27.49,
+          "p50_latency_ms": 26.51,
+          "p95_latency_ms": 34.25
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9833,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.68,
+          "p50_latency_ms": 9.42,
+          "p95_latency_ms": 11.18
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 9,
+      "losses": 8,
+      "unchanged": 104,
+      "net_wins": 1,
+      "p13_fixed": [
+        "track_b_q04",
+        "track_b_q30"
+      ],
+      "p13_regressed": [
+        "track_b_q44"
+      ],
+      "p13_fixed_count": 2,
+      "p13_regressed_count": 1,
+      "mean_latency_ms": 21.13,
+      "p50_latency_ms": 24.73,
+      "p95_latency_ms": 32.26
+    },
+    {
+      "config_name": "rrf_k=20_ck=20_d0.40_b0.60",
+      "rrf_k": 20,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 0.4,
+      "bm25_weight": 0.6,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 21.63,
+          "p50_latency_ms": 21.67,
+          "p95_latency_ms": 22.39
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3654,
+          "hit_at_3": 0.6346,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5061,
+          "recall_at_5": 0.7019,
+          "mean_latency_ms": 26.2,
+          "p50_latency_ms": 25.7,
+          "p95_latency_ms": 31.64
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9833,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.02,
+          "p50_latency_ms": 8.95,
+          "p95_latency_ms": 9.55
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 3,
+      "losses": 3,
+      "unchanged": 115,
+      "net_wins": 0,
+      "p13_fixed": [],
+      "p13_regressed": [],
+      "p13_fixed_count": 0,
+      "p13_regressed_count": 0,
+      "mean_latency_ms": 20.16,
+      "p50_latency_ms": 24.51,
+      "p95_latency_ms": 29.23
+    },
+    {
+      "config_name": "rrf_k=20_ck=20_d0.50_b0.50",
+      "rrf_k": 20,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 0.5,
+      "bm25_weight": 0.5,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 21.84,
+          "p50_latency_ms": 21.58,
+          "p95_latency_ms": 24.53
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5769,
+          "hit_at_5": 0.75,
+          "mrr_at_5": 0.5128,
+          "recall_at_5": 0.7212,
+          "mean_latency_ms": 25.68,
+          "p50_latency_ms": 25.56,
+          "p95_latency_ms": 27.43
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.93,
+          "p50_latency_ms": 9.62,
+          "p95_latency_ms": 12.54
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 1,
+      "losses": 1,
+      "unchanged": 119,
+      "net_wins": 0,
+      "p13_fixed": [
+        "track_b_q41"
+      ],
+      "p13_regressed": [],
+      "p13_fixed_count": 1,
+      "p13_regressed_count": 0,
+      "mean_latency_ms": 20.19,
+      "p50_latency_ms": 24.51,
+      "p95_latency_ms": 26.99
+    },
+    {
+      "config_name": "rrf_k=20_ck=20_d0.60_b0.40",
+      "rrf_k": 20,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 0.6,
+      "bm25_weight": 0.4,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 21.95,
+          "p50_latency_ms": 21.69,
+          "p95_latency_ms": 25.08
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.4038,
+          "hit_at_3": 0.5769,
+          "hit_at_5": 0.6731,
+          "mrr_at_5": 0.5029,
+          "recall_at_5": 0.6442,
+          "mean_latency_ms": 27.26,
+          "p50_latency_ms": 25.6,
+          "p95_latency_ms": 28.21
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9333,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9667,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.54,
+          "p50_latency_ms": 9.45,
+          "p95_latency_ms": 11.0
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 4,
+      "losses": 10,
+      "unchanged": 107,
+      "net_wins": -6,
+      "p13_fixed": [
+        "track_b_q41"
+      ],
+      "p13_regressed": [
+        "track_b_q12",
+        "track_b_q24",
+        "track_b_q25",
+        "track_b_q50"
+      ],
+      "p13_fixed_count": 1,
+      "p13_regressed_count": 4,
+      "mean_latency_ms": 20.95,
+      "p50_latency_ms": 24.51,
+      "p95_latency_ms": 27.64
+    },
+    {
+      "config_name": "rrf_k=20_ck=20_d0.75_b0.25",
+      "rrf_k": 20,
+      "candidate_k": 20,
+      "final_k": 5,
+      "dense_weight": 0.75,
+      "bm25_weight": 0.25,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.8571,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7857,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 21.74,
+          "p50_latency_ms": 21.28,
+          "p95_latency_ms": 25.35
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5577,
+          "hit_at_5": 0.6731,
+          "mrr_at_5": 0.4865,
+          "recall_at_5": 0.6442,
+          "mean_latency_ms": 26.55,
+          "p50_latency_ms": 25.93,
+          "p95_latency_ms": 30.93
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9333,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9667,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 9.52,
+          "p50_latency_ms": 9.17,
+          "p95_latency_ms": 10.96
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 6,
+      "losses": 15,
+      "unchanged": 100,
+      "net_wins": -9,
+      "p13_fixed": [
+        "track_a_q01",
+        "track_b_q41",
+        "track_b_q45"
+      ],
+      "p13_regressed": [
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q24",
+        "track_b_q25",
+        "track_b_q50"
+      ],
+      "p13_fixed_count": 3,
+      "p13_regressed_count": 5,
+      "mean_latency_ms": 20.53,
+      "p50_latency_ms": 24.62,
+      "p95_latency_ms": 27.23
+    }
+  ],
+  "selected_config": null,
+  "phase13_failure_qids": [
+    "track_a_q01",
+    "track_a_q05",
+    "track_a_q06",
+    "track_a_q07",
+    "track_a_q08",
+    "track_b_q04",
+    "track_b_q05",
+    "track_b_q06",
+    "track_b_q07",
+    "track_b_q10",
+    "track_b_q12",
+    "track_b_q13",
+    "track_b_q14",
+    "track_b_q15",
+    "track_b_q16",
+    "track_b_q23",
+    "track_b_q24",
+    "track_b_q25",
+    "track_b_q26",
+    "track_b_q27",
+    "track_b_q28",
+    "track_b_q29",
+    "track_b_q30",
+    "track_b_q32",
+    "track_b_q33",
+    "track_b_q37",
+    "track_b_q39",
+    "track_b_q41",
+    "track_b_q42",
+    "track_b_q43",
+    "track_b_q44",
+    "track_b_q45",
+    "track_b_q46",
+    "track_b_q47",
+    "track_b_q50",
+    "track_b_q51"
+  ]
+}
