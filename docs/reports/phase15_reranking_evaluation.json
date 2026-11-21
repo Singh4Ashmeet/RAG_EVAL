@@ -1,0 +1,3274 @@
+{
+  "phase": 15,
+  "timestamp": "2026-11-21T18:48:02Z",
+  "decision": "RERANKING_EXPERIMENTAL_BASELINE_RETAINED",
+  "production_baseline_retained": true,
+  "baseline_config": {
+    "chunker": "ElementAwareChunker(1000/200)",
+    "embedding": "nomic-embed-text:latest (768d)",
+    "retriever": "Dense + BM25 RRF",
+    "candidate_k": 20,
+    "rrf_k": 100,
+    "final_k": 5
+  },
+  "baseline_metrics": {
+    "Track A": {
+      "total_queries": 14,
+      "hit_at_1": 0.6429,
+      "hit_at_3": 0.9286,
+      "hit_at_5": 1.0,
+      "mrr_at_5": 0.7917,
+      "recall_at_5": 1.0,
+      "mean_latency_ms": 0.0,
+      "p50_latency_ms": 0.0,
+      "p95_latency_ms": 0.0
+    },
+    "Track B": {
+      "total_queries": 52,
+      "hit_at_1": 0.3846,
+      "hit_at_3": 0.5962,
+      "hit_at_5": 0.7308,
+      "mrr_at_5": 0.5115,
+      "recall_at_5": 0.7019,
+      "mean_latency_ms": 0.0,
+      "p50_latency_ms": 0.0,
+      "p95_latency_ms": 0.0
+    },
+    "Track C": {
+      "total_queries": 30,
+      "hit_at_1": 1.0,
+      "hit_at_3": 1.0,
+      "hit_at_5": 1.0,
+      "mrr_at_5": 1.0,
+      "recall_at_5": 1.0,
+      "mean_latency_ms": 0.0,
+      "p50_latency_ms": 0.0,
+      "p95_latency_ms": 0.0
+    },
+    "Track D": {
+      "total_queries": 25,
+      "abstention_safe": 25,
+      "false_answer_rate": 0.0
+    }
+  },
+  "candidate_forensics": {
+    "total_failures_analyzed": 37,
+    "category_a_in_top5_suboptimal": 23,
+    "category_b_in_pool_outside_top5": 12,
+    "category_c_absent_from_pool": 2,
+    "theoretically_recoverable_failures": 35,
+    "fundamentally_unrecoverable_failures": 2,
+    "recoverable_percentage": 94.59,
+    "records": [
+      {
+        "query_id": "track_a_q01",
+        "track": "Track A",
+        "query": "How does the evaluation runner coordinate retrieval and generation?",
+        "relevant_chunk_ids": [
+          "doc_95ccdbb830bc7585_c0000"
+        ],
+        "baseline_rank": 2,
+        "dense_rank": 1,
+        "bm25_rank": 6,
+        "rrf_rank": 2,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_a_q02",
+        "track": "Track A",
+        "query": "What ranking method and similarity metric does DenseRetriever use?",
+        "relevant_chunk_ids": [
+          "doc_95ccdbb830bc7585_c0002"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 2,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_a_q03",
+        "track": "Track A",
+        "query": "What constraints bind an SQLite vector index to an embedding model?",
+        "relevant_chunk_ids": [
+          "doc_95ccdbb830bc7585_c0003"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_a_q04",
+        "track": "Track A",
+        "query": "Which answer generation evaluation metrics are supported and what are their limitations?",
+        "relevant_chunk_ids": [
+          "doc_95ccdbb830bc7585_c0005"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 2,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_a_q05",
+        "track": "Track A",
+        "query": "What file formats does the default ingestion pipeline and CLI support?",
+        "relevant_chunk_ids": [
+          "doc_95ccdbb830bc7585_c0005"
+        ],
+        "baseline_rank": 3,
+        "dense_rank": 6,
+        "bm25_rank": 1,
+        "rrf_rank": 3,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_a_q06",
+        "track": "Track A",
+        "query": "What are the rules and expiration for email magic link sign-in in hosted beta?",
+        "relevant_chunk_ids": [
+          "doc_839c6457fbcaccfb_c0003"
+        ],
+        "baseline_rank": 2,
+        "dense_rank": 2,
+        "bm25_rank": 2,
+        "rrf_rank": 2,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_a_q07",
+        "track": "Track A",
+        "query": "How does the hosted beta enforce tenant isolation across accounts?",
+        "relevant_chunk_ids": [
+          "doc_839c6457fbcaccfb_c0004"
+        ],
+        "baseline_rank": 4,
+        "dense_rank": 4,
+        "bm25_rank": 6,
+        "rrf_rank": 4,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_a_q08",
+        "track": "Track A",
+        "query": "How are evaluation dataset revisions stored and verified in the hosted environment?",
+        "relevant_chunk_ids": [
+          "doc_839c6457fbcaccfb_c0005"
+        ],
+        "baseline_rank": 2,
+        "dense_rank": 3,
+        "bm25_rank": 4,
+        "rrf_rank": 2,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_a_q09",
+        "track": "Track A",
+        "query": "What is the backup requirement for credential encryption keys in the hosted beta?",
+        "relevant_chunk_ids": [
+          "doc_839c6457fbcaccfb_c0006"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 2,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_a_q10",
+        "track": "Track A",
+        "query": "Which generation model name is presented as the default in the runbook prerequisites?",
+        "relevant_chunk_ids": [
+          "doc_192da8a407960f82_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_a_q11",
+        "track": "Track A",
+        "query": "What does the CLI run and what does it omit when parsing and chunking a file?",
+        "relevant_chunk_ids": [
+          "doc_192da8a407960f82_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_a_q12",
+        "track": "Track A",
+        "query": "What happens to a document's existing chunks when re-indexing occurs?",
+        "relevant_chunk_ids": [
+          "doc_192da8a407960f82_c0003"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_a_q13",
+        "track": "Track A",
+        "query": "How is Precision@k calculated when the retriever returns fewer than k results?",
+        "relevant_chunk_ids": [
+          "doc_192da8a407960f82_c0006"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_a_q14",
+        "track": "Track A",
+        "query": "Does the answer result retain retrieved sources if the LLM omits citations?",
+        "relevant_chunk_ids": [
+          "doc_192da8a407960f82_c0004"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q01",
+        "track": "Track B",
+        "query": "What four primitive types can JSON represent?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0006"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q02",
+        "track": "Track B",
+        "query": "What two structured types are provided in JSON?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0006"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q03",
+        "track": "Track B",
+        "query": "What rule regarding member names makes a JSON object interoperable across implementations?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0012"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q04",
+        "track": "Track B",
+        "query": "How is an array structure represented in JSON grammar?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0013"
+        ],
+        "baseline_rank": 2,
+        "dense_rank": 5,
+        "bm25_rank": 1,
+        "rrf_rank": 2,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q05",
+        "track": "Track B",
+        "query": "What components form the grammar of a JSON number?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0014"
+        ],
+        "baseline_rank": null,
+        "dense_rank": null,
+        "bm25_rank": null,
+        "rrf_rank": null,
+        "in_top_5": false,
+        "in_top_10": false,
+        "in_top_20": false,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_C_ABSENT_FROM_POOL",
+        "theoretically_recoverable": false,
+        "failure_class": "SEMANTIC_MISMATCH"
+      },
+      {
+        "query_id": "track_b_q06",
+        "track": "Track B",
+        "query": "What character encoding MUST be used when JSON text is exchanged outside a closed ecosystem?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0018"
+        ],
+        "baseline_rank": 2,
+        "dense_rank": 6,
+        "bm25_rank": 1,
+        "rrf_rank": 2,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q07",
+        "track": "Track B",
+        "query": "How does a JSON string begin and end, and how are characters escaped?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0016"
+        ],
+        "baseline_rank": 3,
+        "dense_rank": 6,
+        "bm25_rank": 3,
+        "rrf_rank": 3,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q08",
+        "track": "Track B",
+        "query": "How does parser behavior differ when an object contains duplicate names?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0012"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q09",
+        "track": "Track B",
+        "query": "What security risk arises from using JavaScript's eval() function to parse JSON texts?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0024"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q10",
+        "track": "Track B",
+        "query": "Which four whitespace characters are permitted in JSON text grammar?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0011"
+        ],
+        "baseline_rank": null,
+        "dense_rank": 4,
+        "bm25_rank": null,
+        "rrf_rank": 15,
+        "in_top_5": false,
+        "in_top_10": false,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_B_IN_POOL_OUTSIDE_TOP5",
+        "theoretically_recoverable": true,
+        "failure_class": "FUSION_FAILURE"
+      },
+      {
+        "query_id": "track_b_q11",
+        "track": "Track B",
+        "query": "What is the registered MIME media type for JSON text according to IANA considerations?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0022"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q12",
+        "track": "Track B",
+        "query": "Who is the editor of RFC 8259 and in what month was it published?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0000"
+        ],
+        "baseline_rank": 5,
+        "dense_rank": 8,
+        "bm25_rank": 4,
+        "rrf_rank": 5,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q13",
+        "track": "Track B",
+        "query": "Which RFC does RFC 8259 obsolete according to its header metadata?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0000"
+        ],
+        "baseline_rank": null,
+        "dense_rank": 8,
+        "bm25_rank": null,
+        "rrf_rank": 17,
+        "in_top_5": false,
+        "in_top_10": false,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_B_IN_POOL_OUTSIDE_TOP5",
+        "theoretically_recoverable": true,
+        "failure_class": "LEXICAL_MISMATCH"
+      },
+      {
+        "query_id": "track_b_q14",
+        "track": "Track B",
+        "query": "What standards track status and STD level does RFC 8259 hold?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0000"
+        ],
+        "baseline_rank": 4,
+        "dense_rank": 9,
+        "bm25_rank": 2,
+        "rrf_rank": 4,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q15",
+        "track": "Track B",
+        "query": "Is the reference to ECMA-404 in RFC 8259 normative or informative?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0009"
+        ],
+        "baseline_rank": null,
+        "dense_rank": 9,
+        "bm25_rank": 20,
+        "rrf_rank": 14,
+        "in_top_5": false,
+        "in_top_10": false,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_B_IN_POOL_OUTSIDE_TOP5",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q16",
+        "track": "Track B",
+        "query": "What definition does RFC 8259 give for a JSON text?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0010"
+        ],
+        "baseline_rank": 4,
+        "dense_rank": 6,
+        "bm25_rank": 5,
+        "rrf_rank": 4,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q17",
+        "track": "Track B",
+        "query": "How did earlier JSON specifications restrict the root value of a JSON text?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0010"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q18",
+        "track": "Track B",
+        "query": "Which six structural characters are defined in the JSON grammar?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0010"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q19",
+        "track": "Track B",
+        "query": "Can whitespace precede or follow any of the six structural characters?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0010"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q20",
+        "track": "Track B",
+        "query": "What literal names represent boolean values and null in JSON?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0011"
+        ],
+        "baseline_rank": 2,
+        "dense_rank": 1,
+        "bm25_rank": 2,
+        "rrf_rank": 2,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "OTHER"
+      },
+      {
+        "query_id": "track_b_q21",
+        "track": "Track B",
+        "query": "How is a JSON object structure represented syntactically?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0011"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 4,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q22",
+        "track": "Track B",
+        "query": "In an object member pair, what separator character must appear between the name and the value?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0011"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q23",
+        "track": "Track B",
+        "query": "Does RFC 8259 define an ordering for the members of a JSON object?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0006",
+          "doc_61a5378f4255c720_c0011"
+        ],
+        "baseline_rank": 2,
+        "dense_rank": 1,
+        "bm25_rank": 3,
+        "rrf_rank": 2,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q24",
+        "track": "Track B",
+        "query": "In a JSON array, what character separates adjacent values?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0013"
+        ],
+        "baseline_rank": 5,
+        "dense_rank": 8,
+        "bm25_rank": 3,
+        "rrf_rank": 5,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q25",
+        "track": "Track B",
+        "query": "Can a JSON number have a leading plus sign according to RFC 8259 grammar?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0014"
+        ],
+        "baseline_rank": 5,
+        "dense_rank": 14,
+        "bm25_rank": 6,
+        "rrf_rank": 5,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q26",
+        "track": "Track B",
+        "query": "Does the JSON number grammar permit leading zeros in integer values?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0014"
+        ],
+        "baseline_rank": null,
+        "dense_rank": 4,
+        "bm25_rank": null,
+        "rrf_rank": 14,
+        "in_top_5": false,
+        "in_top_10": false,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_B_IN_POOL_OUTSIDE_TOP5",
+        "theoretically_recoverable": true,
+        "failure_class": "FUSION_FAILURE"
+      },
+      {
+        "query_id": "track_b_q27",
+        "track": "Track B",
+        "query": "What IEEE 754 precision is recommended for interoperable JSON number implementations?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0014"
+        ],
+        "baseline_rank": null,
+        "dense_rank": 18,
+        "bm25_rank": 19,
+        "rrf_rank": 19,
+        "in_top_5": false,
+        "in_top_10": false,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_B_IN_POOL_OUTSIDE_TOP5",
+        "theoretically_recoverable": true,
+        "failure_class": "IDENTIFIER_TOKENIZATION"
+      },
+      {
+        "query_id": "track_b_q28",
+        "track": "Track B",
+        "query": "What exact range of integers is guaranteed to be interoperable without precision loss?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0014"
+        ],
+        "baseline_rank": null,
+        "dense_rank": 6,
+        "bm25_rank": null,
+        "rrf_rank": 19,
+        "in_top_5": false,
+        "in_top_10": false,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_B_IN_POOL_OUTSIDE_TOP5",
+        "theoretically_recoverable": true,
+        "failure_class": "LEXICAL_MISMATCH"
+      },
+      {
+        "query_id": "track_b_q29",
+        "track": "Track B",
+        "query": "Are values such as NaN, Infinity, and -Infinity permitted in JSON numbers?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0014"
+        ],
+        "baseline_rank": null,
+        "dense_rank": null,
+        "bm25_rank": null,
+        "rrf_rank": null,
+        "in_top_5": false,
+        "in_top_10": false,
+        "in_top_20": false,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_C_ABSENT_FROM_POOL",
+        "theoretically_recoverable": false,
+        "failure_class": "IDENTIFIER_TOKENIZATION"
+      },
+      {
+        "query_id": "track_b_q30",
+        "track": "Track B",
+        "query": "Which characters must be escaped when placed within a JSON string?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0016"
+        ],
+        "baseline_rank": 2,
+        "dense_rank": 7,
+        "bm25_rank": 1,
+        "rrf_rank": 2,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q31",
+        "track": "Track B",
+        "query": "What are the eight two-character escape sequences supported in JSON strings?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0017"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q32",
+        "track": "Track B",
+        "query": "How are basic multilingual plane characters outside 7-bit ASCII escaped in JSON strings?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0017"
+        ],
+        "baseline_rank": 3,
+        "dense_rank": 2,
+        "bm25_rank": 2,
+        "rrf_rank": 3,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q33",
+        "track": "Track B",
+        "query": "How must Unicode characters outside the Basic Multilingual Plane (code points above U+FFFF) be escaped?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0017"
+        ],
+        "baseline_rank": 2,
+        "dense_rank": 2,
+        "bm25_rank": 2,
+        "rrf_rank": 2,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q34",
+        "track": "Track B",
+        "query": "What is the requirement regarding Byte Order Marks (BOM) when producing JSON text in UTF-8?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0019"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q35",
+        "track": "Track B",
+        "query": "Are JSON parsers required to accept or ignore a Byte Order Mark if present?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0019"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q36",
+        "track": "Track B",
+        "query": "What is the recommended method for comparing JSON object member names for equality?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0021"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q37",
+        "track": "Track B",
+        "query": "What happens if a JSON parser receives texts with deeply nested structures?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0022",
+          "doc_61a5378f4255c720_c0024"
+        ],
+        "baseline_rank": 4,
+        "dense_rank": 5,
+        "bm25_rank": 5,
+        "rrf_rank": 4,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q38",
+        "track": "Track B",
+        "query": "What file extension is recommended for JSON files in the IANA considerations?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0022"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 2,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q39",
+        "track": "Track B",
+        "query": "What is the Macintosh file type code registered for JSON in IANA considerations?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0022"
+        ],
+        "baseline_rank": 2,
+        "dense_rank": 2,
+        "bm25_rank": 2,
+        "rrf_rank": 2,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q40",
+        "track": "Track B",
+        "query": "Why can parsing JSON using eval() lead to code execution in JavaScript environments?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0024"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q41",
+        "track": "Track B",
+        "query": "What denial of service vulnerability can affect parsers when reading untrusted JSON?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0024"
+        ],
+        "baseline_rank": null,
+        "dense_rank": 1,
+        "bm25_rank": 16,
+        "rrf_rank": 9,
+        "in_top_5": false,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_B_IN_POOL_OUTSIDE_TOP5",
+        "theoretically_recoverable": true,
+        "failure_class": "FUSION_FAILURE"
+      },
+      {
+        "query_id": "track_b_q42",
+        "track": "Track B",
+        "query": "What risk arises when different software systems parse large numbers exceeding 64-bit float limits?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0025"
+        ],
+        "baseline_rank": null,
+        "dense_rank": null,
+        "bm25_rank": 13,
+        "rrf_rank": 17,
+        "in_top_5": false,
+        "in_top_10": false,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_B_IN_POOL_OUTSIDE_TOP5",
+        "theoretically_recoverable": true,
+        "failure_class": "SEMANTIC_MISMATCH"
+      },
+      {
+        "query_id": "track_b_q43",
+        "track": "Track B",
+        "query": "Does RFC 8259 require a generator to output whitespace between structural tokens?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0011",
+          "doc_61a5378f4255c720_c0022"
+        ],
+        "baseline_rank": 2,
+        "dense_rank": 4,
+        "bm25_rank": 5,
+        "rrf_rank": 2,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q44",
+        "track": "Track B",
+        "query": "Can a JSON text consist solely of a single string, number, or boolean?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0010"
+        ],
+        "baseline_rank": 4,
+        "dense_rank": 2,
+        "bm25_rank": 11,
+        "rrf_rank": 4,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q45",
+        "track": "Track B",
+        "query": "What was changed in Section 8.1 between RFC 7159 and RFC 8259?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0027"
+        ],
+        "baseline_rank": null,
+        "dense_rank": 6,
+        "bm25_rank": 11,
+        "rrf_rank": 7,
+        "in_top_5": false,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_B_IN_POOL_OUTSIDE_TOP5",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q46",
+        "track": "Track B",
+        "query": "Which BCP document reference was removed in Appendix A of RFC 8259?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0027"
+        ],
+        "baseline_rank": null,
+        "dense_rank": 4,
+        "bm25_rank": null,
+        "rrf_rank": 13,
+        "in_top_5": false,
+        "in_top_10": false,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_B_IN_POOL_OUTSIDE_TOP5",
+        "theoretically_recoverable": true,
+        "failure_class": "FUSION_FAILURE"
+      },
+      {
+        "query_id": "track_b_q47",
+        "track": "Track B",
+        "query": "Which errata IDs were applied to the text of RFC 8259 according to Appendix A?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0027"
+        ],
+        "baseline_rank": null,
+        "dense_rank": 2,
+        "bm25_rank": null,
+        "rrf_rank": 7,
+        "in_top_5": false,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_B_IN_POOL_OUTSIDE_TOP5",
+        "theoretically_recoverable": true,
+        "failure_class": "FUSION_FAILURE"
+      },
+      {
+        "query_id": "track_b_q48",
+        "track": "Track B",
+        "query": "Is the forward slash character '/' required to be escaped in JSON strings?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0016",
+          "doc_61a5378f4255c720_c0017"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q49",
+        "track": "Track B",
+        "query": "What case sensitivity rule applies to the true, false, and null literal names?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0011"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_b_q50",
+        "track": "Track B",
+        "query": "Can a JSON number contain an exponent part with either lowercase 'e' or uppercase 'E'?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0014"
+        ],
+        "baseline_rank": 3,
+        "dense_rank": 7,
+        "bm25_rank": 6,
+        "rrf_rank": 3,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_A_SUBOPTIMAL_RANK",
+        "theoretically_recoverable": true,
+        "failure_class": "RANKING_FAILURE"
+      },
+      {
+        "query_id": "track_b_q51",
+        "track": "Track B",
+        "query": "What document defines the ABNF grammar notation used throughout RFC 8259?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0007"
+        ],
+        "baseline_rank": null,
+        "dense_rank": 12,
+        "bm25_rank": 15,
+        "rrf_rank": 15,
+        "in_top_5": false,
+        "in_top_10": false,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "CAT_B_IN_POOL_OUTSIDE_TOP5",
+        "theoretically_recoverable": true,
+        "failure_class": "IDENTIFIER_TOKENIZATION"
+      },
+      {
+        "query_id": "track_b_q52",
+        "track": "Track B",
+        "query": "What is the restriction on characters in the range %x00-1F inside unescaped JSON strings?",
+        "relevant_chunk_ids": [
+          "doc_61a5378f4255c720_c0016",
+          "doc_61a5378f4255c720_c0018"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 4,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q01",
+        "track": "Track C",
+        "query": "What is the maximum P99 latency target and uptime SLA for Tier-1 Gateway in the system specification?",
+        "relevant_chunk_ids": [
+          "doc_2a22a64a8901f8b9_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q02",
+        "track": "Track C",
+        "query": "According to the system specification table, who is the primary contact for Tier-2 Compute escalations?",
+        "relevant_chunk_ids": [
+          "doc_2a22a64a8901f8b9_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q03",
+        "track": "Track C",
+        "query": "What is the minimum RAM and volume size allocated to the Vector Indexer node role?",
+        "relevant_chunk_ids": [
+          "doc_2a22a64a8901f8b9_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q04",
+        "track": "Track C",
+        "query": "What backup frequency is specified for Ingestion Worker disk volumes?",
+        "relevant_chunk_ids": [
+          "doc_2a22a64a8901f8b9_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q05",
+        "track": "Track C",
+        "query": "According to the model benchmark evaluation table, what is the P99 latency and F1 score of Titan-v3?",
+        "relevant_chunk_ids": [
+          "doc_8ba7306c9afe56ff_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q06",
+        "track": "Track C",
+        "query": "Which model has the highest throughput in the benchmark results table, and what is its throughput value?",
+        "relevant_chunk_ids": [
+          "doc_8ba7306c9afe56ff_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q07",
+        "track": "Track C",
+        "query": "How does the P99 latency of Atlas-v1 compare to Nova-v2 in the quantitative benchmarks?",
+        "relevant_chunk_ids": [
+          "doc_8ba7306c9afe56ff_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q08",
+        "track": "Track C",
+        "query": "According to page 1 of the operations guide, which node role is assigned to node-beta-02?",
+        "relevant_chunk_ids": [
+          "doc_21572e58b8b61bc2_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 2,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q09",
+        "track": "Track C",
+        "query": "According to page 1 of the operations guide, what role does node-gamma-03 perform?",
+        "relevant_chunk_ids": [
+          "doc_21572e58b8b61bc2_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q10",
+        "track": "Track C",
+        "query": "According to page 2 of the operations guide, what is the heartbeat check interval and failover trigger timeout?",
+        "relevant_chunk_ids": [
+          "doc_21572e58b8b61bc2_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q11",
+        "track": "Track C",
+        "query": "On which UDP port does health monitoring heartbeat traffic communicate according to page 2 of the operations guide?",
+        "relevant_chunk_ids": [
+          "doc_21572e58b8b61bc2_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q12",
+        "track": "Track C",
+        "query": "What are the RPO and RTO disaster recovery targets specified on page 3 of the operations guide?",
+        "relevant_chunk_ids": [
+          "doc_21572e58b8b61bc2_c0002"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q13",
+        "track": "Track C",
+        "query": "How frequently are offsite differential snapshots transferred according to page 3 of the operations guide?",
+        "relevant_chunk_ids": [
+          "doc_21572e58b8b61bc2_c0002"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q14",
+        "track": "Track C",
+        "query": "What was the root cause and resolution of incident INC-401 on worker-node-east-01?",
+        "relevant_chunk_ids": [
+          "doc_878722b903c1bf46_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q15",
+        "track": "Track C",
+        "query": "How does incident INC-402 differ from INC-401 in its target host and symptom?",
+        "relevant_chunk_ids": [
+          "doc_878722b903c1bf46_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 2,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q16",
+        "track": "Track C",
+        "query": "What resolution was applied to resolve incident INC-402?",
+        "relevant_chunk_ids": [
+          "doc_878722b903c1bf46_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q17",
+        "track": "Track C",
+        "query": "What was the root cause of the packet drop in incident INC-501 on api-gateway-01?",
+        "relevant_chunk_ids": [
+          "doc_878722b903c1bf46_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q18",
+        "track": "Track C",
+        "query": "What network kernel parameter was tuned to resolve incident INC-502 on api-gateway-02?",
+        "relevant_chunk_ids": [
+          "doc_878722b903c1bf46_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q19",
+        "track": "Track C",
+        "query": "Which incident involved ephemeral port exhaustion, INC-501 or INC-502?",
+        "relevant_chunk_ids": [
+          "doc_878722b903c1bf46_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q20",
+        "track": "Track C",
+        "query": "What timeout triggers error code ERR-1001 in the system specification, and how does it compare to the failover trigger timeout in the operations guide?",
+        "relevant_chunk_ids": [
+          "doc_2a22a64a8901f8b9_c0001",
+          "doc_21572e58b8b61bc2_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q21",
+        "track": "Track C",
+        "query": "What maximum batch token threshold triggers error code ERR-1002 in the system specification?",
+        "relevant_chunk_ids": [
+          "doc_2a22a64a8901f8b9_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q22",
+        "track": "Track C",
+        "query": "What vector dimension causes error ERR-3001 if an embedding vector deviates from it?",
+        "relevant_chunk_ids": [
+          "doc_2a22a64a8901f8b9_c0002"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q23",
+        "track": "Track C",
+        "query": "Which network port is allocated for the Prometheus metric scraper in system_spec.md?",
+        "relevant_chunk_ids": [
+          "doc_2a22a64a8901f8b9_c0002"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q24",
+        "track": "Track C",
+        "query": "Which model is recommended for Tier-1 search queries in the product evaluation document and why?",
+        "relevant_chunk_ids": [
+          "doc_8ba7306c9afe56ff_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q25",
+        "track": "Track C",
+        "query": "Why was Atlas-v1 deprecated for real-time interactive search according to the deployment recommendations?",
+        "relevant_chunk_ids": [
+          "doc_8ba7306c9afe56ff_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q26",
+        "track": "Track C",
+        "query": "What role is recommended for Nova-v2 during high concurrency spikes?",
+        "relevant_chunk_ids": [
+          "doc_8ba7306c9afe56ff_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q27",
+        "track": "Track C",
+        "query": "What consensus vote threshold is required for automatic failover in the operations guide?",
+        "relevant_chunk_ids": [
+          "doc_21572e58b8b61bc2_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q28",
+        "track": "Track C",
+        "query": "How quickly does node-beta-02 assume the primary role when node-alpha-01 fails?",
+        "relevant_chunk_ids": [
+          "doc_21572e58b8b61bc2_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q29",
+        "track": "Track C",
+        "query": "What queue length triggers HTTP 429 throttling under error code ERR-2001 in system_spec.md?",
+        "relevant_chunk_ids": [
+          "doc_2a22a64a8901f8b9_c0001"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 1,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      },
+      {
+        "query_id": "track_c_q30",
+        "track": "Track C",
+        "query": "What storage medium and file system format are specified for vector index volumes in section 2 of system_spec.md?",
+        "relevant_chunk_ids": [
+          "doc_2a22a64a8901f8b9_c0000"
+        ],
+        "baseline_rank": 1,
+        "dense_rank": 2,
+        "bm25_rank": 1,
+        "rrf_rank": 1,
+        "in_top_5": true,
+        "in_top_10": true,
+        "in_top_20": true,
+        "in_top_30": true,
+        "in_top_40": true,
+        "category": "SUCCESS",
+        "theoretically_recoverable": true,
+        "failure_class": "NONE"
+      }
+    ]
+  },
+  "configurations_tested": [
+    {
+      "config_name": "MiniLM-L-6-v2_depth=5_full",
+      "model_name": "MiniLM-L-6-v2",
+      "candidate_depth": 5,
+      "strategy": "full",
+      "gate_param": null,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.7143,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8333,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 229.9,
+          "p50_latency_ms": 217.42,
+          "p95_latency_ms": 481.14
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.5192,
+          "hit_at_3": 0.6731,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5981,
+          "recall_at_5": 0.7019,
+          "mean_latency_ms": 178.36,
+          "p50_latency_ms": 166.31,
+          "p95_latency_ms": 260.68
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 167.74,
+          "p50_latency_ms": 169.62,
+          "p95_latency_ms": 183.5
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 15,
+      "losses": 4,
+      "unchanged": 102,
+      "net_wins": 11,
+      "p13_fixed_count": 14,
+      "p13_regressed_count": 2,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_a_q07",
+        "track_b_q04",
+        "track_b_q06",
+        "track_b_q07",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q25",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q39",
+        "track_b_q43",
+        "track_b_q44"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_b_q50"
+      ],
+      "mean_latency_ms": 178.36,
+      "p50_latency_ms": 166.31,
+      "p95_latency_ms": 260.68,
+      "latency_multiplier": 17836.0
+    },
+    {
+      "config_name": "MiniLM-L-6-v2_depth=10_full",
+      "model_name": "MiniLM-L-6-v2",
+      "candidate_depth": 10,
+      "strategy": "full",
+      "gate_param": null,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.7143,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8333,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 411.46,
+          "p50_latency_ms": 422.65,
+          "p95_latency_ms": 460.99
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.5385,
+          "hit_at_3": 0.6923,
+          "hit_at_5": 0.6923,
+          "mrr_at_5": 0.5962,
+          "recall_at_5": 0.6635,
+          "mean_latency_ms": 427.99,
+          "p50_latency_ms": 404.84,
+          "p95_latency_ms": 596.71
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 381.38,
+          "p50_latency_ms": 371.96,
+          "p95_latency_ms": 451.94
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 16,
+      "losses": 8,
+      "unchanged": 97,
+      "net_wins": 8,
+      "p13_fixed_count": 15,
+      "p13_regressed_count": 6,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_a_q07",
+        "track_b_q04",
+        "track_b_q06",
+        "track_b_q07",
+        "track_b_q14",
+        "track_b_q25",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q39",
+        "track_b_q41",
+        "track_b_q43",
+        "track_b_q44",
+        "track_b_q47"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_b_q12",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q24",
+        "track_b_q50"
+      ],
+      "mean_latency_ms": 427.99,
+      "p50_latency_ms": 404.84,
+      "p95_latency_ms": 596.71,
+      "latency_multiplier": 42799.0
+    },
+    {
+      "config_name": "MiniLM-L-6-v2_depth=20_full",
+      "model_name": "MiniLM-L-6-v2",
+      "candidate_depth": 20,
+      "strategy": "full",
+      "gate_param": null,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.7143,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8333,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 917.8,
+          "p50_latency_ms": 910.32,
+          "p95_latency_ms": 1086.19
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.5385,
+          "hit_at_3": 0.6731,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5994,
+          "recall_at_5": 0.6827,
+          "mean_latency_ms": 1155.18,
+          "p50_latency_ms": 1199.04,
+          "p95_latency_ms": 1250.31
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 341.28,
+          "p50_latency_ms": 336.07,
+          "p95_latency_ms": 368.3
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 15,
+      "losses": 8,
+      "unchanged": 98,
+      "net_wins": 7,
+      "p13_fixed_count": 14,
+      "p13_regressed_count": 6,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_a_q07",
+        "track_b_q04",
+        "track_b_q06",
+        "track_b_q07",
+        "track_b_q13",
+        "track_b_q25",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q39",
+        "track_b_q41",
+        "track_b_q43",
+        "track_b_q47"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_b_q12",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q24",
+        "track_b_q50"
+      ],
+      "mean_latency_ms": 1155.18,
+      "p50_latency_ms": 1199.04,
+      "p95_latency_ms": 1250.31,
+      "latency_multiplier": 115518.0
+    },
+    {
+      "config_name": "MiniLM-L-6-v2_depth=20_coverage_preserve",
+      "model_name": "MiniLM-L-6-v2",
+      "candidate_depth": 20,
+      "strategy": "coverage_preserve",
+      "gate_param": null,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.7143,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8333,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 947.13,
+          "p50_latency_ms": 920.11,
+          "p95_latency_ms": 1082.97
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.5385,
+          "hit_at_3": 0.6731,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5994,
+          "recall_at_5": 0.6827,
+          "mean_latency_ms": 1159.56,
+          "p50_latency_ms": 1192.4,
+          "p95_latency_ms": 1242.94
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 352.76,
+          "p50_latency_ms": 340.27,
+          "p95_latency_ms": 413.69
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 15,
+      "losses": 8,
+      "unchanged": 98,
+      "net_wins": 7,
+      "p13_fixed_count": 14,
+      "p13_regressed_count": 6,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_a_q07",
+        "track_b_q04",
+        "track_b_q06",
+        "track_b_q07",
+        "track_b_q13",
+        "track_b_q25",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q39",
+        "track_b_q41",
+        "track_b_q43",
+        "track_b_q47"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_b_q12",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q24",
+        "track_b_q50"
+      ],
+      "mean_latency_ms": 1159.56,
+      "p50_latency_ms": 1192.4,
+      "p95_latency_ms": 1242.94,
+      "latency_multiplier": 115956.0
+    },
+    {
+      "config_name": "MiniLM-L-6-v2_depth=20_margin_gated",
+      "model_name": "MiniLM-L-6-v2",
+      "candidate_depth": 20,
+      "strategy": "margin_gated",
+      "gate_param": 0.001,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.7143,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8333,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 922.96,
+          "p50_latency_ms": 896.18,
+          "p95_latency_ms": 1071.8
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.5385,
+          "hit_at_3": 0.6731,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5994,
+          "recall_at_5": 0.6827,
+          "mean_latency_ms": 1151.29,
+          "p50_latency_ms": 1179.38,
+          "p95_latency_ms": 1254.79
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 350.19,
+          "p50_latency_ms": 341.03,
+          "p95_latency_ms": 403.47
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 15,
+      "losses": 8,
+      "unchanged": 98,
+      "net_wins": 7,
+      "p13_fixed_count": 14,
+      "p13_regressed_count": 6,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_a_q07",
+        "track_b_q04",
+        "track_b_q06",
+        "track_b_q07",
+        "track_b_q13",
+        "track_b_q25",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q39",
+        "track_b_q41",
+        "track_b_q43",
+        "track_b_q47"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_b_q12",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q24",
+        "track_b_q50"
+      ],
+      "mean_latency_ms": 1151.29,
+      "p50_latency_ms": 1179.38,
+      "p95_latency_ms": 1254.79,
+      "latency_multiplier": 115129.0
+    },
+    {
+      "config_name": "MiniLM-L-6-v2_depth=20_margin_gated",
+      "model_name": "MiniLM-L-6-v2",
+      "candidate_depth": 20,
+      "strategy": "margin_gated",
+      "gate_param": 0.0005,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.7143,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8333,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 820.7,
+          "p50_latency_ms": 877.76,
+          "p95_latency_ms": 1004.54
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.5192,
+          "hit_at_3": 0.6731,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5897,
+          "recall_at_5": 0.6827,
+          "mean_latency_ms": 968.92,
+          "p50_latency_ms": 1144.39,
+          "p95_latency_ms": 1281.85
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 334.62,
+          "p50_latency_ms": 342.12,
+          "p95_latency_ms": 364.86
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 14,
+      "losses": 8,
+      "unchanged": 99,
+      "net_wins": 6,
+      "p13_fixed_count": 13,
+      "p13_regressed_count": 6,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_a_q07",
+        "track_b_q04",
+        "track_b_q06",
+        "track_b_q07",
+        "track_b_q13",
+        "track_b_q25",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q39",
+        "track_b_q41",
+        "track_b_q47"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_b_q12",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q24",
+        "track_b_q50"
+      ],
+      "mean_latency_ms": 968.92,
+      "p50_latency_ms": 1144.39,
+      "p95_latency_ms": 1281.85,
+      "latency_multiplier": 96892.0
+    },
+    {
+      "config_name": "MiniLM-L-6-v2_depth=30_full",
+      "model_name": "MiniLM-L-6-v2",
+      "candidate_depth": 30,
+      "strategy": "full",
+      "gate_param": null,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.7143,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8333,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 1233.6,
+          "p50_latency_ms": 1225.92,
+          "p95_latency_ms": 1314.04
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.5385,
+          "hit_at_3": 0.6731,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5994,
+          "recall_at_5": 0.6827,
+          "mean_latency_ms": 1679.31,
+          "p50_latency_ms": 1670.1,
+          "p95_latency_ms": 1772.76
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 341.08,
+          "p50_latency_ms": 334.76,
+          "p95_latency_ms": 371.44
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 15,
+      "losses": 8,
+      "unchanged": 98,
+      "net_wins": 7,
+      "p13_fixed_count": 14,
+      "p13_regressed_count": 6,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_a_q07",
+        "track_b_q04",
+        "track_b_q06",
+        "track_b_q07",
+        "track_b_q13",
+        "track_b_q25",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q39",
+        "track_b_q41",
+        "track_b_q43",
+        "track_b_q47"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_b_q12",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q24",
+        "track_b_q50"
+      ],
+      "mean_latency_ms": 1679.31,
+      "p50_latency_ms": 1670.1,
+      "p95_latency_ms": 1772.76,
+      "latency_multiplier": 167931.0
+    },
+    {
+      "config_name": "MiniLM-L-6-v2_depth=40_full",
+      "model_name": "MiniLM-L-6-v2",
+      "candidate_depth": 40,
+      "strategy": "full",
+      "gate_param": null,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.7143,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8333,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 1194.28,
+          "p50_latency_ms": 1193.87,
+          "p95_latency_ms": 1241.28
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.5385,
+          "hit_at_3": 0.6731,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5994,
+          "recall_at_5": 0.6827,
+          "mean_latency_ms": 1676.1,
+          "p50_latency_ms": 1668.02,
+          "p95_latency_ms": 1750.18
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 343.29,
+          "p50_latency_ms": 334.99,
+          "p95_latency_ms": 386.75
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 15,
+      "losses": 8,
+      "unchanged": 98,
+      "net_wins": 7,
+      "p13_fixed_count": 14,
+      "p13_regressed_count": 6,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_a_q07",
+        "track_b_q04",
+        "track_b_q06",
+        "track_b_q07",
+        "track_b_q13",
+        "track_b_q25",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q39",
+        "track_b_q41",
+        "track_b_q43",
+        "track_b_q47"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_b_q12",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q24",
+        "track_b_q50"
+      ],
+      "mean_latency_ms": 1676.1,
+      "p50_latency_ms": 1668.02,
+      "p95_latency_ms": 1750.18,
+      "latency_multiplier": 167610.0
+    },
+    {
+      "config_name": "TinyBERT-L-2-v2_depth=5_full",
+      "model_name": "TinyBERT-L-2-v2",
+      "candidate_depth": 5,
+      "strategy": "full",
+      "gate_param": null,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.8571,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7821,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 19.04,
+          "p50_latency_ms": 18.88,
+          "p95_latency_ms": 32.35
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.4231,
+          "hit_at_3": 0.6346,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5423,
+          "recall_at_5": 0.7019,
+          "mean_latency_ms": 18.32,
+          "p50_latency_ms": 17.61,
+          "p95_latency_ms": 25.2
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 17.62,
+          "p50_latency_ms": 17.28,
+          "p95_latency_ms": 19.68
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 10,
+      "losses": 6,
+      "unchanged": 105,
+      "net_wins": 4,
+      "p13_fixed_count": 10,
+      "p13_regressed_count": 3,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_b_q04",
+        "track_b_q07",
+        "track_b_q12",
+        "track_b_q14",
+        "track_b_q25",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_b_q23",
+        "track_b_q43"
+      ],
+      "mean_latency_ms": 18.32,
+      "p50_latency_ms": 17.61,
+      "p95_latency_ms": 25.2,
+      "latency_multiplier": 1832.0
+    },
+    {
+      "config_name": "TinyBERT-L-2-v2_depth=10_full",
+      "model_name": "TinyBERT-L-2-v2",
+      "candidate_depth": 10,
+      "strategy": "full",
+      "gate_param": null,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.7857,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7643,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 32.3,
+          "p50_latency_ms": 31.24,
+          "p95_latency_ms": 52.41
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.4038,
+          "hit_at_3": 0.6346,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5276,
+          "recall_at_5": 0.7019,
+          "mean_latency_ms": 33.14,
+          "p50_latency_ms": 32.03,
+          "p95_latency_ms": 44.09
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 30.26,
+          "p50_latency_ms": 30.59,
+          "p95_latency_ms": 33.88
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 10,
+      "losses": 10,
+      "unchanged": 101,
+      "net_wins": 0,
+      "p13_fixed_count": 10,
+      "p13_regressed_count": 6,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_b_q04",
+        "track_b_q07",
+        "track_b_q25",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q41",
+        "track_b_q47",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_a_q08",
+        "track_b_q12",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q43"
+      ],
+      "mean_latency_ms": 33.14,
+      "p50_latency_ms": 32.03,
+      "p95_latency_ms": 44.09,
+      "latency_multiplier": 3314.0
+    },
+    {
+      "config_name": "TinyBERT-L-2-v2_depth=20_full",
+      "model_name": "TinyBERT-L-2-v2",
+      "candidate_depth": 20,
+      "strategy": "full",
+      "gate_param": null,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.7857,
+          "hit_at_5": 0.9286,
+          "mrr_at_5": 0.7464,
+          "recall_at_5": 0.9286,
+          "mean_latency_ms": 71.46,
+          "p50_latency_ms": 71.19,
+          "p95_latency_ms": 81.51
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.4231,
+          "hit_at_3": 0.6538,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5372,
+          "recall_at_5": 0.6923,
+          "mean_latency_ms": 86.14,
+          "p50_latency_ms": 85.67,
+          "p95_latency_ms": 98.82
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 30.31,
+          "p50_latency_ms": 29.44,
+          "p95_latency_ms": 39.46
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 12,
+      "losses": 12,
+      "unchanged": 97,
+      "net_wins": 0,
+      "p13_fixed_count": 12,
+      "p13_regressed_count": 8,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_b_q04",
+        "track_b_q07",
+        "track_b_q13",
+        "track_b_q25",
+        "track_b_q26",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q41",
+        "track_b_q47",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_a_q08",
+        "track_b_q12",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q43",
+        "track_b_q44"
+      ],
+      "mean_latency_ms": 86.14,
+      "p50_latency_ms": 85.67,
+      "p95_latency_ms": 98.82,
+      "latency_multiplier": 8614.0
+    },
+    {
+      "config_name": "TinyBERT-L-2-v2_depth=20_coverage_preserve",
+      "model_name": "TinyBERT-L-2-v2",
+      "candidate_depth": 20,
+      "strategy": "coverage_preserve",
+      "gate_param": null,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.7857,
+          "hit_at_5": 0.9286,
+          "mrr_at_5": 0.7464,
+          "recall_at_5": 0.9286,
+          "mean_latency_ms": 69.38,
+          "p50_latency_ms": 66.42,
+          "p95_latency_ms": 83.14
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.4231,
+          "hit_at_3": 0.6538,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5372,
+          "recall_at_5": 0.6923,
+          "mean_latency_ms": 85.04,
+          "p50_latency_ms": 83.13,
+          "p95_latency_ms": 98.48
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 28.43,
+          "p50_latency_ms": 27.8,
+          "p95_latency_ms": 31.53
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 12,
+      "losses": 12,
+      "unchanged": 97,
+      "net_wins": 0,
+      "p13_fixed_count": 12,
+      "p13_regressed_count": 8,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_b_q04",
+        "track_b_q07",
+        "track_b_q13",
+        "track_b_q25",
+        "track_b_q26",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q41",
+        "track_b_q47",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_a_q08",
+        "track_b_q12",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q43",
+        "track_b_q44"
+      ],
+      "mean_latency_ms": 85.04,
+      "p50_latency_ms": 83.13,
+      "p95_latency_ms": 98.48,
+      "latency_multiplier": 8504.0
+    },
+    {
+      "config_name": "TinyBERT-L-2-v2_depth=20_margin_gated",
+      "model_name": "TinyBERT-L-2-v2",
+      "candidate_depth": 20,
+      "strategy": "margin_gated",
+      "gate_param": 0.001,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.7857,
+          "hit_at_5": 0.9286,
+          "mrr_at_5": 0.7464,
+          "recall_at_5": 0.9286,
+          "mean_latency_ms": 69.64,
+          "p50_latency_ms": 70.82,
+          "p95_latency_ms": 76.12
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.4231,
+          "hit_at_3": 0.6538,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5372,
+          "recall_at_5": 0.6923,
+          "mean_latency_ms": 85.8,
+          "p50_latency_ms": 85.78,
+          "p95_latency_ms": 100.74
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 32.35,
+          "p50_latency_ms": 31.05,
+          "p95_latency_ms": 44.31
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 12,
+      "losses": 12,
+      "unchanged": 97,
+      "net_wins": 0,
+      "p13_fixed_count": 12,
+      "p13_regressed_count": 8,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_b_q04",
+        "track_b_q07",
+        "track_b_q13",
+        "track_b_q25",
+        "track_b_q26",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q41",
+        "track_b_q47",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_a_q08",
+        "track_b_q12",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q43",
+        "track_b_q44"
+      ],
+      "mean_latency_ms": 85.8,
+      "p50_latency_ms": 85.78,
+      "p95_latency_ms": 100.74,
+      "latency_multiplier": 8580.0
+    },
+    {
+      "config_name": "TinyBERT-L-2-v2_depth=20_margin_gated",
+      "model_name": "TinyBERT-L-2-v2",
+      "candidate_depth": 20,
+      "strategy": "margin_gated",
+      "gate_param": 0.0005,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.7857,
+          "hit_at_5": 0.9286,
+          "mrr_at_5": 0.7464,
+          "recall_at_5": 0.9286,
+          "mean_latency_ms": 62.12,
+          "p50_latency_ms": 63.37,
+          "p95_latency_ms": 78.62
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.4231,
+          "hit_at_3": 0.6538,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5452,
+          "recall_at_5": 0.7115,
+          "mean_latency_ms": 75.79,
+          "p50_latency_ms": 89.12,
+          "p95_latency_ms": 102.22
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 27.94,
+          "p50_latency_ms": 26.92,
+          "p95_latency_ms": 35.73
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 12,
+      "losses": 10,
+      "unchanged": 99,
+      "net_wins": 2,
+      "p13_fixed_count": 12,
+      "p13_regressed_count": 6,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_b_q04",
+        "track_b_q07",
+        "track_b_q13",
+        "track_b_q25",
+        "track_b_q26",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q41",
+        "track_b_q47",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_a_q08",
+        "track_b_q12",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q44"
+      ],
+      "mean_latency_ms": 75.79,
+      "p50_latency_ms": 89.12,
+      "p95_latency_ms": 102.22,
+      "latency_multiplier": 7579.0
+    },
+    {
+      "config_name": "TinyBERT-L-2-v2_depth=30_full",
+      "model_name": "TinyBERT-L-2-v2",
+      "candidate_depth": 30,
+      "strategy": "full",
+      "gate_param": null,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.7857,
+          "hit_at_5": 0.9286,
+          "mrr_at_5": 0.7464,
+          "recall_at_5": 0.9286,
+          "mean_latency_ms": 96.44,
+          "p50_latency_ms": 97.38,
+          "p95_latency_ms": 107.79
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.4231,
+          "hit_at_3": 0.6538,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5372,
+          "recall_at_5": 0.6923,
+          "mean_latency_ms": 136.42,
+          "p50_latency_ms": 137.06,
+          "p95_latency_ms": 147.75
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 27.53,
+          "p50_latency_ms": 27.36,
+          "p95_latency_ms": 29.43
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 12,
+      "losses": 12,
+      "unchanged": 97,
+      "net_wins": 0,
+      "p13_fixed_count": 12,
+      "p13_regressed_count": 8,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_b_q04",
+        "track_b_q07",
+        "track_b_q13",
+        "track_b_q25",
+        "track_b_q26",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q41",
+        "track_b_q47",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_a_q08",
+        "track_b_q12",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q43",
+        "track_b_q44"
+      ],
+      "mean_latency_ms": 136.42,
+      "p50_latency_ms": 137.06,
+      "p95_latency_ms": 147.75,
+      "latency_multiplier": 13642.0
+    },
+    {
+      "config_name": "TinyBERT-L-2-v2_depth=40_full",
+      "model_name": "TinyBERT-L-2-v2",
+      "candidate_depth": 40,
+      "strategy": "full",
+      "gate_param": null,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.7857,
+          "hit_at_5": 0.9286,
+          "mrr_at_5": 0.7464,
+          "recall_at_5": 0.9286,
+          "mean_latency_ms": 98.29,
+          "p50_latency_ms": 97.64,
+          "p95_latency_ms": 106.73
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.4231,
+          "hit_at_3": 0.6538,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5372,
+          "recall_at_5": 0.6923,
+          "mean_latency_ms": 141.63,
+          "p50_latency_ms": 141.04,
+          "p95_latency_ms": 154.25
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_latency_ms": 29.0,
+          "p50_latency_ms": 28.76,
+          "p95_latency_ms": 32.45
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 12,
+      "losses": 12,
+      "unchanged": 97,
+      "net_wins": 0,
+      "p13_fixed_count": 12,
+      "p13_regressed_count": 8,
+      "p13_fixed": [
+        "track_a_q05",
+        "track_b_q04",
+        "track_b_q07",
+        "track_b_q13",
+        "track_b_q25",
+        "track_b_q26",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q41",
+        "track_b_q47",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_a_q06",
+        "track_a_q08",
+        "track_b_q12",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q43",
+        "track_b_q44"
+      ],
+      "mean_latency_ms": 141.63,
+      "p50_latency_ms": 141.04,
+      "p95_latency_ms": 154.25,
+      "latency_multiplier": 14163.0
+    }
+  ],
+  "selected_configuration": null,
+  "rationale": "While MiniLM-L-6-v2 significantly improves Track B Hit@1 (+13.5pp) and MRR (+7.8pp), it causes coverage regression (Hit@5 drops from 0.7308 to 0.7115) and incurs a 14x+ CPU latency penalty. TinyBERT operates within acceptable latency (2.3x) but also drops Hit@5/Recall@5 and fails to resolve technical failures. Coverage-preserving and margin-gated strategies reduce regressions but still fail to achieve a safe net improvement over the robust Dense + BM25 RRF baseline without sacrificing latency."
+}
