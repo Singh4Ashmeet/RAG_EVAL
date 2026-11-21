@@ -7,6 +7,8 @@ from pydantic import ValidationError
 
 from core.errors import (
     CorruptedFileError,
+    EncryptedDocumentError,
+    OCRError,
     ParserError,
     RAGEvalError,
     UnsupportedFormatError,
@@ -23,6 +25,10 @@ class TestIngestionExceptionHierarchy:
         assert issubclass(UnsupportedFormatError, RAGEvalError)
         assert issubclass(CorruptedFileError, ParserError)
         assert issubclass(CorruptedFileError, RAGEvalError)
+        assert issubclass(EncryptedDocumentError, ParserError)
+        assert issubclass(EncryptedDocumentError, RAGEvalError)
+        assert issubclass(OCRError, ParserError)
+        assert issubclass(OCRError, RAGEvalError)
 
     def test_catchable_as_parser_and_rag_eval_error(self) -> None:
         with pytest.raises(ParserError):
@@ -251,7 +257,126 @@ class TestPublicExports:
         assert IngestionStatus is not None
 
     def test_core_errors_exports(self) -> None:
-        from core.errors import CorruptedFileError, UnsupportedFormatError
+        from core.errors import (
+            CorruptedFileError,
+            EncryptedDocumentError,
+            OCRError,
+            UnsupportedFormatError,
+        )
 
         assert CorruptedFileError is not None
+        assert EncryptedDocumentError is not None
+        assert OCRError is not None
         assert UnsupportedFormatError is not None
+
+
+class TestMultiFormatContracts:
+    """Contract tests verifying the unified document representation across all parsers."""
+
+    FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "ingestion"
+
+    @pytest.mark.parametrize(
+        ("parser_cls_name", "filename"),
+        [
+            ("PlainTextParser", "sample.txt"),
+            ("PlainTextParser", "sample.md"),
+            ("PDFParser", "sample.pdf"),
+            ("DOCXParser", "sample.docx"),
+        ],
+    )
+    def test_parser_protocol_and_deterministic_identity(
+        self, parser_cls_name: str, filename: str
+    ) -> None:
+        import hashlib
+
+        from core.parsers import DocumentParser, DOCXParser, PDFParser, PlainTextParser
+
+        parsers = {
+            "PlainTextParser": PlainTextParser,
+            "PDFParser": PDFParser,
+            "DOCXParser": DOCXParser,
+        }
+        file_path = self.FIXTURES_DIR / filename
+        assert file_path.exists()
+
+        parser = parsers[parser_cls_name]()
+        assert isinstance(parser, DocumentParser)
+
+        doc = parser.parse(file_path)
+        assert isinstance(doc, NormalizedDocument)
+
+        raw_bytes = file_path.read_bytes()
+        expected_sha = hashlib.sha256(raw_bytes).hexdigest().lower()
+        expected_id = f"doc_{expected_sha[:16]}"
+        assert doc.metadata.document_id == expected_id
+        assert doc.metadata.content_sha256 == expected_sha
+        assert doc.metadata.byte_size == len(raw_bytes)
+        assert doc.metadata.filename == filename
+
+        assert len(doc.elements) > 0
+        for idx, elem in enumerate(doc.elements):
+            assert elem.order_index == idx
+            assert elem.element_id == f"{expected_id}_e{idx:04d}"
+            assert isinstance(elem.content, str)
+            assert len(elem.content.strip()) > 0
+
+    @pytest.mark.parametrize(
+        "filename",
+        ["sample.txt", "sample.md", "sample.pdf", "sample.docx"],
+    )
+    def test_chunking_contract_across_all_formats(self, filename: str) -> None:
+        from core.ingest.pipeline import create_default_ingestion_pipeline
+
+        file_path = self.FIXTURES_DIR / filename
+        pipeline = create_default_ingestion_pipeline(chunk_size=500, chunk_overlap=100)
+
+        result = pipeline.ingest(file_path)
+        assert result.status == IngestionStatus.SUCCESS
+        assert result.document is not None
+        assert len(result.chunks) > 0
+        assert result.errors == []
+
+        doc_id = result.document.metadata.document_id
+        for c_idx, chunk in enumerate(result.chunks):
+            assert chunk.document_id == doc_id
+            assert chunk.chunk_id == f"{doc_id}_c{c_idx:04d}"
+            assert len(chunk.text.strip()) > 0
+            assert len(chunk.source_element_ids) > 0
+
+    def test_pdf_provenance_flows_to_chunks(self) -> None:
+        from core.ingest.pipeline import create_default_ingestion_pipeline
+
+        pdf_path = self.FIXTURES_DIR / "sample.pdf"
+        pipeline = create_default_ingestion_pipeline()
+        result = pipeline.ingest(pdf_path)
+
+        assert result.status == IngestionStatus.SUCCESS
+        assert len(result.chunks) >= 1
+
+        chunk_pages = [loc.page_number for chunk in result.chunks for loc in chunk.locations]
+        assert 1 in chunk_pages
+        assert 2 in chunk_pages
+
+    def test_image_parser_protocol_with_ocr_engine(self) -> None:
+        from PIL import Image
+
+        from core.chunking.chunker import ElementAwareChunker
+        from core.parsers.base import DocumentParser
+        from core.parsers.image_parser import ImageParser
+
+        img_path = self.FIXTURES_DIR / "sample.png"
+
+        def mock_ocr(_: Image.Image) -> str:
+            return "Sample OCR Line"
+
+        parser = ImageParser(ocr_engine=mock_ocr)
+        assert isinstance(parser, DocumentParser)
+        doc = parser.parse(img_path)
+
+        assert isinstance(doc, NormalizedDocument)
+        chunker = ElementAwareChunker()
+        chunks = chunker.chunk(doc)
+        assert len(chunks) == 1
+        assert chunks[0].text == "Sample OCR Line"
+        assert len(chunks[0].locations) == 1
+        assert chunks[0].locations[0].page_number == 1

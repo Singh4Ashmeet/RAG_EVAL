@@ -72,7 +72,7 @@ class GeminiLLMProvider:
             self._client = client
             self._async_client = async_client if async_client is not None else client
         else:
-            client_config = {"api_key": self._api_key}
+            client_config: dict[str, Any]
             if self._base_url:
                 # For Vertex AI or custom endpoints
                 client_config = {
@@ -228,6 +228,7 @@ class GeminiLLMProvider:
         if not system_prompt.strip() or not user_prompt.strip():
             raise LLMError("System and user prompts must be non-empty.")
 
+        request_timeout: float | None = None
         # Handle deadline
         if deadline is not None:
             if deadline.expired:

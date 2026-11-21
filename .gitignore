@@ -11,6 +11,8 @@ node_modules/
 /rag_eval_hosted.db
 /private_data/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .vite/
 .playwright/
 /frontend/test-results/
@@ -20,3 +22,7 @@ node_modules/
 !data/uploads/.gitkeep
 !data/cache/.gitkeep
 !eval/reports/.gitkeep
+
+# Generated evaluation run artifacts
+/eval/runs/
+.hyde_cache/

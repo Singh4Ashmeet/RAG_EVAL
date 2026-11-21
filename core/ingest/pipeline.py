@@ -11,6 +11,8 @@ from core.chunking.chunker import ElementAwareChunker
 from core.errors import ChunkerError, ParserError
 from core.ingest.schema import IngestionResult, IngestionStatus
 from core.normalize.schema import NormalizedDocument
+from core.parsers.docx_parser import DOCXParser
+from core.parsers.pdf_text import PDFParser
 from core.parsers.registry import ParserRegistry
 from core.parsers.text_parser import PlainTextParser
 
@@ -94,12 +96,26 @@ class IngestionPipeline:
         return f"doc_unprocessed_{digest}"
 
 
-def create_default_ingestion_pipeline() -> IngestionPipeline:
-    """Create a default IngestionPipeline with registered PlainTextParser and
-    ElementAwareChunker.
+def create_default_ingestion_pipeline(
+    chunk_size: int = 1000, chunk_overlap: int = 200
+) -> IngestionPipeline:
+    """Create a default IngestionPipeline with registered PlainTextParser, PDFParser,
+    DOCXParser, and ElementAwareChunker.
+
+    Args:
+        chunk_size: Maximum chunk length in characters (default 1000).
+        chunk_overlap: Target character overlap between consecutive chunks (default 200).
+            Must be strictly less than chunk_size.
+
+    Returns:
+        Configured IngestionPipeline instance.
     """
     registry = ParserRegistry()
     text_parser = PlainTextParser()
     registry.register([".txt", ".md"], text_parser)
-    chunker = ElementAwareChunker()
+    pdf_parser = PDFParser()
+    registry.register([".pdf"], pdf_parser)
+    docx_parser = DOCXParser()
+    registry.register([".docx"], docx_parser)
+    chunker = ElementAwareChunker(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     return IngestionPipeline(parser_registry=registry, chunker=chunker)

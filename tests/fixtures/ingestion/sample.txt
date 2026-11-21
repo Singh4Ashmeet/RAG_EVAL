@@ -1,0 +1,6 @@
+Introduction to Ingestion
+
+This is the first paragraph of plain text.
+
+Second Paragraph
+This paragraph contains details about plain text processing.

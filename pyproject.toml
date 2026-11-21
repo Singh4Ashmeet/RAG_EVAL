@@ -13,15 +13,22 @@ dependencies = [
     "httpx>=0.28.1",
     "itsdangerous>=2.2",
     "ollama>=0.6.3",
+    "pillow>=10.0.0",
     "psycopg[binary]>=3.3.6",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.16.2",
+    "pypdf>=5.0.0",
+    "python-docx>=1.1.0",
     "python-multipart>=0.0.33",
     "pyyaml>=6.0.3",
+    "rank-bm25>=0.2.2",
     "redis>=5",
     "rq>=2",
+    "sentence-transformers>=3.0.0",
     "sqlalchemy>=2.1.6",
     "structlog>=26.1.0",
+    "tokenizers>=0.19.0",
+    "transformers>=4.40.0",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -37,6 +44,12 @@ select = ["E", "F", "I", "UP", "B", "ASYNC"]
 
 [tool.ruff.lint.per-file-ignores]
 "apps/api/main.py" = ["B008"]
+"migrations/versions/*" = ["E501"]
+"scripts/*" = ["E501", "E402"]
+"tests/integration/test_postgres_queue.py" = ["E501", "F841"]
+"core/retrieval/router/features.py" = ["E501"]
+"core/retrieval/router/router.py" = ["E501"]
+"core/hyde/transformer.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -49,14 +62,16 @@ markers = [
 
 [tool.mypy]
 python_version = "3.12"
+files = ["core", "apps", "eval", "main.py"]
 check_untyped_defs = true
 ignore_missing_imports = true
 
 [tool.taskipy.tasks]
 lint = "ruff check ."
 format = "ruff format ."
-typecheck = "mypy core apps eval"
+typecheck = "mypy"
 test = "pytest"
+phase0 = "python scripts/validate_phase0.py"
 
 [dependency-groups]
 bench = [

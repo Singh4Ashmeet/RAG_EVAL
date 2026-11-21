@@ -170,7 +170,7 @@ function App() {
     const formElement = event.currentTarget
     const file = new FormData(formElement).get('file')
     if (!(file instanceof File) || !file.size) {
-      setError('Choose a .txt or .md file first.')
+      setError('Choose a supported document (.txt, .md, .pdf, .docx) first.')
       return
     }
     setBusy(true)
@@ -732,18 +732,18 @@ function App() {
                 </div>
                 <div>
                   <h2>Add source material</h2>
-                  <p>UTF-8 text or Markdown, up to 25 MiB per file. Elements are automatically extracted for ground-truth labeling.</p>
+                  <p>Plain text, Markdown, PDF, or DOCX, up to 25 MiB per file. Elements are automatically extracted for ground-truth labeling.</p>
                 </div>
               </div>
               <form onSubmit={upload} className="upload-form">
                 <label className="file-input">
                   <span className="file-input-text">
-                    {uploadedFileName ? `📄 ${uploadedFileName}` : 'Choose .txt or .md file'}
+                    {uploadedFileName ? `📄 ${uploadedFileName}` : 'Choose document (.txt, .md, .pdf, .docx)'}
                   </span>
                   <input
                     name="file"
                     type="file"
-                    accept=".txt,.md,text/plain,text/markdown"
+                    accept=".txt,.md,.pdf,.docx,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     onChange={e => {
                       const f = e.target.files?.[0]
                       setUploadedFileName(f ? f.name : '')
@@ -769,7 +769,7 @@ function App() {
                   <span className="empty-mark">01</span>
                   <div>
                     <h3>Your corpus is empty</h3>
-                    <p>Upload a text or Markdown source to begin. Source elements will be available for dataset labels.</p>
+                    <p>Upload a document (.txt, .md, .pdf, .docx) to begin. Source elements will be available for dataset labels.</p>
                   </div>
                 </div>
               ) : (

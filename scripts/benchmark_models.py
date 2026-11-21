@@ -17,10 +17,7 @@ from typing import Any
 import httpx
 import psutil
 
-# ---------------------------------------------------------------------------
 # Constants
-# ---------------------------------------------------------------------------
-
 OLLAMA_BASE = "http://localhost:11434"
 DEFAULT_MODELS = ["llama3.2:3b", "qwen2.5:3b", "qwen2.5:7b", "llama3.1:8b"]
 DEFAULT_RUNS = 3
@@ -31,9 +28,7 @@ DEFAULT_SEED = 42
 REQUEST_TIMEOUT = 300.0
 MEMORY_SAMPLE_INTERVAL = 0.2  # seconds
 
-# ---------------------------------------------------------------------------
 # Pure helper functions (testable, no I/O)
-# ---------------------------------------------------------------------------
 
 
 def tokens_per_second(count: int, duration_ns: int) -> float:
@@ -88,7 +83,7 @@ def build_prompt(nonce: str | None = None) -> list[dict[str, str]]:
     ]
 
     passages = [
-        # Passage 1 – approx 60 words
+        # Passage 1
         (
             "Passage 1: Transformer Architecture\n"
             "The transformer architecture was introduced in 2017 and relies on "
@@ -100,7 +95,7 @@ def build_prompt(nonce: str | None = None) -> list[dict[str, str]]:
             "Transformers process all positions in parallel, making them faster "
             "to train than RNNs on modern hardware with sufficient memory bandwidth."
         ),
-        # Passage 2 – approx 60 words
+        # Passage 2
         (
             "Passage 2: Retrieval-Augmented Generation\n"
             "Retrieval-Augmented Generation combines a retriever with a generator. "
@@ -111,7 +106,7 @@ def build_prompt(nonce: str | None = None) -> list[dict[str, str]]:
             "approximate nearest-neighbor search. Sparse retrievers like BM25 rely "
             "on term-frequency statistics and inverted indices for efficient lookup."
         ),
-        # Passage 3 – approx 60 words
+        # Passage 3
         (
             "Passage 3: Quantization Methods\n"
             "Post-training quantization reduces model size by converting weights "
@@ -122,7 +117,7 @@ def build_prompt(nonce: str | None = None) -> list[dict[str, str]]:
             "Quantized models typically lose one to three percent accuracy on common "
             "benchmarks while reducing memory requirements by three to eight times."
         ),
-        # Passage 4 – approx 60 words
+        # Passage 4
         (
             "Passage 4: Evaluation Metrics for RAG\n"
             "RAG systems are evaluated along two axes: retrieval quality and "
@@ -133,7 +128,7 @@ def build_prompt(nonce: str | None = None) -> list[dict[str, str]]:
             "Human evaluation remains the gold standard, but LLM-as-judge approaches "
             "correlate well with human scores at lower cost and higher throughput."
         ),
-        # Passage 5 – approx 60 words
+        # Passage 5
         (
             "Passage 5: Vector Database Indexing\n"
             "Vector databases store high-dimensional embeddings and support "

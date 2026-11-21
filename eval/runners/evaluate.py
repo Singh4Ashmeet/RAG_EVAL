@@ -17,7 +17,9 @@ from core.generate.schema import AnswerCitation
 from core.llm.base import GenerationSettings
 from core.retrieval.base import Retriever
 from core.retrieval.schema import SearchResult
-from eval.datasets.schema import EvaluationCase, EvaluationDataset
+from eval.datasets.schema import Answerability, EvaluationCase, EvaluationDataset
+from eval.failure_taxonomy import classify_query_failure
+from eval.metrics.abstention import abstention_accuracy, false_answer_rate, is_abstention
 from eval.metrics.generation import exact_match, token_f1
 from eval.metrics.retrieval import (
     average_precision_at_k,
@@ -54,6 +56,7 @@ class QueryEvaluationResult(BaseModel):
     citations: list[AnswerCitation] = Field(default_factory=list)
     unresolved_citation_labels: list[str] = Field(default_factory=list)
     answer_metrics: dict[str, float] = Field(default_factory=dict)
+    failure_type: str | None = None
     errors: list[str] = Field(default_factory=list)
 
 
@@ -130,6 +133,10 @@ class EvaluationRunner:
                 "latency.generation_ms",
             ]
         )
+        if "answer.abstention.accuracy" in metric_values:
+            metric_names.extend(
+                ["answer.abstention.accuracy", "answer.abstention.false_answer_rate"]
+            )
         metrics = {
             name: fmean(metric_values[name]) if metric_values.get(name) else None
             for name in metric_names
@@ -246,12 +253,27 @@ class EvaluationRunner:
                         "exact_match": exact_match(generated.answer, case.reference_answer),
                         "token_f1": token_f1(generated.answer, case.reference_answer),
                     }
+                elif case.answerability == Answerability.UNANSWERABLE or case.answerable is False:
+                    abstained = is_abstention(generated.answer)
+                    answer_metrics = {
+                        "abstention.accuracy": abstention_accuracy(abstained, True),
+                        "abstention.false_answer_rate": false_answer_rate(abstained, True),
+                    }
             except Exception as exc:
                 errors.append(f"generation: {exc}")
             finally:
                 generation_duration_ms = max(0.0, (perf_counter() - generation_started) * 1000.0)
         elif retrieval_succeeded and case.reference_answer is not None:
             errors.append("answer metrics unavailable: no answer generator was configured.")
+
+        failure_classification = classify_query_failure(
+            case=case,
+            errors=errors,
+            retrieval_metrics=retrieval_metrics,
+            answer_metrics=answer_metrics,
+            generated_answer=generated_answer,
+            max_cutoff=self.config.max_cutoff,
+        )
 
         if not retrieval_succeeded:
             status: QueryStatus = "failed"
@@ -275,6 +297,7 @@ class EvaluationRunner:
             citations=citations,
             unresolved_citation_labels=unresolved_citations,
             answer_metrics=answer_metrics,
+            failure_type=failure_classification.value,
             errors=errors,
         )
 

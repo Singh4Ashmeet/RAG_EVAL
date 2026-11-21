@@ -9,6 +9,7 @@ import os
 import re
 import secrets
 import uuid
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
@@ -20,13 +21,36 @@ from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, Uplo
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ValidationError, field_validator
-from sqlalchemy import DateTime, ForeignKey, String, Text, create_engine, delete, select, text
+from sqlalchemy import (
+    JSON,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    create_engine,
+    delete,
+    select,
+    text,
+)
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, synonym
 
+from core.config import get_settings
 from core.generate.pipeline import NO_CONTEXT_ANSWER
 from eval.datasets.schema import EvaluationCase, EvaluationDataset
 
 dotenv.load_dotenv()
+
+
+class StorageError(Exception):
+    """Base class for storage-related errors."""
+
+
+class StorageConfigurationError(StorageError):
+    """Raised when storage is misconfigured in production."""
 
 
 class Base(DeclarativeBase):
@@ -136,8 +160,75 @@ class Job(Base):
     kind: Mapped[str] = mapped_column(String(32))
     status: Mapped[str] = mapped_column(String(24), default="queued")
     detail: Mapped[str] = mapped_column(Text, default="")
+    payload_json: Mapped[dict] = mapped_column(
+        JSON().with_variant(postgresql.JSONB(astext_type=Text()), "postgresql"),
+        default=dict,
+        nullable=False,
+    )
+    worker_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    lease_token: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    lease_generation: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    cycle_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cumulative_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    max_attempts: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    manual_retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    scheduled_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('queued', 'running', 'complete', 'failed')", name="ck_jobs_status"
+        ),
+        CheckConstraint("kind IN ('index', 'evaluate', 'experiment')", name="ck_jobs_kind"),
+        Index("ix_jobs_queue_claim", "status", "scheduled_at", "lease_expires_at"),
+        Index("ix_jobs_lease_token", "lease_token"),
+    )
+
+
+class JobAttempt(Base):
+    __tablename__ = "job_attempts"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), index=True)
+    workspace_id: Mapped[str] = mapped_column(
+        ForeignKey("accounts.id", ondelete="CASCADE"), index=True
+    )
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    lease_generation: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    lease_token: Mapped[str] = mapped_column(String(36), nullable=False)
+    worker_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(24), default="running")
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_classification: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('running', 'complete', 'failed', 'timeout', 'aborted')",
+            name="ck_job_attempts_status",
+        ),
+        Index("ix_job_attempts_job_status", "job_id", "status"),
+        Index(
+            "uq_job_attempts_active_job",
+            "job_id",
+            unique=True,
+            postgresql_where=text("status = 'running'"),
+        ),
     )
 
 
@@ -233,12 +324,49 @@ if DB_URL.startswith("postgres://"):
     DB_URL = "postgresql+psycopg://" + DB_URL.removeprefix("postgres://")
 elif DB_URL.startswith("postgresql://"):
     DB_URL = "postgresql+psycopg://" + DB_URL.removeprefix("postgresql://")
+
 engine = create_engine(
     DB_URL,
+    pool_size=3 if not DB_URL.startswith("sqlite") else 5,
+    max_overflow=2 if not DB_URL.startswith("sqlite") else 10,
     pool_pre_ping=True,
     connect_args={"check_same_thread": False} if DB_URL.startswith("sqlite") else {},
 )
 SessionLocal = sessionmaker(engine, expire_on_commit=False)
+
+# Worker database configuration with production isolation validation
+worker_db_env = os.getenv("WORKER_DATABASE_URL")
+is_production = os.getenv("RENDER") == "true" or os.getenv("ENVIRONMENT") == "production"
+
+if is_production:
+    if not worker_db_env:
+        raise RuntimeError(
+            "Production configuration error: WORKER_DATABASE_URL is required "
+            "for worker role isolation."
+        )
+    if worker_db_env.strip() == os.getenv("DATABASE_URL", "").strip():
+        raise RuntimeError(
+            "Production configuration error: WORKER_DATABASE_URL must not be "
+            "identical to DATABASE_URL (role separation required)."
+        )
+    WORKER_DB_URL = worker_db_env
+else:
+    WORKER_DB_URL = worker_db_env or DB_URL
+
+if WORKER_DB_URL.startswith("postgres://"):
+    WORKER_DB_URL = "postgresql+psycopg://" + WORKER_DB_URL.removeprefix("postgres://")
+elif WORKER_DB_URL.startswith("postgresql://"):
+    WORKER_DB_URL = "postgresql+psycopg://" + WORKER_DB_URL.removeprefix("postgresql://")
+
+worker_engine = create_engine(
+    WORKER_DB_URL,
+    pool_size=3 if not WORKER_DB_URL.startswith("sqlite") else 5,
+    max_overflow=2 if not WORKER_DB_URL.startswith("sqlite") else 10,
+    pool_pre_ping=True,
+    connect_args={"check_same_thread": False} if WORKER_DB_URL.startswith("sqlite") else {},
+)
+SessionLocalWorker = sessionmaker(worker_engine, expire_on_commit=False)
+
 if os.getenv("SKIP_SCHEMA_INIT") != "true":
     Base.metadata.create_all(engine)
 if engine.dialect.name == "postgresql" and os.getenv("SKIP_RLS_SETUP") != "true":
@@ -249,6 +377,7 @@ if engine.dialect.name == "postgresql" and os.getenv("SKIP_RLS_SETUP") != "true"
             "datasets",
             "dataset_revisions",
             "jobs",
+            "job_attempts",
             "evaluation_runs",
             "experiments",
             "provider_credentials",
@@ -261,7 +390,33 @@ if engine.dialect.name == "postgresql" and os.getenv("SKIP_RLS_SETUP") != "true"
                 USING (workspace_id = current_setting('app.workspace_id', true))
                 WITH CHECK (workspace_id = current_setting('app.workspace_id', true))''')
             )
-app = FastAPI(title="RAG_EVAL API", version="1.0.0")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Fail fast: validate all production requirements before starting worker
+    settings = get_settings()
+    settings.validate_production_requirements()
+
+    processor = None
+    if os.getenv("DISABLE_IN_PROCESS_WORKER") != "true" and not getattr(
+        app.state, "worker_started", False
+    ):
+        from apps.worker.pg_queue import JobProcessor
+
+        processor = JobProcessor(session_factory=SessionLocalWorker)
+        app.state.processor = processor
+        app.state.worker_started = True
+        processor.start()
+
+    try:
+        yield
+    finally:
+        if processor:
+            await processor.stop(timeout=10.0)
+
+
+app = FastAPI(title="RAG_EVAL API", version="1.0.0", lifespan=lifespan)
 MAX_UPLOAD = int(os.getenv("MAX_UPLOAD_BYTES", str(25 * 1024 * 1024)))
 PRIVATE_DATA = Path(os.getenv("PRIVATE_DATA_DIR", "./private_data")).resolve()
 PRIVATE_DATA.mkdir(parents=True, exist_ok=True)
@@ -297,7 +452,7 @@ def current_account(request: Request, db=Depends(db_session)) -> Account:
     expiry = record.expires_at if record else None
     if expiry is not None and expiry.tzinfo is None:
         expiry = expiry.replace(tzinfo=UTC)
-    if not record or expiry < datetime.now(UTC):
+    if not record or expiry is None or expiry < datetime.now(UTC):
         raise HTTPException(401, "Session expired. Sign in again.")
     account = db.get(Account, record.account_id)
     if account is None:
@@ -340,42 +495,73 @@ def validate_dataset_cases(
     return [case.model_dump(mode="json") for case in parsed]
 
 
-def store_original(key: str, raw: bytes, content_type: str) -> None:
-    bucket = os.getenv("S3_BUCKET")
-    if bucket:
-        import boto3
-        from botocore.config import Config
+def _get_s3_client():
+    """Build a boto3 S3 client from validated application settings."""
+    import boto3
+    from botocore.config import Config
 
-        endpoint = os.getenv("S3_ENDPOINT_URL")
-        options = {"endpoint_url": endpoint, "region_name": os.getenv("AWS_REGION", "us-east-1")}
-        if endpoint:
-            options["config"] = Config(s3={"addressing_style": "path"})
-        client = boto3.client("s3", **options)
-        client.put_object(
-            Bucket=bucket,
-            Key=key,
-            Body=raw,
-            ContentType=content_type,
-            ServerSideEncryption="AES256",
+    cfg = get_settings()
+    options: dict[str, Any] = {
+        "endpoint_url": cfg.s3_endpoint_url or None,
+        "region_name": cfg.s3_region or None,
+        "aws_access_key_id": cfg.s3_access_key_id or None,
+        "aws_secret_access_key": cfg.s3_secret_access_key or None,
+    }
+    if cfg.s3_endpoint_url:
+        options["config"] = Config(s3={"addressing_style": "path"})
+    return boto3.client("s3", **options)
+
+
+def store_original(key: str, raw: bytes, content_type: str) -> None:
+    cfg = get_settings()
+    if (cfg.storage_backend == "s3" or cfg.s3_bucket) and cfg.s3_bucket:
+        client = _get_s3_client()
+        put_kwargs = {
+            "Bucket": cfg.s3_bucket,
+            "Key": key,
+            "Body": raw,
+            "ContentType": content_type,
+        }
+        # Provider-aware encryption: Supabase Storage and MinIO S3 compatibility layers
+        # reject ServerSideEncryption="AES256". Only send parameter to standard AWS S3.
+        endpoint = cfg.s3_endpoint_url
+        is_custom_endpoint = bool(
+            endpoint
+            and (
+                "supabase" in endpoint.lower()
+                or "minio" in endpoint.lower()
+                or "localhost" in endpoint
+                or "127.0.0.1" in endpoint
+            )
         )
+        if not is_custom_endpoint and os.getenv("S3_DISABLE_SERVER_SIDE_ENCRYPTION") != "true":
+            put_kwargs["ServerSideEncryption"] = "AES256"
+        client.put_object(**put_kwargs)
         return
-    path = PRIVATE_DATA / key
+    # In production, never silently fall back to local filesystem
+    if cfg.is_production:
+        raise StorageConfigurationError(
+            "S3 storage is not configured. "
+            "Local filesystem fallback is not permitted in production."
+        )
+    path = (PRIVATE_DATA / key).resolve()
+    if PRIVATE_DATA not in path.parents:
+        raise ValueError(f"Path traversal detected: {key}")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(raw)
 
 
 def delete_original(key: str) -> None:
-    bucket = os.getenv("S3_BUCKET")
-    if bucket:
-        import boto3
-        from botocore.config import Config
-
-        endpoint = os.getenv("S3_ENDPOINT_URL")
-        options = {"endpoint_url": endpoint, "region_name": os.getenv("AWS_REGION", "us-east-1")}
-        if endpoint:
-            options["config"] = Config(s3={"addressing_style": "path"})
-        boto3.client("s3", **options).delete_object(Bucket=bucket, Key=key)
+    cfg = get_settings()
+    if (cfg.storage_backend == "s3" or cfg.s3_bucket) and cfg.s3_bucket:
+        _get_s3_client().delete_object(Bucket=cfg.s3_bucket, Key=key)
         return
+    # In production, never silently fall back to local filesystem
+    if cfg.is_production:
+        raise StorageConfigurationError(
+            "S3 storage is not configured. "
+            "Local filesystem fallback is not permitted in production."
+        )
     path = (PRIVATE_DATA / key).resolve()
     if PRIVATE_DATA in path.parents and path.is_file():
         path.unlink()
@@ -683,7 +869,7 @@ def consume_email_login(token: str, db=Depends(db_session)):
     expiry = record.expires_at if record else None
     if expiry is not None and expiry.tzinfo is None:
         expiry = expiry.replace(tzinfo=UTC)
-    if not record or expiry < datetime.now(UTC):
+    if not record or expiry is None or expiry < datetime.now(UTC):
         raise HTTPException(400, "This sign-in link is invalid or has expired. Request a new one.")
     email = record.email
     db.delete(record)
@@ -747,20 +933,52 @@ def documents(account=Depends(current_account), db=Depends(db_session)):
 async def upload_document(
     file: UploadFile = File(...), account=Depends(current_account), db=Depends(db_session)
 ):
+    import tempfile
+
+    from core.errors import CorruptedFileError, EncryptedDocumentError, ParserError
+    from core.ingest.pipeline import create_default_ingestion_pipeline
+
     name = Path((file.filename or "").replace("\\", "/")).name
-    if Path(name).suffix.lower() not in {".txt", ".md"}:
-        raise HTTPException(415, "Upload a UTF-8 .txt or .md file.")
+    suffix = Path(name).suffix.lower()
+    allowed_extensions = {".txt", ".md", ".pdf", ".docx"}
+    if suffix not in allowed_extensions:
+        fmt_list = ", ".join(sorted(allowed_extensions))
+        raise HTTPException(
+            415,
+            f"Unsupported file format '{suffix}'. Supported formats: {fmt_list}.",
+        )
     raw = await file.read(MAX_UPLOAD + 1)
     if len(raw) > MAX_UPLOAD:
         raise HTTPException(413, f"File exceeds the {MAX_UPLOAD // (1024 * 1024)} MiB limit.")
+
+    pipeline = create_default_ingestion_pipeline()
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(raw)
+        tmp_path = Path(tmp.name)
     try:
-        raw.decode("utf-8")
-    except UnicodeDecodeError as exc:
-        raise HTTPException(422, "File must contain valid UTF-8 text.") from exc
+        parser = pipeline.parser_registry.get_parser(tmp_path)
+        norm_doc = parser.parse(tmp_path)
+    except EncryptedDocumentError as exc:
+        raise HTTPException(422, f"Document is encrypted or password-protected: {exc}") from exc
+    except CorruptedFileError as exc:
+        raise HTTPException(422, f"Document is corrupted or cannot be decoded: {exc}") from exc
+    except ParserError as exc:
+        raise HTTPException(422, f"Failed to parse document: {exc}") from exc
+    finally:
+        tmp_path.unlink(missing_ok=True)  # noqa: ASYNC240
+
     doc_id = str(uuid.uuid4())
     digest = hashlib.sha256(raw).hexdigest()
     key = f"{account.id}/documents/{doc_id}/{name}"
-    store_original(key, raw, file.content_type or "text/plain; charset=utf-8")
+    content_type = file.content_type
+    if not content_type:
+        content_type = {
+            ".pdf": "application/pdf",
+            ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".md": "text/markdown",
+            ".txt": "text/plain",
+        }.get(suffix, "application/octet-stream")
+    store_original(key, raw, content_type)
     doc = Document(
         id=doc_id,
         workspace_id=account.id,
@@ -770,7 +988,8 @@ async def upload_document(
         sha256=digest,
     )
     db.add(doc)
-    elements = [p.strip() for p in raw.decode("utf-8").split("\n\n") if p.strip()]
+    db.flush()
+    elements = [elem.content for elem in norm_doc.elements]
     rows = [
         CorpusElement(
             id=str(uuid.uuid4()), workspace_id=account.id, document_id=doc_id, ordinal=i, text=text
@@ -778,30 +997,17 @@ async def upload_document(
         for i, text in enumerate(elements)
     ]
     db.add_all(rows)
-    # The API records source elements immediately; the worker performs embeddings asynchronously.
-    job = Job(
-        id=str(uuid.uuid4()), workspace_id=account.id, kind="index", status="queued", detail=doc_id
-    )
-    db.add(job)
-    db.commit()
-    try:
-        from redis import Redis
-        from rq import Queue
+    # The API records source elements immediately;
+    # the worker performs embeddings asynchronously via durable queue.
+    from apps.worker.pg_queue import enqueue_job
 
-        Queue(
-            "rag_eval",
-            connection=Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0")),
-        ).enqueue("apps.worker.tasks.index_document", account.id, doc_id, job.id)
-    except Exception:
-        # Preserve an explicit failure state if the queue service is unreachable.
-        if db.bind and db.bind.dialect.name == "postgresql":
-            db.execute(
-                text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": account.id}
-            )
-        doc.status = "failed"
-        job.status = "failed"
-        job.detail = "Queue unavailable"
-        db.commit()
+    job_id = enqueue_job(
+        db,
+        workspace_id=account.id,
+        kind="index",
+        payload={"version": 1, "kind": "index", "document_id": doc_id},
+        detail=doc_id,
+    )
     return {
         "id": doc.id,
         "name": doc.name,
@@ -809,7 +1015,7 @@ async def upload_document(
         "sha256": digest,
         "created_at": doc.created_at,
         "element_count": len(elements),
-        "job_id": job.id,
+        "job_id": job_id,
     }
 
 
@@ -844,35 +1050,17 @@ def delete_document(doc_id: str, account=Depends(current_account), db=Depends(db
 @app.post("/api/v1/documents/{doc_id}/reindex")
 def reindex_document(doc_id: str, account=Depends(current_account), db=Depends(db_session)):
     doc = owned(db, Document, account.id, doc_id)
-    job = Job(
-        id=str(uuid.uuid4()),
+    doc.status = "queued"
+    from apps.worker.pg_queue import enqueue_job
+
+    job_id = enqueue_job(
+        db,
         workspace_id=account.id,
         kind="index",
-        status="queued",
+        payload={"version": 1, "kind": "index", "document_id": doc.id},
         detail=doc.id,
     )
-    doc.status = "queued"
-    db.add(job)
-    db.commit()
-    try:
-        from redis import Redis
-        from rq import Queue
-
-        Queue(
-            "rag_eval",
-            connection=Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0")),
-        ).enqueue("apps.worker.tasks.index_document", account.id, doc.id, job.id)
-    except Exception as exc:
-        if db.bind and db.bind.dialect.name == "postgresql":
-            db.execute(
-                text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": account.id}
-            )
-        doc.status = "failed"
-        job.status = "failed"
-        job.detail = "Queue unavailable"
-        db.commit()
-        raise HTTPException(503, "Indexing queue is unavailable.") from exc
-    return {"job_id": job.id, "status": "queued"}
+    return {"job_id": job_id, "status": "queued"}
 
 
 @app.delete("/api/v1/workspace")
@@ -1003,15 +1191,65 @@ async def ask(payload: AskPayload, account=Depends(current_account), db=Depends(
                         else 0.0
                     )
                     ranked.append((score, element))
+
+                from core.normalize.schema import Chunk
+                from core.retrieval.bm25 import BM25Retriever
+                from core.retrieval.hybrid import _rrf_fusion
+                from core.retrieval.schema import RetrievalStrategy, SearchResult
+
+                # Convert all workspace elements to Chunk instances
+                all_element_chunks = [
+                    Chunk(
+                        chunk_id=elem.id,
+                        document_id=elem.document_id,
+                        text=elem.text,
+                        chunk_index=elem.ordinal,
+                        source_element_ids=[elem.id],
+                    )
+                    for elem in elements
+                ]
+
+                # 1. Dense retrieval candidates (top 20)
                 ranked.sort(key=lambda pair: pair[0], reverse=True)
+                dense_results = [
+                    SearchResult(
+                        chunk=Chunk(
+                            chunk_id=elem.id,
+                            document_id=elem.document_id,
+                            text=elem.text,
+                            chunk_index=elem.ordinal,
+                            source_element_ids=[elem.id],
+                        ),
+                        score=score,
+                        rank=rank,
+                        strategy=RetrievalStrategy.DENSE,
+                    )
+                    for rank, (score, elem) in enumerate(ranked[:20])
+                ]
+
+                # 2. BM25 lexical retrieval candidates (top 20)
+                bm25_retriever = BM25Retriever(all_element_chunks)
+                bm25_results = bm25_retriever.retrieve(payload.query, top_k=20)
+
+                # 3. Hybrid RRF fusion (candidate_k=20, rrf_k=100, top_k=5)
+                fused = _rrf_fusion(
+                    [dense_results, bm25_results],
+                    k=100,
+                    top_k=min(payload.top_k, 5),
+                )
+
                 sources = [
                     {
-                        "element_id": element.id,
-                        "document": db.get(Document, element.document_id).name,
-                        "text": element.text,
-                        "cosine_similarity": score,
+                        "element_id": r.chunk.chunk_id,
+                        "document": (
+                            db.get(Document, r.chunk.document_id).name
+                            if r.chunk.document_id and db.get(Document, r.chunk.document_id)
+                            else "document"
+                        ),
+                        "text": r.chunk.text,
+                        "cosine_similarity": r.score,
                     }
-                    for score, element in ranked[: payload.top_k]
+                    for r in fused
                 ]
                 if sources:
                     prompt = (
@@ -1227,7 +1465,6 @@ def create_run(payload: RunPayload, account=Depends(current_account), db=Depends
             "Hosted retrieval runs require source-element labels on every query.",
         )
     run_id = str(uuid.uuid4())
-    job_id = str(uuid.uuid4())
     db.add(
         EvaluationRun(
             id=run_id,
@@ -1237,44 +1474,21 @@ def create_run(payload: RunPayload, account=Depends(current_account), db=Depends
             status="queued",
         )
     )
-    db.add(
-        Job(
-            id=job_id,
-            workspace_id=account.id,
-            kind="evaluation",
-            status="queued",
-            detail=run_id,
-        )
-    )
-    db.commit()
-    try:
-        from redis import Redis
-        from rq import Queue
+    from apps.worker.pg_queue import enqueue_job
 
-        Queue(
-            "rag_eval",
-            connection=Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0")),
-        ).enqueue(
-            "apps.worker.tasks.evaluate_dataset",
-            account.id,
-            run_id,
-            job_id,
-            revision.id,
-            payload.cutoffs,
-        )
-    except Exception as exc:
-        db.execute(
-            text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": account.id}
-        ) if db.bind and db.bind.dialect.name == "postgresql" else None
-        row = db.get(EvaluationRun, run_id)
-        if row:
-            row.status = "failed"
-        job = db.get(Job, job_id)
-        if job:
-            job.status = "failed"
-            job.detail = "Queue unavailable"
-        db.commit()
-        raise HTTPException(503, "Evaluation queue is unavailable.") from exc
+    job_id = enqueue_job(
+        db,
+        workspace_id=account.id,
+        kind="evaluate",
+        payload={
+            "version": 1,
+            "kind": "evaluate",
+            "run_id": run_id,
+            "revision_id": revision.id,
+            "cutoffs": payload.cutoffs,
+        },
+        detail=run_id,
+    )
     return {"id": run_id, "job_id": job_id, "status": "queued"}
 
 
@@ -1319,7 +1533,7 @@ def create_experiment(
         raise HTTPException(
             422, "Chunking or retrieval experiments require source-element labels on every query."
         )
-    experiment_id, job_id = str(uuid.uuid4()), str(uuid.uuid4())
+    experiment_id = str(uuid.uuid4())
     db.add(
         Experiment(
             id=experiment_id,
@@ -1329,45 +1543,21 @@ def create_experiment(
             status="queued",
         )
     )
-    db.add(
-        Job(
-            id=job_id,
-            workspace_id=account.id,
-            kind="experiment",
-            status="queued",
-            detail=experiment_id,
-        )
-    )
-    db.commit()
-    try:
-        from redis import Redis
-        from rq import Queue
+    from apps.worker.pg_queue import enqueue_job
 
-        Queue(
-            "rag_eval",
-            connection=Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0")),
-        ).enqueue(
-            "apps.worker.tasks.run_experiment",
-            account.id,
-            experiment_id,
-            job_id,
-            revision.id,
-            payload.model_dump(mode="json"),
-        )
-    except Exception as exc:
-        if db.bind and db.bind.dialect.name == "postgresql":
-            db.execute(
-                text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": account.id}
-            )
-        experiment = db.get(Experiment, experiment_id)
-        job = db.get(Job, job_id)
-        if experiment:
-            experiment.status = "failed"
-        if job:
-            job.status = "failed"
-            job.detail = "Queue unavailable"
-        db.commit()
-        raise HTTPException(503, "Experiment queue is unavailable.") from exc
+    job_id = enqueue_job(
+        db,
+        workspace_id=account.id,
+        kind="experiment",
+        payload={
+            "version": 1,
+            "kind": "experiment",
+            "experiment_id": experiment_id,
+            "revision_id": revision.id,
+            "payload": payload.model_dump(mode="json"),
+        },
+        detail=experiment_id,
+    )
     return {"id": experiment_id, "job_id": job_id, "status": "queued"}
 
 
@@ -1397,11 +1587,27 @@ def list_jobs(account=Depends(current_account), db=Depends(db_session)):
             "status": j.status,
             "detail": j.detail,
             "created_at": j.created_at,
+            "cycle_attempts": j.cycle_attempts,
+            "cumulative_attempts": j.cumulative_attempts,
+            "manual_retry_count": j.manual_retry_count,
         }
         for j in db.scalars(
             select(Job).where(Job.workspace_id == account.id).order_by(Job.created_at.desc())
         )
     ]
+
+
+@app.post("/api/v1/jobs/{job_id}/retry")
+def retry_job(job_id: str, account=Depends(current_account), db=Depends(db_session)):
+    from apps.worker.pg_queue import manual_retry_job
+
+    res = manual_retry_job(db, job_id, account.id)
+    if not res:
+        raise HTTPException(
+            400,
+            "Job cannot be retried. It must be in 'failed' status and belong to your workspace.",
+        )
+    return res
 
 
 class CredentialPayload(BaseModel):

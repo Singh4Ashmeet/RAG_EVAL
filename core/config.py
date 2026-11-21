@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, ValidationError, field_validator
+from pydantic import AliasChoices, Field, ValidationError, field_validator
+from pydantic_core import InitErrorDetails, PydanticCustomError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,9 +21,7 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # =========================================================================
     # Application Environment
-    # =========================================================================
     app_env: Literal["development", "production", "test"] = Field(
         default="development",
         validation_alias="APP_ENV",
@@ -33,63 +33,38 @@ class Settings(BaseSettings):
         description="Enable debug mode (only for development)",
     )
 
+    @classmethod
+    def _is_production_env(cls, info) -> bool:
+        """Check if running in production mode via APP_ENV or RENDER environment."""
+        return info.data.get("app_env") == "production" or os.environ.get("RENDER") == "true"
+
     @field_validator("app_debug", mode="after")
     @classmethod
     def validate_debug_in_production(cls, v: bool, info) -> bool:
-        if info.data.get("app_env") == "production" and v:
+        if cls._is_production_env(info) and v:
             raise ValueError("APP_DEBUG must be false in production")
         return v
 
-    # =========================================================================
     # Database
-    # =========================================================================
     database_url: str = Field(
         default="sqlite:///./rag_eval_hosted.db",
         validation_alias="DATABASE_URL",
         description="SQLAlchemy database connection URL",
     )
 
-    # =========================================================================
-    # Redis / Queue
-    # =========================================================================
-    redis_url: str = Field(
-        default="redis://localhost:6379/0",
-        validation_alias="REDIS_URL",
-        description="Redis connection URL for RQ job queue",
-    )
+    # Provider & Job Timeouts
     rq_job_timeout: int = Field(
         default=600,
         validation_alias="RQ_JOB_TIMEOUT",
         ge=30,
         le=3600,
-        description="RQ job timeout in seconds",
-    )
-    rq_result_ttl: int = Field(
-        default=86400,
-        validation_alias="RQ_RESULT_TTL",
-        ge=60,
-        description="RQ successful job result TTL in seconds",
-    )
-    rq_failure_ttl: int = Field(
-        default=604800,
-        validation_alias="RQ_FAILURE_TTL",
-        ge=60,
-        description="RQ failed job retention TTL in seconds",
+        description=(
+            "HTTP timeout in seconds for LLM and embedding provider calls "
+            "(named RQ_JOB_TIMEOUT for backward compatibility with existing environments)"
+        ),
     )
 
-    @field_validator("redis_url", mode="after")
-    @classmethod
-    def validate_redis_url_in_production(cls, v: str, info) -> str:
-        if info.data.get("app_env") == "production" and v.startswith("redis://localhost"):
-            raise ValueError(
-                "REDIS_URL must not point to localhost in production. "
-                "Configure a reachable Redis service."
-            )
-        return v
-
-    # =========================================================================
     # Inference Providers
-    # =========================================================================
     embedding_provider: Literal["ollama"] = Field(
         default="ollama",
         validation_alias="EMBEDDING_PROVIDER",
@@ -109,6 +84,33 @@ class Settings(BaseSettings):
         default="",
         validation_alias="EMBEDDING_API_KEY",
         description="Embedding service API key (if required)",
+    )
+
+    # Production Retrieval Configuration
+    chunk_size: int = Field(
+        default=1000,
+        validation_alias="CHUNK_SIZE",
+        description="Production element-aware chunk size in characters",
+    )
+    chunk_overlap: int = Field(
+        default=200,
+        validation_alias="CHUNK_OVERLAP",
+        description="Production chunk overlap in characters",
+    )
+    retrieval_candidate_k: int = Field(
+        default=20,
+        validation_alias="RETRIEVAL_CANDIDATE_K",
+        description="Candidate pool size retrieved from dense and BM25 retrievers",
+    )
+    retrieval_rrf_k: int = Field(
+        default=100,
+        validation_alias="RETRIEVAL_RRF_K",
+        description="RRF smoothing parameter k for rank fusion",
+    )
+    retrieval_final_k: int = Field(
+        default=5,
+        validation_alias="RETRIEVAL_FINAL_K",
+        description="Final top-k chunks selected for generation",
     )
 
     chat_provider: Literal["ollama", "gemini", "groq"] = Field(
@@ -161,9 +163,7 @@ class Settings(BaseSettings):
         validation_alias="GROQ_CHAT_MODEL",
     )
 
-    # =========================================================================
     # Provider Fallback
-    # =========================================================================
     fallback_enabled: bool = Field(
         default=False,
         validation_alias="FALLBACK_ENABLED",
@@ -178,9 +178,7 @@ class Settings(BaseSettings):
         ),
     )
 
-    # =========================================================================
     # Provider Retry
-    # =========================================================================
     retry_enabled: bool = Field(
         default=True,
         validation_alias="RETRY_ENABLED",
@@ -227,9 +225,7 @@ class Settings(BaseSettings):
         description="Maximum total time budget for all retry attempts per provider",
     )
 
-    # =========================================================================
     # Provider Circuit Breaker
-    # =========================================================================
     circuit_breaker_enabled: bool = Field(
         default=True,
         validation_alias="CIRCUIT_BREAKER_ENABLED",
@@ -273,54 +269,71 @@ class Settings(BaseSettings):
             )
         return v
 
-    # =========================================================================
     # S3-Compatible Storage
-    # =========================================================================
     storage_backend: Literal["local", "s3"] = Field(
         default="local",
-        validation_alias="STORAGE_BACKEND",
+        validation_alias=AliasChoices("STORAGE_BACKEND"),
         description="Storage backend for original documents",
     )
     s3_bucket: str = Field(
         default="",
-        validation_alias="S3_BUCKET",
+        validation_alias=AliasChoices("S3_BUCKET", "AWS_BUCKET"),
         description="S3 bucket name",
     )
     s3_region: str = Field(
-        default="us-east-1",
-        validation_alias="S3_REGION",
+        default="",
+        validation_alias=AliasChoices("AWS_REGION", "S3_REGION"),
+        description="S3 / AWS region name",
     )
     s3_endpoint_url: str = Field(
         default="",
-        validation_alias="S3_ENDPOINT_URL",
+        validation_alias=AliasChoices("S3_ENDPOINT_URL", "AWS_ENDPOINT_URL"),
         description="S3-compatible endpoint URL (for non-AWS providers)",
     )
     s3_access_key_id: str = Field(
         default="",
-        validation_alias="S3_ACCESS_KEY_ID",
+        validation_alias=AliasChoices("AWS_ACCESS_KEY_ID", "S3_ACCESS_KEY_ID"),
+        description="S3 / AWS access key ID",
     )
     s3_secret_access_key: str = Field(
         default="",
-        validation_alias="S3_SECRET_ACCESS_KEY",
+        validation_alias=AliasChoices("AWS_SECRET_ACCESS_KEY", "S3_SECRET_ACCESS_KEY"),
+        description="S3 / AWS secret access key",
     )
     s3_prefix: str = Field(
         default="rag-eval/",
-        validation_alias="S3_PREFIX",
+        validation_alias=AliasChoices("S3_PREFIX"),
         description="Object key prefix within bucket",
     )
 
-    @field_validator("s3_bucket", "s3_access_key_id", "s3_secret_access_key", mode="after")
+    @field_validator("storage_backend", mode="after")
     @classmethod
-    def validate_s3_config_in_production(cls, v: str, info) -> str:
-        if info.data.get("app_env") == "production" and info.data.get("storage_backend") == "s3":
-            if not v:
-                field_name = info.field_name
-                raise ValueError(f"{field_name} is required when STORAGE_BACKEND=s3 in production")
+    def validate_storage_backend_in_production(cls, v: str, info) -> str:
+        if cls._is_production_env(info) and v == "local":
+            raise ValueError(
+                "STORAGE_BACKEND must be 's3' in production; local storage is not permitted"
+            )
         return v
 
-    # =========================================================================
+    @field_validator(
+        "s3_bucket",
+        "s3_endpoint_url",
+        "s3_region",
+        "s3_access_key_id",
+        "s3_secret_access_key",
+        mode="after",
+    )
+    @classmethod
+    def validate_s3_config_in_production(cls, v: str, info) -> str:
+        if cls._is_production_env(info) and info.data.get("storage_backend") == "s3":
+            field_name = info.field_name
+            if not v:
+                raise ValueError(f"{field_name} is required when STORAGE_BACKEND=s3 in production")
+            if field_name == "s3_endpoint_url" and not v.startswith("https://"):
+                raise ValueError("S3_ENDPOINT_URL must use HTTPS in production")
+        return v
+
     # CORS & Security
-    # =========================================================================
     cors_allowed_origins: str = Field(
         default="",
         validation_alias="CORS_ALLOWED_ORIGINS",
@@ -332,9 +345,7 @@ class Settings(BaseSettings):
             return []
         return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
 
-    # =========================================================================
     # Credentials & Auth
-    # =========================================================================
     credential_encryption_key: str = Field(
         default="",
         validation_alias="CREDENTIAL_ENCRYPTION_KEY",
@@ -392,34 +403,32 @@ class Settings(BaseSettings):
     @field_validator("credential_encryption_key", mode="after")
     @classmethod
     def validate_credential_key(cls, v: str, info) -> str:
-        if info.data.get("app_env") == "production" and not v:
+        if cls._is_production_env(info) and not v:
             raise ValueError("CREDENTIAL_ENCRYPTION_KEY is required in production")
         return v
 
     @field_validator("invitation_admin_token", mode="after")
     @classmethod
     def validate_invitation_token(cls, v: str, info) -> str:
-        if info.data.get("app_env") == "production" and not v:
+        if cls._is_production_env(info) and not v:
             raise ValueError("INVITATION_ADMIN_TOKEN is required in production")
         return v
 
     @field_validator("cookie_secure", mode="after")
     @classmethod
     def validate_cookie_secure(cls, v: bool, info) -> bool:
-        if info.data.get("app_env") == "production" and not v:
+        if cls._is_production_env(info) and not v:
             raise ValueError("COOKIE_SECURE must be true in production (requires HTTPS)")
         return v
 
     @field_validator("public_base_url", mode="after")
     @classmethod
     def validate_public_base_url(cls, v: str, info) -> str:
-        if info.data.get("app_env") == "production" and v.startswith("http://localhost"):
+        if cls._is_production_env(info) and v.startswith("http://localhost"):
             raise ValueError("PUBLIC_BASE_URL must not be localhost in production")
         return v
 
-    # =========================================================================
     # File Upload
-    # =========================================================================
     max_upload_bytes: int = Field(
         default=26214400,
         validation_alias="MAX_UPLOAD_BYTES",
@@ -431,9 +440,7 @@ class Settings(BaseSettings):
         validation_alias="PRIVATE_DATA_DIR",
     )
 
-    # =========================================================================
     # Ollama (Legacy - kept for backward compatibility)
-    # =========================================================================
     ollama_base_url: str = Field(
         default="http://localhost:11434",
         validation_alias="OLLAMA_BASE_URL",
@@ -455,12 +462,10 @@ class Settings(BaseSettings):
         validation_alias="GROQ_CHAT_MODEL",
     )
 
-    # =========================================================================
     # Derived Properties
-    # =========================================================================
     @property
     def is_production(self) -> bool:
-        return self.app_env == "production"
+        return self.app_env == "production" or os.environ.get("RENDER") == "true"
 
     @property
     def is_development(self) -> bool:
@@ -479,9 +484,6 @@ class Settings(BaseSettings):
 
         if self.database_url.startswith("sqlite"):
             errors.append("DATABASE_URL must use PostgreSQL in production")
-
-        if self.redis_url.startswith("redis://localhost"):
-            errors.append("REDIS_URL must not be localhost in production")
 
         if self.embedding_base_url.startswith("http://localhost"):
             errors.append("EMBEDDING_BASE_URL must not be localhost in production")
@@ -504,16 +506,31 @@ class Settings(BaseSettings):
         if self.storage_backend == "s3":
             if not self.s3_bucket:
                 errors.append("S3_BUCKET is required when STORAGE_BACKEND=s3")
+            if not self.s3_endpoint_url:
+                errors.append("S3_ENDPOINT_URL is required when STORAGE_BACKEND=s3")
+            elif not self.s3_endpoint_url.startswith("https://"):
+                errors.append("S3_ENDPOINT_URL must use HTTPS in production")
+            if not self.s3_region:
+                errors.append("S3_REGION is required when STORAGE_BACKEND=s3")
             if not self.s3_access_key_id:
                 errors.append("S3_ACCESS_KEY_ID is required when STORAGE_BACKEND=s3")
             if not self.s3_secret_access_key:
                 errors.append("S3_SECRET_ACCESS_KEY is required when STORAGE_BACKEND=s3")
+        elif self.storage_backend == "local":
+            errors.append(
+                "STORAGE_BACKEND must be 's3' in production; local storage is not permitted"
+            )
 
         if errors:
             raise ValidationError.from_exception_data(
                 title="ProductionConfigurationError",
                 line_errors=[
-                    {"type": "value_error", "msg": e, "loc": ("production",)} for e in errors
+                    InitErrorDetails(
+                        type=PydanticCustomError("value_error", e),
+                        loc=("production",),
+                        input=None,
+                    )
+                    for e in errors
                 ],
             )
 

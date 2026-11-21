@@ -5,10 +5,9 @@ from __future__ import annotations
 import json
 
 import httpx
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text, update
 
 from apps.api.main import (
-    PRIVATE_DATA,
     CorpusElement,
     DatasetRevision,
     Document,
@@ -17,6 +16,7 @@ from apps.api.main import (
     Job,
     SessionLocal,
 )
+from apps.worker.pg_queue import StaleLeaseError, complete_job
 from core.config import get_settings
 from core.generate.pipeline import GroundedAnswerGenerator
 from core.llm.router import get_chat_provider
@@ -78,14 +78,35 @@ class HostedElementRetriever:
         ]
 
 
-def index_document(workspace_id: str, document_id: str, job_id: str) -> dict[str, int]:
-    """Embed source elements and persist vectors under their owning workspace."""
-    with SessionLocal() as db:
-        if db.bind and db.bind.dialect.name == "postgresql":
+def index_document(
+    workspace_id: str,
+    document_id: str,
+    job_id: str,
+    lease_token: str | None = None,
+    lease_generation: int | None = None,
+    worker_id: str | None = None,
+    attempt_id: str | None = None,
+    session_factory=None,
+) -> dict[str, int]:
+    """Embed source elements and persist vectors using 3-phase fenced transactions."""
+    sf = session_factory or SessionLocal
+
+    # -------------------------------------------------------------
+    # Phase A: Short DB read (<50ms)
+    # -------------------------------------------------------------
+    with sf() as db:
+        is_pg = bool(db.bind and db.bind.dialect.name == "postgresql")
+        if is_pg:
             db.execute(
                 text("SELECT set_config('app.workspace_id', :workspace_id, true)"),
                 {"workspace_id": workspace_id},
             )
+            if not (lease_token and lease_generation is not None and worker_id and attempt_id):
+                raise StaleLeaseError(
+                    "PostgreSQL worker execution strictly requires active lease_token, "
+                    "lease_generation, worker_id, and attempt_id."
+                )
+
         doc = db.scalar(
             select(Document).where(
                 Document.id == document_id, Document.workspace_id == workspace_id
@@ -94,66 +115,156 @@ def index_document(workspace_id: str, document_id: str, job_id: str) -> dict[str
         job = db.scalar(select(Job).where(Job.id == job_id, Job.workspace_id == workspace_id))
         if doc is None or job is None:
             return {"indexed": 0}
-        doc.status = "running"
-        job.status = "running"
-        db.commit()
-        try:
-            if db.bind and db.bind.dialect.name == "postgresql":
-                db.execute(
-                    text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": workspace_id}
-                )
-            elements = list(
-                db.scalars(
-                    select(CorpusElement)
-                    .where(
-                        CorpusElement.workspace_id == workspace_id,
-                        CorpusElement.document_id == document_id,
-                    )
-                    .order_by(CorpusElement.ordinal)
+
+        if lease_token:
+            # Verify active lease
+            active = db.scalar(
+                select(Job.id).where(
+                    Job.id == job_id,
+                    Job.workspace_id == workspace_id,
+                    Job.lease_token == lease_token,
+                    Job.lease_generation == lease_generation,
+                    Job.worker_id == worker_id,
+                    Job.status == "running",
+                    Job.lease_expires_at > func.now(),
                 )
             )
-            # Verify the private original is still present before indexing its derived elements.
-            settings = get_settings()
-            if settings.s3_bucket and settings.storage_backend == "s3":
-                import boto3
-                from botocore.config import Config
+            if not active:
+                raise StaleLeaseError("Lease expired before index task execution.")
+        else:
+            doc.status = "running"
+            job.status = "running"
+            db.commit()
 
-                endpoint = settings.s3_endpoint_url
-                options = {
-                    "endpoint_url": endpoint,
-                    "region_name": settings.s3_region,
-                }
-                if endpoint:
-                    options["config"] = Config(s3={"addressing_style": "path"})
-                boto3.client("s3", **options).head_object(
-                    Bucket=settings.s3_bucket, Key=doc.storage_key
+        elements = list(
+            db.scalars(
+                select(CorpusElement)
+                .where(
+                    CorpusElement.workspace_id == workspace_id,
+                    CorpusElement.document_id == document_id,
                 )
-            elif not (PRIVATE_DATA / doc.storage_key).is_file():
-                raise FileNotFoundError("Original source file no longer exists.")
-            base = settings.embedding_base_url.rstrip("/")
-            model = settings.embedding_model
-            texts = [element.text for element in elements]
-            if texts:
-                response = httpx.post(
-                    f"{base}/api/embed", json={"model": model, "input": texts}, timeout=180
+                .order_by(CorpusElement.ordinal)
+            )
+        )
+        total_elements = len(elements)
+        if total_elements == 0:
+            if not lease_token:
+                doc.status = "failed"
+                job.status = "failed"
+                job.detail = "Cannot index empty corpus: document has zero source elements."
+                db.commit()
+            raise ValueError("Cannot index empty corpus: document has zero source elements.")
+
+        missing_elements = [(el.id, el.text) for el in elements if not el.embedding_json]
+
+    # -------------------------------------------------------------
+    # Phase B: External I/O without holding database connection
+    # -------------------------------------------------------------
+    try:
+        settings = get_settings()
+        base = settings.embedding_base_url.rstrip("/")
+        model = settings.embedding_model
+        texts = [text for _, text in missing_elements]
+        vectors = []
+        if texts:
+            response = httpx.post(
+                f"{base}/api/embed", json={"model": model, "input": texts}, timeout=180
+            )
+            response.raise_for_status()
+            vectors = response.json().get("embeddings", [])
+            if len(vectors) != len(texts):
+                raise ValueError("Embedding service returned an unexpected vector count.")
+    except Exception as exc:
+        if not lease_token:
+            with sf() as db:
+                db.rollback()
+                if db.bind and db.bind.dialect.name == "postgresql":
+                    db.execute(
+                        text("SELECT set_config('app.workspace_id', :wid, true)"),
+                        {"wid": workspace_id},
+                    )
+                doc = db.scalar(
+                    select(Document).where(
+                        Document.id == document_id, Document.workspace_id == workspace_id
+                    )
                 )
-                response.raise_for_status()
-                vectors = response.json().get("embeddings", [])
-                if len(vectors) != len(elements):
-                    raise ValueError("Embedding service returned an unexpected vector count.")
-                for element, vector in zip(elements, vectors, strict=True):
-                    element.embedding_json = json.dumps(vector, separators=(",", ":"))
-            doc.status = "indexed"
-            job.status = "complete"
-            job.detail = f"{len(elements)} source elements indexed"
-            db.commit()
-            return {"indexed": len(elements)}
-        except Exception as exc:
-            doc.status = "failed"
-            job.status = "failed"
-            job.detail = f"Indexing failed: {type(exc).__name__}"
-            db.commit()
-            raise
+                job = db.scalar(
+                    select(Job).where(Job.id == job_id, Job.workspace_id == workspace_id)
+                )
+                if doc:
+                    doc.status = "failed"
+                if job:
+                    job.status = "failed"
+                    job.detail = f"Indexing failed: {exc}"
+                db.commit()
+        raise
+
+    # -------------------------------------------------------------
+    # Phase C: Atomic fenced write (<50ms)
+    # -------------------------------------------------------------
+    with sf() as db:
+        if db.bind and db.bind.dialect.name == "postgresql":
+            db.execute(
+                text("SELECT set_config('app.workspace_id', :workspace_id, true)"),
+                {"workspace_id": workspace_id},
+            )
+        if lease_token:
+            locked = db.scalar(
+                select(Job.id)
+                .where(
+                    Job.id == job_id,
+                    Job.workspace_id == workspace_id,
+                    Job.lease_token == lease_token,
+                    Job.lease_generation == lease_generation,
+                    Job.worker_id == worker_id,
+                    Job.status == "running",
+                    Job.lease_expires_at > func.now(),
+                )
+                .with_for_update()
+            )
+            if not locked:
+                db.rollback()
+                raise StaleLeaseError(
+                    "Fencing check failed: lease expired or lost during indexing."
+                )
+
+        for (el_id, _), vec in zip(missing_elements, vectors, strict=True):
+            db.execute(
+                update(CorpusElement)
+                .where(CorpusElement.id == el_id, CorpusElement.workspace_id == workspace_id)
+                .values(embedding_json=json.dumps(vec, separators=(",", ":")))
+            )
+
+        db.execute(
+            update(Document)
+            .where(Document.id == document_id, Document.workspace_id == workspace_id)
+            .values(status="indexed")
+        )
+
+        detail_msg = f"{total_elements} source elements indexed"
+        if lease_token and attempt_id and lease_generation is not None and worker_id is not None:
+            ok = complete_job(
+                db,
+                job_id=job_id,
+                lease_token=lease_token,
+                lease_generation=lease_generation,
+                worker_id=worker_id,
+                attempt_id=attempt_id,
+                detail=detail_msg,
+            )
+            if not ok:
+                db.rollback()
+                raise StaleLeaseError(
+                    "Fencing check failed: lease invalidated during job completion."
+                )
+        else:
+            db.execute(
+                update(Job)
+                .where(Job.id == job_id, Job.workspace_id == workspace_id)
+                .values(status="complete", detail=detail_msg)
+            )
+        db.commit()
+        return {"indexed": total_elements}
 
 
 def evaluate_dataset(
@@ -162,13 +273,29 @@ def evaluate_dataset(
     job_id: str,
     revision_id: str,
     cutoffs: list[int],
+    lease_token: str | None = None,
+    lease_generation: int | None = None,
+    worker_id: str | None = None,
+    attempt_id: str | None = None,
+    session_factory=None,
 ) -> dict[str, str]:
-    """Run retrieval evaluation asynchronously and persist its report."""
-    with SessionLocal() as db:
-        if db.bind and db.bind.dialect.name == "postgresql":
+    """Run retrieval evaluation asynchronously using 3-phase fenced transactions."""
+    sf = session_factory or SessionLocal
+
+    # -------------------------------------------------------------
+    # Phase A: Short DB read (<50ms)
+    # -------------------------------------------------------------
+    with sf() as db:
+        is_pg = bool(db.bind and db.bind.dialect.name == "postgresql")
+        if is_pg:
             db.execute(
                 text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": workspace_id}
             )
+            if not (lease_token and lease_generation is not None and worker_id and attempt_id):
+                raise StaleLeaseError(
+                    "PostgreSQL worker execution strictly requires active lease_token, "
+                    "lease_generation, worker_id, and attempt_id."
+                )
         run = db.scalar(
             select(EvaluationRun).where(
                 EvaluationRun.id == run_id, EvaluationRun.workspace_id == workspace_id
@@ -191,76 +318,132 @@ def evaluate_dataset(
         )
         if run is None or job is None or revision is None:
             raise LookupError("Evaluation run, job, or dataset revision is unavailable.")
-        run.status = "running"
-        job.status = "running"
-        db.commit()
-        try:
-            # Reapply transaction-local tenant context after the state commit.
-            if db.bind and db.bind.dialect.name == "postgresql":
-                db.execute(
-                    text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": workspace_id}
+
+        if lease_token:
+            active = db.scalar(
+                select(Job.id).where(
+                    Job.id == job_id,
+                    Job.workspace_id == workspace_id,
+                    Job.lease_token == lease_token,
+                    Job.lease_generation == lease_generation,
+                    Job.worker_id == worker_id,
+                    Job.status == "running",
+                    Job.lease_expires_at > func.now(),
                 )
-            elements = list(
-                db.scalars(
-                    select(CorpusElement).where(
-                        CorpusElement.workspace_id == workspace_id,
-                        CorpusElement.embedding_json.is_not(None),
+            )
+            if not active:
+                raise StaleLeaseError("Lease expired before evaluation task execution.")
+        else:
+            run.status = "running"
+            job.status = "running"
+            db.commit()
+
+        cases = json.loads(revision.cases_json)
+        ds_id = f"{revision.dataset_id}:r{revision.revision}"
+        sha256 = revision.sha256
+
+    # -------------------------------------------------------------
+    # Phase B: External I/O without holding database connection
+    # -------------------------------------------------------------
+    try:
+        dataset = EvaluationDataset(
+            dataset_id=ds_id,
+            sha256=sha256,
+            cases=cases,
+        )
+        settings = get_settings()
+        config = EvaluationRunConfig(cutoffs=tuple(cutoffs))
+        retriever = HostedElementRetriever(elements)
+        answerer = GroundedAnswerGenerator(
+            retriever,
+            get_chat_provider(settings.chat_provider),
+            top_k=config.max_cutoff,
+        )
+        report = EvaluationRunner(config).run(dataset, retriever, answerer)
+    except Exception as exc:
+        if not lease_token:
+            with sf() as db:
+                db.rollback()
+                if db.bind and db.bind.dialect.name == "postgresql":
+                    db.execute(
+                        text("SELECT set_config('app.workspace_id', :wid, true)"),
+                        {"wid": workspace_id},
+                    )
+                run = db.scalar(
+                    select(EvaluationRun).where(
+                        EvaluationRun.id == run_id, EvaluationRun.workspace_id == workspace_id
                     )
                 )
-            )
-            dataset = EvaluationDataset(
-                dataset_id=f"{revision.dataset_id}:r{revision.revision}",
-                sha256=revision.sha256,
-                cases=json.loads(revision.cases_json),
-            )
-            settings = get_settings()
-            config = EvaluationRunConfig(cutoffs=tuple(cutoffs))
-            retriever = HostedElementRetriever(elements)
-            answerer = GroundedAnswerGenerator(
-                retriever,
-                get_chat_provider(settings.chat_provider),
-                top_k=config.max_cutoff,
-            )
-            report = EvaluationRunner(config).run(dataset, retriever, answerer)
-            if db.bind and db.bind.dialect.name == "postgresql":
-                db.execute(
-                    text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": workspace_id}
+                job = db.scalar(
+                    select(Job).where(Job.id == job_id, Job.workspace_id == workspace_id)
                 )
-            run = db.scalar(
-                select(EvaluationRun).where(
-                    EvaluationRun.id == run_id,
-                    EvaluationRun.workspace_id == workspace_id,
-                )
+                if run:
+                    run.status = "failed"
+                if job:
+                    job.status = "failed"
+                    job.detail = f"Evaluation failed: {type(exc).__name__}"
+                db.commit()
+        raise
+
+    # -------------------------------------------------------------
+    # Phase C: Atomic fenced write (<50ms)
+    # -------------------------------------------------------------
+    with sf() as db:
+        if db.bind and db.bind.dialect.name == "postgresql":
+            db.execute(
+                text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": workspace_id}
             )
-            job = db.scalar(select(Job).where(Job.id == job_id, Job.workspace_id == workspace_id))
-            if run is None or job is None:
-                raise LookupError("Evaluation state disappeared during execution.")
-            run.status = report.status
-            run.report_json = report.model_dump_json()
-            job.status = "complete" if report.status == "complete" else report.status
-            job.detail = f"{len(report.queries)} queries evaluated"
-            db.commit()
-            return {"run_id": run_id, "status": report.status}
-        except Exception as exc:
-            db.rollback()
-            if db.bind and db.bind.dialect.name == "postgresql":
-                db.execute(
-                    text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": workspace_id}
+        if lease_token:
+            locked = db.scalar(
+                select(Job.id)
+                .where(
+                    Job.id == job_id,
+                    Job.workspace_id == workspace_id,
+                    Job.lease_token == lease_token,
+                    Job.lease_generation == lease_generation,
+                    Job.worker_id == worker_id,
+                    Job.status == "running",
+                    Job.lease_expires_at > func.now(),
                 )
-            run = db.scalar(
-                select(EvaluationRun).where(
-                    EvaluationRun.id == run_id,
-                    EvaluationRun.workspace_id == workspace_id,
-                )
+                .with_for_update()
             )
-            job = db.scalar(select(Job).where(Job.id == job_id, Job.workspace_id == workspace_id))
-            if run:
-                run.status = "failed"
-            if job:
-                job.status = "failed"
-                job.detail = f"Evaluation failed: {type(exc).__name__}"
-            db.commit()
-            raise
+            if not locked:
+                db.rollback()
+                raise StaleLeaseError(
+                    "Fencing check failed: lease expired or lost during evaluation."
+                )
+
+        db.execute(
+            update(EvaluationRun)
+            .where(EvaluationRun.id == run_id, EvaluationRun.workspace_id == workspace_id)
+            .values(status=report.status, report_json=report.model_dump_json())
+        )
+
+        detail_msg = f"{len(report.queries)} queries evaluated"
+        final_job_status = "complete" if report.status == "complete" else report.status
+        if lease_token and attempt_id and lease_generation is not None and worker_id is not None:
+            ok = complete_job(
+                db,
+                job_id=job_id,
+                lease_token=lease_token,
+                lease_generation=lease_generation,
+                worker_id=worker_id,
+                attempt_id=attempt_id,
+                detail=detail_msg,
+            )
+            if not ok:
+                db.rollback()
+                raise StaleLeaseError(
+                    "Fencing check failed: lease invalidated during evaluation completion."
+                )
+        else:
+            db.execute(
+                update(Job)
+                .where(Job.id == job_id, Job.workspace_id == workspace_id)
+                .values(status=final_job_status, detail=detail_msg)
+            )
+        db.commit()
+        return {"run_id": run_id, "status": report.status}
 
 
 def run_experiment(
@@ -269,13 +452,29 @@ def run_experiment(
     job_id: str,
     revision_id: str,
     payload: dict,
+    lease_token: str | None = None,
+    lease_generation: int | None = None,
+    worker_id: str | None = None,
+    attempt_id: str | None = None,
+    session_factory=None,
 ) -> dict[str, str]:
-    """Compare named retrieval-depth variants with paired bootstrap intervals."""
-    with SessionLocal() as db:
-        if db.bind and db.bind.dialect.name == "postgresql":
+    """Compare named retrieval-depth variants using 3-phase fenced transactions."""
+    sf = session_factory or SessionLocal
+
+    # -------------------------------------------------------------
+    # Phase A: Short DB read (<50ms)
+    # -------------------------------------------------------------
+    with sf() as db:
+        is_pg = bool(db.bind and db.bind.dialect.name == "postgresql")
+        if is_pg:
             db.execute(
                 text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": workspace_id}
             )
+            if not (lease_token and lease_generation is not None and worker_id and attempt_id):
+                raise StaleLeaseError(
+                    "PostgreSQL worker execution strictly requires active lease_token, "
+                    "lease_generation, worker_id, and attempt_id."
+                )
         experiment = db.scalar(
             select(Experiment).where(
                 Experiment.id == experiment_id,
@@ -291,89 +490,157 @@ def run_experiment(
         )
         if experiment is None or job is None or revision is None:
             raise LookupError("Experiment, job, or dataset revision is unavailable.")
-        experiment.status = "running"
-        job.status = "running"
+
+        if lease_token:
+            active = db.scalar(
+                select(Job.id).where(
+                    Job.id == job_id,
+                    Job.workspace_id == workspace_id,
+                    Job.lease_token == lease_token,
+                    Job.lease_generation == lease_generation,
+                    Job.worker_id == worker_id,
+                    Job.status == "running",
+                    Job.lease_expires_at > func.now(),
+                )
+            )
+            if not active:
+                raise StaleLeaseError("Lease expired before experiment task execution.")
+        else:
+            experiment.status = "running"
+            job.status = "running"
+            db.commit()
+
+        elements = list(
+            db.scalars(
+                select(CorpusElement).where(
+                    CorpusElement.workspace_id == workspace_id,
+                    CorpusElement.embedding_json.is_not(None),
+                )
+            )
+        )
+        ds_id = f"{revision.dataset_id}:r{revision.revision}"
+        sha256 = revision.sha256
+        cases = json.loads(revision.cases_json)
+
+    # -------------------------------------------------------------
+    # Phase B: External I/O without holding database connection
+    # -------------------------------------------------------------
+    try:
+        dataset = EvaluationDataset(
+            dataset_id=ds_id,
+            sha256=sha256,
+            cases=cases,
+        )
+        evaluation_config = EvaluationRunConfig(cutoffs=tuple(payload["cutoffs"]))
+        config = ExperimentConfig(
+            experiment_id=experiment_id,
+            baseline_variant=payload["baseline_variant"],
+            evaluation=evaluation_config,
+            bootstrap_resamples=payload["bootstrap_resamples"],
+            random_seed=payload["random_seed"],
+        )
+        variants = []
+        for item in payload["variants"]:
+            retriever = HostedElementRetriever(elements, item["retrieval_depth"])
+            settings = get_settings()
+            answerer = GroundedAnswerGenerator(
+                retriever,
+                get_chat_provider(settings.chat_provider),
+                top_k=evaluation_config.max_cutoff,
+            )
+            variants.append(
+                ExperimentVariant(
+                    name=item["name"],
+                    pipeline_config={"retrieval_depth": item["retrieval_depth"]},
+                    retriever=retriever,
+                    answerer=answerer,
+                )
+            )
+        report = ExperimentRunner(config).run(dataset, variants)
+    except Exception:
+        if not lease_token:
+            with sf() as db:
+                db.rollback()
+                if db.bind and db.bind.dialect.name == "postgresql":
+                    db.execute(
+                        text("SELECT set_config('app.workspace_id', :wid, true)"),
+                        {"wid": workspace_id},
+                    )
+                experiment = db.scalar(
+                    select(Experiment).where(
+                        Experiment.id == experiment_id,
+                        Experiment.workspace_id == workspace_id,
+                    )
+                )
+                job = db.scalar(
+                    select(Job).where(Job.id == job_id, Job.workspace_id == workspace_id)
+                )
+                if experiment:
+                    experiment.status = "failed"
+                if job:
+                    job.status = "failed"
+                    job.detail = (
+                        "Experiment failed; inspect worker logs for sanitized exception type."
+                    )
+                db.commit()
+        raise
+
+    # -------------------------------------------------------------
+    # Phase C: Atomic fenced write (<50ms)
+    # -------------------------------------------------------------
+    with sf() as db:
+        if db.bind and db.bind.dialect.name == "postgresql":
+            db.execute(
+                text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": workspace_id}
+            )
+        if lease_token:
+            locked = db.scalar(
+                select(Job.id)
+                .where(
+                    Job.id == job_id,
+                    Job.workspace_id == workspace_id,
+                    Job.lease_token == lease_token,
+                    Job.lease_generation == lease_generation,
+                    Job.worker_id == worker_id,
+                    Job.status == "running",
+                    Job.lease_expires_at > func.now(),
+                )
+                .with_for_update()
+            )
+            if not locked:
+                db.rollback()
+                raise StaleLeaseError(
+                    "Fencing check failed: lease expired or lost during experiment."
+                )
+
+        db.execute(
+            update(Experiment)
+            .where(Experiment.id == experiment_id, Experiment.workspace_id == workspace_id)
+            .values(status=report.status, report_json=report.model_dump_json())
+        )
+
+        detail_msg = f"{len(report.variants)} variants compared"
+        final_job_status = "complete" if report.status == "complete" else report.status
+        if lease_token and attempt_id and lease_generation is not None and worker_id is not None:
+            ok = complete_job(
+                db,
+                job_id=job_id,
+                lease_token=lease_token,
+                lease_generation=lease_generation,
+                worker_id=worker_id,
+                attempt_id=attempt_id,
+                detail=detail_msg,
+            )
+            if not ok:
+                db.rollback()
+                raise StaleLeaseError(
+                    "Fencing check failed: lease invalidated during experiment completion."
+                )
+        else:
+            db.execute(
+                update(Job)
+                .where(Job.id == job_id, Job.workspace_id == workspace_id)
+                .values(status=final_job_status, detail=detail_msg)
+            )
         db.commit()
-        try:
-            if db.bind and db.bind.dialect.name == "postgresql":
-                db.execute(
-                    text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": workspace_id}
-                )
-            elements = list(
-                db.scalars(
-                    select(CorpusElement).where(
-                        CorpusElement.workspace_id == workspace_id,
-                        CorpusElement.embedding_json.is_not(None),
-                    )
-                )
-            )
-            dataset = EvaluationDataset(
-                dataset_id=f"{revision.dataset_id}:r{revision.revision}",
-                sha256=revision.sha256,
-                cases=json.loads(revision.cases_json),
-            )
-            evaluation_config = EvaluationRunConfig(cutoffs=tuple(payload["cutoffs"]))
-            config = ExperimentConfig(
-                experiment_id=experiment_id,
-                baseline_variant=payload["baseline_variant"],
-                evaluation=evaluation_config,
-                bootstrap_resamples=payload["bootstrap_resamples"],
-                random_seed=payload["random_seed"],
-            )
-            variants = []
-            for item in payload["variants"]:
-                retriever = HostedElementRetriever(elements, item["retrieval_depth"])
-                settings = get_settings()
-                answerer = GroundedAnswerGenerator(
-                    retriever,
-                    get_chat_provider(settings.chat_provider),
-                    top_k=evaluation_config.max_cutoff,
-                )
-                variants.append(
-                    ExperimentVariant(
-                        name=item["name"],
-                        pipeline_config={"retrieval_depth": item["retrieval_depth"]},
-                        retriever=retriever,
-                        answerer=answerer,
-                    )
-                )
-            report = ExperimentRunner(config).run(dataset, variants)
-            if db.bind and db.bind.dialect.name == "postgresql":
-                db.execute(
-                    text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": workspace_id}
-                )
-            experiment = db.scalar(
-                select(Experiment).where(
-                    Experiment.id == experiment_id,
-                    Experiment.workspace_id == workspace_id,
-                )
-            )
-            job = db.scalar(select(Job).where(Job.id == job_id, Job.workspace_id == workspace_id))
-            if experiment is None or job is None:
-                raise LookupError("Experiment state disappeared during execution.")
-            experiment.status = report.status
-            experiment.report_json = report.model_dump_json()
-            job.status = "complete" if report.status == "complete" else report.status
-            job.detail = f"{len(report.variants)} variants compared"
-            db.commit()
-            return {"experiment_id": experiment_id, "status": report.status}
-        except Exception:
-            db.rollback()
-            if db.bind and db.bind.dialect.name == "postgresql":
-                db.execute(
-                    text("SELECT set_config('app.workspace_id', :wid, true)"), {"wid": workspace_id}
-                )
-            experiment = db.scalar(
-                select(Experiment).where(
-                    Experiment.id == experiment_id,
-                    Experiment.workspace_id == workspace_id,
-                )
-            )
-            job = db.scalar(select(Job).where(Job.id == job_id, Job.workspace_id == workspace_id))
-            if experiment:
-                experiment.status = "failed"
-            if job:
-                job.status = "failed"
-                job.detail = "Experiment failed; inspect worker logs for sanitized exception type."
-            db.commit()
-            raise
+        return {"experiment_id": experiment_id, "status": report.status}

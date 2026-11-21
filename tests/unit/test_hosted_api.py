@@ -77,7 +77,7 @@ def hosted_client(tmp_path: Path, monkeypatch) -> Iterator[tuple[TestClient, mai
 def test_upload_validates_type_and_persists_utf8_source(hosted_client) -> None:
     client, _ = hosted_client
     unsupported = client.post(
-        "/api/v1/documents", files={"file": ("scan.pdf", b"bytes", "application/pdf")}
+        "/api/v1/documents", files={"file": ("scan.xyz", b"bytes", "application/octet-stream")}
     )
     assert unsupported.status_code == 415
 
@@ -90,6 +90,34 @@ def test_upload_validates_type_and_persists_utf8_source(hosted_client) -> None:
     assert uploaded.json()["element_count"] == 2
     listed = client.get("/api/v1/documents")
     assert [row["name"] for row in listed.json()] == ["notes.md"]
+
+
+def test_upload_docx_success(hosted_client) -> None:
+    import io
+
+    import docx
+
+    doc = docx.Document()
+    doc.add_heading("Test Heading", level=1)
+    doc.add_paragraph("First paragraph text.")
+    buf = io.BytesIO()
+    doc.save(buf)
+    docx_bytes = buf.getvalue()
+
+    client, _ = hosted_client
+    uploaded = client.post(
+        "/api/v1/documents",
+        files={
+            "file": (
+                "sample.docx",
+                docx_bytes,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        },
+    )
+    assert uploaded.status_code == 200
+    assert uploaded.json()["status"] == "queued"
+    assert uploaded.json()["element_count"] == 2
 
 
 def test_dataset_rejects_foreign_source_element(hosted_client) -> None:

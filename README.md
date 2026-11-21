@@ -145,6 +145,42 @@ Copyright © 2026 Ashmeet Singh. RAG_EVAL is proprietary and all rights are rese
 
 Project process documents: [Contributing](CONTRIBUTING.md) and [Security reporting](SECURITY.md).
 
+## Production Architecture & Status
+
+### Validated Production Pipeline
+The verified production retrieval and generation baseline is:
+
+```text
+Query
+  ↓
+Dense + BM25 RRF (candidate_k=20, rrf_k=100)
+  ↓
+Top 5 Selection (final_k=5)
+  ↓
+Grounded Generation (llama3.2:3b)
+  ↓
+Answer + Citations / Provenance / Refusal
+```
+
+- **Chunking:** `ElementAwareChunker` (`chunk_size=1000`, `chunk_overlap=200`)
+- **Embedding:** `nomic-embed-text:latest` (768 dimensions)
+- **Lexical:** `BM25Retriever` (BM25Okapi with technical token preservation)
+- **Dense:** `DenseRetriever` (exact cosine similarity)
+- **Fusion:** `HybridRetriever` (Reciprocal Rank Fusion, `candidate_k=20`, `rrf_k=100`, `final_k=5`)
+- **Generation:** `GroundedAnswerGenerator` (`llama3.2:3b`, temperature=0.0)
+- **Evaluation:** Track A (14 cases), Track B (52 cases), Track C (30 cases), Track D (25 unanswerable cases)
+
+### Evaluation Lifecycle Status
+
+| Component | Status | Rationale / Outcome |
+|---|---|---|
+| **Dense + BM25 RRF** | **PRODUCTION** | Validated baseline; best MRR@5 (0.5212) on Track B with sub-110ms latency. |
+| **Phase 6: SPLADE** | **REJECTED** | Learned sparse expansion underperformed lexical BM25 and added inference latency. |
+| **Phase 7: Reranking** | **REJECTED** | Cross-encoder reranking (ms-marco-MiniLM-L-6-v2) introduced 10x latency overhead without significant retrieval gain. |
+| **Phase 8: HyDE** | **REJECTED** | Hypothetical document embeddings degraded precision on specific technical queries and generated hallucinated citations. |
+| **Phase 9: Heuristic Routing** | **REJECTED** | Rule-based query classifier failed to beat uniform Hybrid RRF across tracks. |
+| **Phase 10: Learned Routing** | **BLOCKED** | Blocked due to insufficient independent query data (sample size too small for statistical generalization without risk of overfitting). |
+
 ## Project status
 
-The local RAG and evaluation path includes repeatable experiment tracking and failure diagnosis. The hosted UI is a technical workbench with self-service account registration; real scores require reviewed ground truth and configured model services. The hosted deployment guide tracks its beta limits.
+The local RAG and evaluation path includes repeatable experiment tracking, Track D abstention metrics, and failure diagnosis. The hosted UI is a technical workbench with self-service account registration. The validated production configuration uses Dense + BM25 RRF with ElementAwareChunker (1000/200), nomic-embed-text (768d), and llama3.2:3b. Experimental components (SPLADE, Reranking, HyDE, Heuristic Routing) are documented as rejected, and Learned Routing is blocked pending sufficient independent ground-truth data.

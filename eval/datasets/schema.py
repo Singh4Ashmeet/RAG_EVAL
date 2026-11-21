@@ -38,6 +38,10 @@ class QuestionCategory(StrEnum):
     CROSS_DOCUMENT = "cross_document"
     UNANSWERABLE = "unanswerable"
     MISLEADING_TERMINOLOGY = "misleading_terminology"
+    TABLE_LOOKUP = "table_lookup"
+    NUMERICAL_COMPARISON = "numerical_comparison"
+    ADVERSARIAL = "adversarial"
+    PROVENANCE = "provenance"
 
 
 class Difficulty(StrEnum):
@@ -53,6 +57,8 @@ class CorpusTrack(StrEnum):
 
     TRACK_A = "track_a"
     TRACK_B = "track_b"
+    TRACK_C = "track_c"
+    TRACK_D = "track_d"
 
 
 class AnnotationProvenance(BaseModel):
@@ -106,10 +112,26 @@ class EvaluationCase(BaseModel):
     # M3 annotation metadata: defaults ensure legacy records remain unverified
     status: AnnotationStatus = Field(default=AnnotationStatus.UNVERIFIED)
     answerability: Answerability = Field(default=Answerability.UNDETERMINED)
+    answerable: bool | None = None
+    requires_multi_chunk: bool = False
+    requires_table: bool = False
     category: QuestionCategory | None = None
     difficulty: Difficulty | None = None
     provenance: AnnotationProvenance | None = None
     track: CorpusTrack | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def sync_answerable(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "answerable" in data and "answerability" not in data:
+                if data["answerable"] is False:
+                    data["answerability"] = Answerability.UNANSWERABLE
+                elif data["answerable"] is True:
+                    data["answerability"] = Answerability.ANSWERABLE
+            elif "answerability" in data and "answerable" not in data:
+                data["answerable"] = data["answerability"] != Answerability.UNANSWERABLE
+        return data
 
     @field_validator("query_id", "query")
     @classmethod
@@ -174,6 +196,7 @@ class EvaluationDataset(BaseModel):
 
     dataset_id: str = Field(..., min_length=1)
     sha256: str = Field(..., min_length=64, max_length=64)
+    version: str = Field(default="1.0.0", min_length=1)
     cases: list[EvaluationCase] = Field(..., min_length=1)
     track: CorpusTrack | None = None
 

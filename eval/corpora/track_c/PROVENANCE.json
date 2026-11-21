@@ -1,0 +1,45 @@
+{
+  "track": "track_c",
+  "corpus_id": "rag_eval_multiformat_corpus",
+  "curation_date": "2026-11-16T12:00:00Z",
+  "curator": "RAG_EVAL Curation Team",
+  "description": "Multi-format corpus (Markdown, PDF, DOCX, TXT) with tables and provenance for Track C.",
+  "documents": [
+    {
+      "filename": "system_spec.md",
+      "title": "System Specification and Infrastructure Architecture",
+      "sha256": "2c869a47619a12fee7bf783f4b7d516b403a5859481d86e8c6adcd9114d152e2",
+      "document_id": "doc_2c869a47619a12fe",
+      "source_url": "file:///eval/corpora/track_c/system_spec.md",
+      "license_or_reuse_terms": "Proprietary / Internal project documentation",
+      "retrieved_at": "2026-11-16T12:00:00Z"
+    },
+    {
+      "filename": "operations_guide.pdf",
+      "title": "Operations Guide and High Availability Runbook",
+      "sha256": "21572e58b8b61bc2ba5fcddda01e6e9a21b39dca27181a3dc32f739099a51254",
+      "document_id": "doc_21572e58b8b61bc2",
+      "source_url": "file:///eval/corpora/track_c/operations_guide.pdf",
+      "license_or_reuse_terms": "Proprietary / Internal project documentation",
+      "retrieved_at": "2026-11-16T12:00:00Z"
+    },
+    {
+      "filename": "product_evaluation.docx",
+      "title": "Model Benchmark and Quantitative Performance Evaluation",
+      "sha256": "8ba7306c9afe56ff245ead55c0cb5d97c2002d94ba8e8ae5bf1e75815f42a90f",
+      "document_id": "doc_8ba7306c9afe56ff",
+      "source_url": "file:///eval/corpora/track_c/product_evaluation.docx",
+      "license_or_reuse_terms": "Proprietary / Internal project documentation",
+      "retrieved_at": "2026-11-16T12:00:00Z"
+    },
+    {
+      "filename": "incident_log.txt",
+      "title": "Incident Report Log - Q1 Infrastructure Operations",
+      "sha256": "31dc07e6f650404a001b232d0db20d714cc01ac1c1fa56dc44f3e342d870fd6c",
+      "document_id": "doc_31dc07e6f650404a",
+      "source_url": "file:///eval/corpora/track_c/incident_log.txt",
+      "license_or_reuse_terms": "Proprietary / Internal project documentation",
+      "retrieved_at": "2026-11-16T12:00:00Z"
+    }
+  ]
+}

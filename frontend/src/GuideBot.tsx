@@ -41,7 +41,7 @@ const WORKSPACE_STEPS: TourStep[] = [
     target: '[data-tour="upload"]',
     title: '2. Upload Source Material',
     subtitle: 'Stable, Deterministic Element Extraction',
-    body: 'Upload UTF-8 text (.txt) or Markdown (.md) documents up to 25 MiB. Each file is parsed into stable elements with immutable IDs (elem_...). When you adjust chunk sizes later, your ground-truth labels remain valid.',
+    body: 'Upload supported documents (.txt, .md, .pdf, .docx) up to 25 MiB. Each file is parsed into stable elements with immutable IDs (elem_...). When you adjust chunk sizes later, your ground-truth labels remain valid.',
     section: 'Corpus',
     actionLabel: 'Next: Document Registry →',
     tip: 'Select a document file above to begin.',

@@ -16,6 +16,7 @@ class RetrievalStrategy(StrEnum):
     DENSE = "dense"
     SPARSE = "sparse"
     HYBRID = "hybrid"
+    HYDE = "hyde"
 
 
 class SearchResult(BaseModel):

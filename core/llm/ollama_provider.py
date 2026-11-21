@@ -15,11 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class OllamaLLMProvider:
-    """Generate non-streaming chat responses using an available Ollama model.
-
-    The provider does not start Ollama or download models. Model availability is
-    checked by the first request and reported as :class:`LLMError` on failure.
-    """
+    """Generate non-streaming chat responses using an available Ollama model."""
 
     def __init__(
         self,
@@ -161,6 +157,7 @@ class OllamaLLMProvider:
         if not system_prompt.strip() or not user_prompt.strip():
             raise LLMError("System and user prompts must be non-empty.")
 
+        request_timeout: float | None = None
         # Handle deadline
         if deadline is not None:
             if deadline.expired:

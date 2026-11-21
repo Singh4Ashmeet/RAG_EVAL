@@ -17,6 +17,14 @@ class CorruptedFileError(ParserError):
     """Raised when a supported input file cannot be opened or decoded."""
 
 
+class EncryptedDocumentError(ParserError):
+    """Raised when an encrypted or password-protected document cannot be opened."""
+
+
+class OCRError(ParserError):
+    """Raised when OCR extraction fails or OCR dependencies are unavailable."""
+
+
 class ChunkerError(RAGEvalError):
     """Raised when document chunking fails."""
 

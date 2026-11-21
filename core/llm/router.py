@@ -114,7 +114,7 @@ class CircuitBreakerOpenError(LLMError):
 
 # Cache for provider instances and circuit breakers
 _chat_provider_cache: dict[str, LLMProvider] = {}
-_embedding_provider_cache: dict[str, LLMProvider] = {}
+_embedding_provider_cache: dict[str, Any] = {}
 _circuit_breakers: dict[str, CircuitBreaker] = {}
 
 
@@ -239,7 +239,7 @@ class CircuitBreaker:
 
     def _is_failure_recoverable(self, exc: Exception) -> bool:
         """Determine if an exception counts as a circuit breaker failure."""
-        if isinstance(exc, ProviderFallbackExhaustedError) and exc.__cause__ is not None:
+        if isinstance(exc, ProviderFallbackExhaustedError) and isinstance(exc.__cause__, Exception):
             return _is_recoverable_error(exc.__cause__)
         return _is_recoverable_error(exc)
 
@@ -999,7 +999,7 @@ def _is_recoverable_error(exc: Exception) -> bool:
         return True
 
     if isinstance(exc, ProviderFallbackExhaustedError):
-        if exc.__cause__ is not None:
+        if isinstance(exc.__cause__, Exception):
             return _is_recoverable_error(exc.__cause__)
         return True
 
@@ -1178,6 +1178,7 @@ def get_chat_provider(provider_name: str | None = None) -> LLMProvider:
     raw_primary = _create_raw_provider(provider_name, settings)
     wrapped_primary = _wrap_provider_pipeline(provider_name, raw_primary, settings)
 
+    provider: LLMProvider
     if settings.fallback_enabled:
         fallback_names = [
             f for f in _parse_fallback_providers(settings.fallback_providers) if f != provider_name

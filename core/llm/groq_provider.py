@@ -70,7 +70,7 @@ class GroqLLMProvider:
         if client is not None:
             self._client = client
         else:
-            client_config = {"api_key": self._api_key}
+            client_config: dict[str, Any] = {"api_key": self._api_key}
             if self._base_url:
                 client_config["base_url"] = self._base_url
             self._client = Groq(**client_config, timeout=timeout, max_retries=0)
@@ -78,7 +78,7 @@ class GroqLLMProvider:
         if async_client is not None:
             self._async_client = async_client
         else:
-            async_client_config = {"api_key": self._api_key}
+            async_client_config: dict[str, Any] = {"api_key": self._api_key}
             if self._base_url:
                 async_client_config["base_url"] = self._base_url
             self._async_client = AsyncGroq(**async_client_config, timeout=timeout, max_retries=0)
@@ -216,6 +216,7 @@ class GroqLLMProvider:
         if not system_prompt.strip() or not user_prompt.strip():
             raise LLMError("System and user prompts must be non-empty.")
 
+        request_timeout: float | None = None
         # Handle deadline
         if deadline is not None:
             if deadline.expired:

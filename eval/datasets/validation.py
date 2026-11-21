@@ -684,11 +684,12 @@ class DatasetValidator:
         chunks: list[Chunk] = []
         filename_by_doc_id: dict[str, str] = {}
 
+        supported_exts = self._pipeline.parser_registry.supported_extensions()
         candidate_files = [
             f
             for f in corpus_path.iterdir()
             if f.is_file()
-            and f.suffix.lower() in {".txt", ".md"}
+            and f.suffix.lower() in supported_exts
             and f.name not in {"manifest.json", "PROVENANCE.json"}
         ]
 

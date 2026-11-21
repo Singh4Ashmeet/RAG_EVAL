@@ -111,7 +111,7 @@ class TestDatasetIntegrity:
     def test_track_b_dataset_integrity(self) -> None:
         dataset = load_jsonl_dataset(TRACK_B_DATASET)
         assert dataset.track == CorpusTrack.TRACK_B
-        assert 10 <= len(dataset.cases) <= 12
+        assert len(dataset.cases) >= 50
         query_ids = [c.query_id for c in dataset.cases]
         assert len(query_ids) == len(set(query_ids)), "Duplicate query IDs in Track B"
 
@@ -152,7 +152,7 @@ class TestValidationAndIsolation:
         assert report.valid is True
         assert len(report.errors) == 0
         assert len(report.warnings) == 0
-        assert report.cases_checked == 11
+        assert report.cases_checked >= 50
         assert report.documents_checked == 1
 
     def test_track_a_against_track_b_corpus_fails_validation(self) -> None:
@@ -219,7 +219,7 @@ class TestCoverageReporting:
             expected_track=CorpusTrack.TRACK_B,
         )
 
-        assert cov_report.total_cases == 11
+        assert cov_report.total_cases >= 50
         assert cov_report.validation_valid is True
         assert cov_report.manifest_verified is True
         assert cov_report.quality_ratios.verified_ratio == 1.0
@@ -227,7 +227,7 @@ class TestCoverageReporting:
 
         for metric in ("recall@5", "source_element_recall@5", "token_f1", "exact_match"):
             cov = cov_report.metric_coverage[metric]
-            assert cov.eligible_cases == 11
+            assert cov.eligible_cases >= 50
             assert cov.excluded_cases == 0
             assert cov.coverage_ratio == 1.0
             assert cov.calculable is True

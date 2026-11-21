@@ -30,7 +30,7 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         "--track",
         type=str,
         required=True,
-        choices=["track_a", "track_b"],
+        choices=["track_a", "track_b", "track_c", "track_d"],
         help="Golden evaluation track to run.",
     )
     parser.add_argument(
@@ -87,6 +87,18 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         default=180.0,
         help="Timeout in seconds for Ollama LLM requests (default: 180.0).",
     )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=1000,
+        help="Chunk size in characters (default: 1000).",
+    )
+    parser.add_argument(
+        "--chunk-overlap",
+        type=int,
+        default=200,
+        help="Chunk overlap in characters (default: 200).",
+    )
     return parser.parse_args(args)
 
 
@@ -107,6 +119,8 @@ def main(args: list[str] | None = None) -> int:
         cutoffs=tuple(parsed.cutoffs),
         run_generation=not parsed.no_generation,
         request_timeout=parsed.timeout,
+        chunk_size=parsed.chunk_size,
+        chunk_overlap=parsed.chunk_overlap,
     )
 
     print(f"=== Baseline Evaluation: {track.value.upper()} ===")

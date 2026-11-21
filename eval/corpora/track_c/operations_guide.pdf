@@ -1,0 +1,102 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 6 0 R >> >> /Contents 7 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 6 0 R >> >> /Contents 8 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 6 0 R >> >> /Contents 9 0 R >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+7 0 obj
+<< /Length 380 >>
+stream
+BT
+/F1 12 Tf
+72 712 Td
+(Operations Guide - Page 1) Tj
+0 -24 Td
+(Section 1: Cluster Node Topology and High Availability Design) Tj
+0 -20 Td
+(The production evaluation cluster utilizes a three-node distributed consensus design.) Tj
+0 -18 Td
+(Primary coordinator: node-alpha-01 handles active search and query orchestration.) Tj
+0 -18 Td
+(Secondary replica: node-beta-02 maintains streaming write-ahead log replication.) Tj
+0 -18 Td
+(Quorum witness: node-gamma-03 participates in leader election and split-brain resolution.) Tj
+0 -20 Td
+(Each node resides in a distinct physical rack with redundant 25 Gbps top-of-rack switches.) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 395 >>
+stream
+BT
+/F1 12 Tf
+72 712 Td
+(Operations Guide - Page 2) Tj
+0 -24 Td
+(Section 2: High Availability and Automatic Failover Protocol) Tj
+0 -20 Td
+(Health monitoring runs over private point-to-point heartbeat channels on UDP port 7443.) Tj
+0 -18 Td
+(Heartbeat check interval: 500 milliseconds across all participating cluster members.) Tj
+0 -18 Td
+(Failover trigger timeout: 3500 milliseconds of consecutive missed heartbeats.) Tj
+0 -18 Td
+(Consensus requires a strict majority quorum of minimum 2 of 3 node votes.) Tj
+0 -20 Td
+(When node-alpha-01 fails, node-beta-02 automatically assumes primary role within 4.2 seconds.) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Length 410 >>
+stream
+BT
+/F1 12 Tf
+72 712 Td
+(Operations Guide - Page 3) Tj
+0 -24 Td
+(Section 3: Disaster Recovery Protocols and Offsite Backup Schedules) Tj
+0 -20 Td
+(Disaster recovery procedures guarantee data survivability against complete datacenter outages.) Tj
+0 -18 Td
+(Target Recovery Point Objective RPO: 15 minutes maximum permissible data loss.) Tj
+0 -18 Td
+(Target Recovery Time Objective RTO: 120 minutes maximum service restoration duration.) Tj
+0 -18 Td
+(Offsite differential snapshot interval: 30 minutes transferred over encrypted TLS tunnel.) Tj
+0 -20 Td
+(Cold standby recovery procedures are validated monthly in the secondary failover region.) Tj
+ET
+endstream
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000129 00000 n 
+0000000252 00000 n 
+0000000375 00000 n 
+0000000498 00000 n 
+0000000569 00000 n 
+0000000999 00000 n 
+0000001444 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+1904
+%%EOF

@@ -6,7 +6,7 @@ services:
     command: ["sh", "-c", "uv run alembic upgrade head && uv run uvicorn apps.api.main:app --host 0.0.0.0 --port 8000"]
     environment:
       DATABASE_URL: postgresql+psycopg://rag_eval:${POSTGRES_PASSWORD}@postgres:5432/rag_eval
-      REDIS_URL: redis://redis:6379/0
+      WORKER_DATABASE_URL: postgresql+psycopg://rag_eval:${POSTGRES_PASSWORD}@postgres:5432/rag_eval
       S3_ENDPOINT_URL: http://minio:9000
       S3_BUCKET: rag-eval-private
       AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY}
@@ -30,8 +30,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
       minio-init:
         condition: service_completed_successfully
     healthcheck:
@@ -39,31 +37,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
-  worker:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-    command: ["uv", "run", "rq", "worker", "--url", "redis://redis:6379/0", "rag_eval"]
-    environment:
-      DATABASE_URL: postgresql+psycopg://rag_eval:${POSTGRES_PASSWORD}@postgres:5432/rag_eval
-      REDIS_URL: redis://redis:6379/0
-      S3_ENDPOINT_URL: http://minio:9000
-      S3_BUCKET: rag-eval-private
-      AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY}
-      AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY}
-      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      SKIP_RLS_SETUP: "true"
-      SKIP_SCHEMA_INIT: "true"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      api:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      minio-init:
-        condition: service_completed_successfully
   postgres:
     image: postgres:17-alpine
     environment:
@@ -76,10 +49,6 @@ services:
       interval: 5s
       timeout: 3s
       retries: 15
-  redis:
-    image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes: ["redis_data:/data"]
   minio:
     image: minio/minio:latest
     command: ["server", "/data", "--console-address", ":9001"]
@@ -100,5 +69,4 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
   object_data:

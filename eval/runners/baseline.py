@@ -67,6 +67,8 @@ class BaselineConfig(BaseModel):
     top_k: int = 5
     run_generation: bool = True
     request_timeout: float = 180.0
+    chunk_size: int = 1000
+    chunk_overlap: int = 200
 
 
 class BaselineRunManifest(BaseModel):
@@ -80,6 +82,7 @@ class BaselineRunManifest(BaseModel):
     completed_at: datetime
     duration_seconds: float = Field(ge=0.0)
     dataset_id: str
+    dataset_version: str = Field(default="1.0.0")
     dataset_sha256: str
     corpus_sha256: str
     config_sha256: str
@@ -115,7 +118,11 @@ def run_baseline(
     dataset = _load_and_validate_dataset(dataset_path, config.track)
 
     # 2. Build corpus index for validation
-    corpus_manifest, corpus_index = _build_corpus_index(corpus_dir)
+    corpus_manifest, corpus_index = _build_corpus_index(
+        corpus_dir,
+        chunk_size=config.chunk_size,
+        chunk_overlap=config.chunk_overlap,
+    )
 
     # 3. Validate dataset against corpus
     validator = DatasetValidator()
@@ -140,6 +147,8 @@ def run_baseline(
             embed_model=config.embed_model,
             ollama_host=config.ollama_host,
             timeout=config.request_timeout,
+            chunk_size=config.chunk_size,
+            chunk_overlap=config.chunk_overlap,
         )
 
         # 5. Optionally create answer generator
@@ -194,6 +203,7 @@ def run_baseline(
             completed_at=completed_at,
             duration_seconds=round(duration_seconds, 3),
             dataset_id=dataset.dataset_id,
+            dataset_version=getattr(dataset, "version", "1.0.0"),
             dataset_sha256=dataset.sha256,
             corpus_sha256=corpus_sha256,
             config_sha256=_config_digest(config),
@@ -239,6 +249,7 @@ def run_baseline(
             completed_at=failed_at,
             duration_seconds=round(duration_seconds, 3),
             dataset_id=dataset.dataset_id,
+            dataset_version=getattr(dataset, "version", "1.0.0"),
             dataset_sha256=dataset.sha256,
             corpus_sha256=_corpus_digest(corpus_manifest),
             config_sha256=_config_digest(config),
@@ -283,7 +294,9 @@ def _load_and_validate_dataset(
     return dataset
 
 
-def _build_corpus_index(corpus_dir: Path) -> tuple[CorpusManifest | None, CorpusIndex]:
+def _build_corpus_index(
+    corpus_dir: Path, chunk_size: int = 1000, chunk_overlap: int = 200
+) -> tuple[CorpusManifest | None, CorpusIndex]:
     """Load corpus manifest and build a corpus index for validation."""
     manifest_path = corpus_dir / "manifest.json"
     manifest = None
@@ -295,15 +308,18 @@ def _build_corpus_index(corpus_dir: Path) -> tuple[CorpusManifest | None, Corpus
             pass  # Validation will catch manifest issues
 
     # Ingest all documents to build the index
-    pipeline = create_default_ingestion_pipeline()
+    pipeline = create_default_ingestion_pipeline(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     documents = []
     all_chunks: list[Chunk] = []
 
     # Find source documents in corpus directory
+    supported_exts = pipeline.parser_registry.supported_extensions()
     source_files = sorted(
         p
         for p in corpus_dir.iterdir()
-        if p.is_file() and p.suffix in {".md", ".txt"} and p.name != "manifest.json"
+        if p.is_file()
+        and p.suffix.lower() in supported_exts
+        and p.name not in {"manifest.json", "PROVENANCE.json"}
     )
 
     for source_file in source_files:
@@ -328,18 +344,23 @@ def _ingest_and_index(
     embed_model: str,
     ollama_host: str,
     timeout: float = 120.0,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 200,
 ) -> tuple[DenseRetriever, list[Chunk]]:
     """Ingest corpus documents and index them into a fresh SQLite vector store."""
-    pipeline = create_default_ingestion_pipeline()
+    pipeline = create_default_ingestion_pipeline(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     embedder = OllamaEmbedder(embed_model, host=ollama_host, timeout=timeout)
     vector_store = SQLiteVectorStore(db_path)
     retriever = DenseRetriever(embedder, vector_store)
 
     all_chunks: list[Chunk] = []
+    supported_exts = pipeline.parser_registry.supported_extensions()
     source_files = sorted(
         p
         for p in corpus_dir.iterdir()
-        if p.is_file() and p.suffix in {".md", ".txt"} and p.name != "manifest.json"
+        if p.is_file()
+        and p.suffix.lower() in supported_exts
+        and p.name not in {"manifest.json", "PROVENANCE.json"}
     )
 
     for source_file in source_files:

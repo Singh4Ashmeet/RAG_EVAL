@@ -35,11 +35,20 @@ class TestDefaultIngestionPipelineFactory:
         supported = pipeline.parser_registry.supported_extensions()
         assert ".md" in supported
 
+    def test_factory_registers_pdf_extension(self) -> None:
+        pipeline = create_default_ingestion_pipeline()
+        supported = pipeline.parser_registry.supported_extensions()
+        assert ".pdf" in supported
+
+    def test_factory_registers_docx_extension(self) -> None:
+        pipeline = create_default_ingestion_pipeline()
+        supported = pipeline.parser_registry.supported_extensions()
+        assert ".docx" in supported
+
     def test_factory_supported_extensions_exact(self) -> None:
         pipeline = create_default_ingestion_pipeline()
         supported = pipeline.parser_registry.supported_extensions()
-        # PlainTextParser only supports .txt and .md
-        assert supported == {".txt", ".md"}
+        assert supported == {".txt", ".md", ".pdf", ".docx"}
 
     def test_factory_uses_element_aware_chunker_with_defaults(self) -> None:
         pipeline = create_default_ingestion_pipeline()
@@ -91,6 +100,38 @@ class TestEndToEndPipelineIngestion:
         assert len(result.chunks) > 0
         assert result.errors == []
 
+    def test_e2e_valid_pdf_file(self) -> None:
+        fixtures_dir = Path(__file__).resolve().parents[1] / "fixtures" / "ingestion"
+        pdf_file = fixtures_dir / "sample.pdf"
+        assert pdf_file.exists()
+
+        pipeline = create_default_ingestion_pipeline()
+        result = pipeline.ingest(pdf_file)
+
+        assert result.status == IngestionStatus.SUCCESS
+        assert result.source_path == pdf_file
+        assert result.document is not None
+        assert result.document_id == result.document.metadata.document_id
+        assert result.document.page_count == 2
+        assert len(result.chunks) > 0
+        assert result.errors == []
+
+    def test_e2e_valid_docx_file(self) -> None:
+        fixtures_dir = Path(__file__).resolve().parents[1] / "fixtures" / "ingestion"
+        docx_file = fixtures_dir / "sample.docx"
+        assert docx_file.exists()
+
+        pipeline = create_default_ingestion_pipeline()
+        result = pipeline.ingest(docx_file)
+
+        assert result.status == IngestionStatus.SUCCESS
+        assert result.source_path == docx_file
+        assert result.document is not None
+        assert result.document_id == result.document.metadata.document_id
+        assert len(result.document.elements) >= 3
+        assert len(result.chunks) > 0
+        assert result.errors == []
+
     def test_e2e_empty_file(self, tmp_path: Path) -> None:
         pipeline = create_default_ingestion_pipeline()
         empty_file = tmp_path / "empty_doc.txt"
@@ -106,16 +147,16 @@ class TestEndToEndPipelineIngestion:
 
     def test_e2e_unsupported_extension(self, tmp_path: Path) -> None:
         pipeline = create_default_ingestion_pipeline()
-        pdf_file = tmp_path / "unsupported.pdf"
-        pdf_file.write_bytes(b"%PDF-1.4 dummy binary content")
+        unknown_file = tmp_path / "unsupported.xyz"
+        unknown_file.write_bytes(b"dummy binary content")
 
-        result = pipeline.ingest(pdf_file)
+        result = pipeline.ingest(unknown_file)
 
         assert result.status == IngestionStatus.FAILED
         assert result.document is None
         assert result.chunks == []
         assert len(result.errors) == 1
-        assert "Unsupported file format '.pdf'" in result.errors[0]
+        assert "Unsupported file format '.xyz'" in result.errors[0]
 
     def test_e2e_missing_file(self, tmp_path: Path) -> None:
         pipeline = create_default_ingestion_pipeline()
