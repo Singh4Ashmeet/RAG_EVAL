@@ -6,8 +6,8 @@
     {
       "filename": "system_spec.md",
       "title": "System Specification and Infrastructure Architecture",
-      "sha256": "2c869a47619a12fee7bf783f4b7d516b403a5859481d86e8c6adcd9114d152e2",
-      "document_id": "doc_2c869a47619a12fe",
+      "sha256": "2a22a64a8901f8b9fbd3fa1b9bc35cffdac4fdbd04bf6d30d5eeb3a4d3e6229f",
+      "document_id": "doc_2a22a64a8901f8b9",
       "source_url": "file:///eval/corpora/track_c/system_spec.md",
       "license_or_reuse_terms": "Proprietary / Internal project documentation",
       "retrieved_at": "2026-11-16T12:00:00Z"
@@ -33,8 +33,8 @@
     {
       "filename": "incident_log.txt",
       "title": "Incident Report Log - Q1 Infrastructure Operations",
-      "sha256": "31dc07e6f650404a001b232d0db20d714cc01ac1c1fa56dc44f3e342d870fd6c",
-      "document_id": "doc_31dc07e6f650404a",
+      "sha256": "878722b903c1bf464e107476c4ae99ed8b6fe2af2aab4a322026cfa21f7c3115",
+      "document_id": "doc_878722b903c1bf46",
       "source_url": "file:///eval/corpora/track_c/incident_log.txt",
       "license_or_reuse_terms": "Proprietary / Internal project documentation",
       "retrieved_at": "2026-11-16T12:00:00Z"

@@ -506,10 +506,10 @@ def build_track_c() -> list[dict]:
             e_to_c[eid] = c.chunk_id
 
     # Document IDs
-    spec_id = "doc_2c869a47619a12fe"
+    spec_id = "doc_2a22a64a8901f8b9"
     pdf_id = "doc_21572e58b8b61bc2"
     docx_id = "doc_8ba7306c9afe56ff"
-    log_id = "doc_31dc07e6f650404a"
+    log_id = "doc_878722b903c1bf46"
 
     doc_files = {
         spec_id: "system_spec.md",
@@ -934,7 +934,7 @@ def main() -> None:
     print("Building Track B (52 queries)...")
     track_b_cases = build_track_b()
     track_b_path = golden_dir / "track_b.jsonl"
-    with open(track_b_path, "w", encoding="utf-8") as f:
+    with open(track_b_path, "w", encoding="utf-8", newline="\n") as f:
         for c in track_b_cases:
             f.write(json.dumps(c) + "\n")
     print(f"Track B saved to {track_b_path} ({len(track_b_cases)} cases)")
@@ -942,7 +942,7 @@ def main() -> None:
     print("Building Track C (30 queries)...")
     track_c_cases = build_track_c()
     track_c_path = golden_dir / "track_c.jsonl"
-    with open(track_c_path, "w", encoding="utf-8") as f:
+    with open(track_c_path, "w", encoding="utf-8", newline="\n") as f:
         for c in track_c_cases:
             f.write(json.dumps(c) + "\n")
     print(f"Track C saved to {track_c_path} ({len(track_c_cases)} cases)")
@@ -950,7 +950,7 @@ def main() -> None:
     print("Building Track D (25 queries)...")
     track_d_cases = build_track_d()
     track_d_path = golden_dir / "track_d.jsonl"
-    with open(track_d_path, "w", encoding="utf-8") as f:
+    with open(track_d_path, "w", encoding="utf-8", newline="\n") as f:
         for c in track_d_cases:
             f.write(json.dumps(c) + "\n")
     print(f"Track D saved to {track_d_path} ({len(track_d_cases)} cases)")
