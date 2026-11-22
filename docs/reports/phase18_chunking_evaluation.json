@@ -1,0 +1,498 @@
+{
+  "phase": 18,
+  "timestamp": "2026-11-22T12:16:37Z",
+  "decision": "PHASE 18 COMPLETE \u2014 CHUNK-BOUNDARY HYPOTHESIS NOT ACTIONABLE, BASELINE RETAINED",
+  "production_baseline_retained": true,
+  "promoted_configuration": null,
+  "baseline_config": {
+    "chunker": "ElementAwareChunker(1000, 200)",
+    "embedding": "nomic-embed-text:latest (768d)",
+    "retriever": "Dense + BM25 RRF",
+    "candidate_k": 20,
+    "rrf_k": 100,
+    "final_k": 5
+  },
+  "phase11_development_results": [
+    {
+      "strategy_name": "Candidate A (Baseline)",
+      "chunker_class": "ElementAwareChunker",
+      "total_units": 23,
+      "avg_unit_length": 772.4,
+      "metrics": {
+        "total_queries": 109,
+        "hit_at_1": 0.7982,
+        "hit_at_3": 0.9266,
+        "hit_at_5": 0.9633,
+        "mrr_at_5": 0.87,
+        "recall_at_5": 0.9633,
+        "mean_dense_lat_ms": 20.55,
+        "mean_bm25_lat_ms": 0.7,
+        "mean_total_lat_ms": 21.38,
+        "p50_total_lat_ms": 20.84,
+        "p95_total_lat_ms": 25.9
+      },
+      "wins": 0,
+      "losses": 0,
+      "net_wins": 0
+    },
+    {
+      "strategy_name": "Candidate B (Element Atomic)",
+      "chunker_class": "ElementAtomicChunker",
+      "total_units": 105,
+      "avg_unit_length": 167.6,
+      "metrics": {
+        "total_queries": 109,
+        "hit_at_1": 0.7706,
+        "hit_at_3": 0.9083,
+        "hit_at_5": 0.9358,
+        "mrr_at_5": 0.8398,
+        "recall_at_5": 0.3776,
+        "mean_dense_lat_ms": 90.73,
+        "mean_bm25_lat_ms": 1.06,
+        "mean_total_lat_ms": 92.03,
+        "p50_total_lat_ms": 91.36,
+        "p95_total_lat_ms": 101.98
+      },
+      "wins": 9,
+      "losses": 15,
+      "net_wins": -6
+    },
+    {
+      "strategy_name": "Candidate C (Heading Attached)",
+      "chunker_class": "ElementHeadingAttachedChunker",
+      "total_units": 105,
+      "avg_unit_length": 189.7,
+      "metrics": {
+        "total_queries": 109,
+        "hit_at_1": 0.7706,
+        "hit_at_3": 0.8807,
+        "hit_at_5": 0.9358,
+        "mrr_at_5": 0.8364,
+        "recall_at_5": 0.452,
+        "mean_dense_lat_ms": 91.12,
+        "mean_bm25_lat_ms": 1.1,
+        "mean_total_lat_ms": 92.49,
+        "p50_total_lat_ms": 92.83,
+        "p95_total_lat_ms": 100.67
+      },
+      "wins": 9,
+      "losses": 16,
+      "net_wins": -7
+    },
+    {
+      "strategy_name": "Candidate D (Boundary Aware 500)",
+      "chunker_class": "BoundaryAwareChunker",
+      "total_units": 56,
+      "avg_unit_length": 327.0,
+      "metrics": {
+        "total_queries": 109,
+        "hit_at_1": 0.7523,
+        "hit_at_3": 0.9083,
+        "hit_at_5": 0.945,
+        "mrr_at_5": 0.8329,
+        "recall_at_5": 0.5282,
+        "mean_dense_lat_ms": 49.01,
+        "mean_bm25_lat_ms": 0.9,
+        "mean_total_lat_ms": 50.15,
+        "p50_total_lat_ms": 50.27,
+        "p95_total_lat_ms": 54.9
+      },
+      "wins": 9,
+      "losses": 18,
+      "net_wins": -9
+    }
+  ],
+  "protected_track_results": [
+    {
+      "strategy_name": "Candidate A (Baseline)",
+      "chunker_class": "ElementAwareChunker",
+      "total_units": 67,
+      "avg_unit_length": 812.9,
+      "min_unit_length": 106,
+      "max_unit_length": 1000,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_dense_lat_ms": 21.76,
+          "mean_bm25_lat_ms": 0.61,
+          "mean_total_lat_ms": 22.52,
+          "p50_total_lat_ms": 21.31,
+          "p95_total_lat_ms": 35.6
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5962,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5115,
+          "recall_at_5": 0.7019,
+          "mean_dense_lat_ms": 37.06,
+          "mean_bm25_lat_ms": 0.97,
+          "mean_total_lat_ms": 38.3,
+          "p50_total_lat_ms": 38.63,
+          "p95_total_lat_ms": 54.16
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_dense_lat_ms": 10.25,
+          "mean_bm25_lat_ms": 0.82,
+          "mean_total_lat_ms": 11.15,
+          "p50_total_lat_ms": 10.25,
+          "p95_total_lat_ms": 16.21
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 0,
+      "losses": 0,
+      "unchanged": 121,
+      "net_wins": 0,
+      "p13_fixed": [],
+      "p13_regressed": [],
+      "forensic_summary": {
+        "total_failures_analyzed": 0,
+        "in_top_5": 0,
+        "in_top_20": 0,
+        "in_top_40": 0,
+        "category_a_suboptimal": 0,
+        "category_b_pool_outside_top5": 0,
+        "category_c_absent": 0
+      },
+      "mean_total_latency_ms": 0.0,
+      "latency_multiplier": 1.0,
+      "gates_passed": {},
+      "all_gates_passed": false
+    },
+    {
+      "strategy_name": "Candidate B (Element Atomic)",
+      "chunker_class": "ElementAtomicChunker",
+      "total_units": 358,
+      "avg_unit_length": 150.7,
+      "min_unit_length": 2,
+      "max_unit_length": 1000,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.8571,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9071,
+          "recall_at_5": 1.0,
+          "mean_dense_lat_ms": 112.57,
+          "mean_bm25_lat_ms": 1.17,
+          "mean_total_lat_ms": 114.05,
+          "p50_total_lat_ms": 118.82,
+          "p95_total_lat_ms": 132.65
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.1346,
+          "hit_at_3": 0.3077,
+          "hit_at_5": 0.3654,
+          "mrr_at_5": 0.2186,
+          "recall_at_5": 0.3173,
+          "mean_dense_lat_ms": 241.17,
+          "mean_bm25_lat_ms": 1.67,
+          "mean_total_lat_ms": 243.15,
+          "p50_total_lat_ms": 210.14,
+          "p95_total_lat_ms": 313.51
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.8667,
+          "hit_at_3": 0.9333,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9094,
+          "recall_at_5": 0.9833,
+          "mean_dense_lat_ms": 41.84,
+          "mean_bm25_lat_ms": 1.01,
+          "mean_total_lat_ms": 43.09,
+          "p50_total_lat_ms": 44.46,
+          "p95_total_lat_ms": 51.47
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 5,
+      "losses": 31,
+      "unchanged": 85,
+      "net_wins": -26,
+      "p13_fixed": [
+        "track_a_q01",
+        "track_a_q05",
+        "track_a_q06",
+        "track_b_q06",
+        "track_b_q24"
+      ],
+      "p13_regressed": [
+        "track_a_q07",
+        "track_b_q12",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q25",
+        "track_b_q33",
+        "track_b_q37",
+        "track_b_q39",
+        "track_b_q43",
+        "track_b_q44",
+        "track_b_q50"
+      ],
+      "forensic_summary": {
+        "total_failures_analyzed": 121,
+        "in_top_5": 63,
+        "in_top_20": 69,
+        "in_top_40": 75,
+        "category_a_suboptimal": 18,
+        "category_b_pool_outside_top5": 6,
+        "category_c_absent": 27
+      },
+      "mean_total_latency_ms": 161.8,
+      "latency_multiplier": 4.22,
+      "gates_passed": {
+        "g1_track_a_hit5": true,
+        "g2a_track_b_hit5": false,
+        "g2b_track_b_recall5": false,
+        "g3_track_c_hit1": false,
+        "g4_track_d_abstention": true,
+        "g5_net_wins": false,
+        "g6_latency": false,
+        "g7_no_excess_regressions": false
+      },
+      "all_gates_passed": false
+    },
+    {
+      "strategy_name": "Candidate C (Heading Attached)",
+      "chunker_class": "ElementHeadingAttachedChunker",
+      "total_units": 358,
+      "avg_unit_length": 169.7,
+      "min_unit_length": 8,
+      "max_unit_length": 1200,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.7857,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 0.9286,
+          "mrr_at_5": 0.8571,
+          "recall_at_5": 0.9286,
+          "mean_dense_lat_ms": 99.07,
+          "mean_bm25_lat_ms": 1.13,
+          "mean_total_lat_ms": 100.54,
+          "p50_total_lat_ms": 98.51,
+          "p95_total_lat_ms": 138.42
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.1346,
+          "hit_at_3": 0.2308,
+          "hit_at_5": 0.3462,
+          "mrr_at_5": 0.2032,
+          "recall_at_5": 0.3077,
+          "mean_dense_lat_ms": 225.18,
+          "mean_bm25_lat_ms": 1.65,
+          "mean_total_lat_ms": 227.12,
+          "p50_total_lat_ms": 201.63,
+          "p95_total_lat_ms": 314.65
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.9,
+          "hit_at_3": 0.9333,
+          "hit_at_5": 0.9667,
+          "mrr_at_5": 0.925,
+          "recall_at_5": 0.95,
+          "mean_dense_lat_ms": 44.37,
+          "mean_bm25_lat_ms": 1.05,
+          "mean_total_lat_ms": 45.69,
+          "p50_total_lat_ms": 48.17,
+          "p95_total_lat_ms": 52.13
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 7,
+      "losses": 31,
+      "unchanged": 83,
+      "net_wins": -24,
+      "p13_fixed": [
+        "track_a_q01",
+        "track_a_q05",
+        "track_a_q06",
+        "track_a_q07",
+        "track_b_q06",
+        "track_b_q24",
+        "track_b_q32"
+      ],
+      "p13_regressed": [
+        "track_b_q12",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q25",
+        "track_b_q30",
+        "track_b_q33",
+        "track_b_q37",
+        "track_b_q39",
+        "track_b_q43",
+        "track_b_q44",
+        "track_b_q50"
+      ],
+      "forensic_summary": {
+        "total_failures_analyzed": 121,
+        "in_top_5": 60,
+        "in_top_20": 75,
+        "in_top_40": 77,
+        "category_a_suboptimal": 15,
+        "category_b_pool_outside_top5": 15,
+        "category_c_absent": 21
+      },
+      "mean_total_latency_ms": 151.97,
+      "latency_multiplier": 3.97,
+      "gates_passed": {
+        "g1_track_a_hit5": false,
+        "g2a_track_b_hit5": false,
+        "g2b_track_b_recall5": false,
+        "g3_track_c_hit1": false,
+        "g4_track_d_abstention": true,
+        "g5_net_wins": false,
+        "g6_latency": false,
+        "g7_no_excess_regressions": false
+      },
+      "all_gates_passed": false
+    },
+    {
+      "strategy_name": "Candidate D (Boundary Aware 500)",
+      "chunker_class": "BoundaryAwareChunker",
+      "total_units": 166,
+      "avg_unit_length": 337.1,
+      "min_unit_length": 12,
+      "max_unit_length": 500,
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14,
+          "hit_at_1": 0.7857,
+          "hit_at_3": 0.8571,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8571,
+          "recall_at_5": 1.0,
+          "mean_dense_lat_ms": 67.4,
+          "mean_bm25_lat_ms": 0.94,
+          "mean_total_lat_ms": 68.62,
+          "p50_total_lat_ms": 60.13,
+          "p95_total_lat_ms": 94.51
+        },
+        "Track B": {
+          "total_queries": 52,
+          "hit_at_1": 0.2692,
+          "hit_at_3": 0.4808,
+          "hit_at_5": 0.5962,
+          "mrr_at_5": 0.3891,
+          "recall_at_5": 0.5769,
+          "mean_dense_lat_ms": 75.25,
+          "mean_bm25_lat_ms": 1.03,
+          "mean_total_lat_ms": 76.57,
+          "p50_total_lat_ms": 67.1,
+          "p95_total_lat_ms": 106.87
+        },
+        "Track C": {
+          "total_queries": 30,
+          "hit_at_1": 0.8667,
+          "hit_at_3": 0.9333,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9039,
+          "recall_at_5": 1.0,
+          "mean_dense_lat_ms": 21.6,
+          "mean_bm25_lat_ms": 0.67,
+          "mean_total_lat_ms": 22.4,
+          "p50_total_lat_ms": 21.49,
+          "p95_total_lat_ms": 28.81
+        },
+        "Track D": {
+          "total_queries": 25,
+          "abstention_safe": 25,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 10,
+      "losses": 25,
+      "unchanged": 86,
+      "net_wins": -15,
+      "p13_fixed": [
+        "track_a_q01",
+        "track_a_q05",
+        "track_a_q06",
+        "track_b_q06",
+        "track_b_q10",
+        "track_b_q24",
+        "track_b_q39",
+        "track_b_q45",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_b_q07",
+        "track_b_q12",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q25",
+        "track_b_q30",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q44"
+      ],
+      "forensic_summary": {
+        "total_failures_analyzed": 121,
+        "in_top_5": 75,
+        "in_top_20": 84,
+        "in_top_40": 93,
+        "category_a_suboptimal": 24,
+        "category_b_pool_outside_top5": 9,
+        "category_c_absent": 12
+      },
+      "mean_total_latency_ms": 58.48,
+      "latency_multiplier": 1.53,
+      "gates_passed": {
+        "g1_track_a_hit5": true,
+        "g2a_track_b_hit5": false,
+        "g2b_track_b_recall5": false,
+        "g3_track_c_hit1": false,
+        "g4_track_d_abstention": true,
+        "g5_net_wins": false,
+        "g6_latency": true,
+        "g7_no_excess_regressions": false
+      },
+      "all_gates_passed": false
+    }
+  ],
+  "provenance_status": {
+    "deterministic_ids": true,
+    "element_source_mapping_valid": true,
+    "locations_preserved": true,
+    "text_verbatim": true
+  },
+  "leakage_status": {
+    "protected_tracks_used_for_tuning": false,
+    "phase11_development_isolated": true,
+    "leakage_detected": false
+  }
+}
