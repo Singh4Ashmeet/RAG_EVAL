@@ -1,0 +1,804 @@
+{
+  "phase": 19,
+  "timestamp": "2026-11-22T17:11:17Z",
+  "decision": "PHASE 19 COMPLETE \u2014 MULTI-GRANULARITY RETRIEVAL NOT ACTIONABLE, BASELINE RETAINED",
+  "production_baseline_retained": true,
+  "promoted_configuration": null,
+  "baseline_config": {
+    "chunker": "ElementAwareChunker(1000, 200)",
+    "embedding": "nomic-embed-text:latest (768d)",
+    "retriever": "Dense + BM25 RRF",
+    "candidate_k": 20,
+    "rrf_k": 100,
+    "final_k": 5
+  },
+  "phase11_development_results": [
+    {
+      "variant_name": "Variant A (Baseline Control)",
+      "description": "Baseline control: standard 1000/200 parent retrieval",
+      "metrics": {
+        "total_queries": 109.0,
+        "hit_at_1": 0.7982,
+        "hit_at_3": 0.9266,
+        "hit_at_5": 0.9633,
+        "mrr_at_5": 0.87,
+        "recall_at_5": 0.9633,
+        "mean_total_lat_ms": 34.96,
+        "p50_total_lat_ms": 34.63,
+        "p95_total_lat_ms": 46.06
+      },
+      "wins": 0,
+      "losses": 0,
+      "net_wins": 0
+    },
+    {
+      "variant_name": "Variant B_atomic",
+      "description": "Atomic element retrieval mapped to parent baseline chunks",
+      "metrics": {
+        "total_queries": 109.0,
+        "hit_at_1": 0.7706,
+        "hit_at_3": 0.9083,
+        "hit_at_5": 0.945,
+        "mrr_at_5": 0.842,
+        "recall_at_5": 0.945,
+        "mean_total_lat_ms": 134.07,
+        "p50_total_lat_ms": 132.93,
+        "p95_total_lat_ms": 166.07
+      },
+      "wins": 9,
+      "losses": 15,
+      "net_wins": -6
+    },
+    {
+      "variant_name": "Variant B_heading",
+      "description": "Heading-attached element retrieval mapped to parent baseline chunks",
+      "metrics": {
+        "total_queries": 109.0,
+        "hit_at_1": 0.7615,
+        "hit_at_3": 0.9083,
+        "hit_at_5": 0.9541,
+        "mrr_at_5": 0.8408,
+        "recall_at_5": 0.9541,
+        "mean_total_lat_ms": 100.37,
+        "p50_total_lat_ms": 98.1,
+        "p95_total_lat_ms": 140.28
+      },
+      "wins": 10,
+      "losses": 16,
+      "net_wins": -6
+    },
+    {
+      "variant_name": "Variant C_atomic",
+      "description": "Baseline candidates + Atomic parent candidates fused with RRF at parent level",
+      "metrics": {
+        "total_queries": 109.0,
+        "hit_at_1": 0.7982,
+        "hit_at_3": 0.9266,
+        "hit_at_5": 0.9541,
+        "mrr_at_5": 0.8657,
+        "recall_at_5": 0.9541,
+        "mean_total_lat_ms": 166.48,
+        "p50_total_lat_ms": 162.95,
+        "p95_total_lat_ms": 227.31
+      },
+      "wins": 6,
+      "losses": 7,
+      "net_wins": -1
+    },
+    {
+      "variant_name": "Variant C_heading",
+      "description": "Baseline candidates + Heading-attached parent candidates fused with RRF",
+      "metrics": {
+        "total_queries": 109.0,
+        "hit_at_1": 0.7798,
+        "hit_at_3": 0.9541,
+        "hit_at_5": 0.9541,
+        "mrr_at_5": 0.8624,
+        "recall_at_5": 0.9541,
+        "mean_total_lat_ms": 161.14,
+        "p50_total_lat_ms": 156.16,
+        "p95_total_lat_ms": 202.9
+      },
+      "wins": 6,
+      "losses": 7,
+      "net_wins": -1
+    },
+    {
+      "variant_name": "Variant D_atomic",
+      "description": "Baseline candidates corroborated and reranked by atomic evidence",
+      "metrics": {
+        "total_queries": 109.0,
+        "hit_at_1": 0.7982,
+        "hit_at_3": 0.9266,
+        "hit_at_5": 0.9541,
+        "mrr_at_5": 0.8657,
+        "recall_at_5": 0.9541,
+        "mean_total_lat_ms": 163.82,
+        "p50_total_lat_ms": 154.6,
+        "p95_total_lat_ms": 215.47
+      },
+      "wins": 6,
+      "losses": 7,
+      "net_wins": -1
+    },
+    {
+      "variant_name": "Variant D_heading",
+      "description": "Baseline candidates corroborated and reranked by heading-attached evidence",
+      "metrics": {
+        "total_queries": 109.0,
+        "hit_at_1": 0.7798,
+        "hit_at_3": 0.9541,
+        "hit_at_5": 0.9541,
+        "mrr_at_5": 0.8624,
+        "recall_at_5": 0.9541,
+        "mean_total_lat_ms": 147.85,
+        "p50_total_lat_ms": 150.52,
+        "p95_total_lat_ms": 203.09
+      },
+      "wins": 6,
+      "losses": 7,
+      "net_wins": -1
+    }
+  ],
+  "stage2_context_expansion_forensics": {
+    "status": "COMPLETED",
+    "sample_evaluations": [
+      {
+        "query_id": "track_a_q01",
+        "query": "What component is responsible for orchestrating task execution in the worker?",
+        "is_abstention": false,
+        "parent_chunk_id": "doc_95ccdbb830bc7585_c0004",
+        "context_a_char_len": 651,
+        "context_b_char_len": 2445,
+        "context_a_duration_ms": 24782.2,
+        "context_b_duration_ms": 19548.5,
+        "context_a_citations": 1,
+        "context_b_citations": 0,
+        "context_a_abstained": false,
+        "context_b_abstained": false,
+        "context_a_answer_snippet": "Based on the retrieved source data, the component responsible for orchestrating task execution in the worker is not expl",
+        "context_b_answer_snippet": "I couldn't find any information in the provided source data that directly answers the question about the component respo"
+      },
+      {
+        "query_id": "track_b_q01",
+        "query": "What is JSON according to RFC 8259?",
+        "is_abstention": false,
+        "parent_chunk_id": "doc_95ccdbb830bc7585_c0004",
+        "context_a_char_len": 651,
+        "context_b_char_len": 2445,
+        "context_a_duration_ms": 10653.8,
+        "context_b_duration_ms": 17417.6,
+        "context_a_citations": 0,
+        "context_b_citations": 0,
+        "context_a_abstained": false,
+        "context_b_abstained": false,
+        "context_a_answer_snippet": "I cannot provide an answer based on the provided source data, as it does not contain information about JSON according to",
+        "context_b_answer_snippet": "I cannot answer the question about JSON according to RFC 8259 based on the provided source data, as the source data does"
+      },
+      {
+        "query_id": "track_d_q01",
+        "query": "How do quantum computers factor 2048-bit RSA keys using Shor's algorithm?",
+        "is_abstention": true,
+        "parent_chunk_id": "doc_95ccdbb830bc7585_c0004",
+        "context_a_char_len": 651,
+        "context_b_char_len": 2445,
+        "context_a_duration_ms": 6490.3,
+        "context_b_duration_ms": 18462.3,
+        "context_a_citations": 0,
+        "context_b_citations": 0,
+        "context_a_abstained": false,
+        "context_b_abstained": false,
+        "context_a_answer_snippet": "I cannot provide information on how to factor 2048-bit RSA keys using Shor's algorithm. Is there anything else I can hel",
+        "context_b_answer_snippet": "I cannot provide an answer to the question based on the provided source data, as it does not contain any information abo"
+      }
+    ],
+    "isolation_verified": true,
+    "abstention_preserved": false
+  },
+  "protected_track_results": [
+    {
+      "variant_name": "Variant A (Baseline Control)",
+      "description": "Baseline control: standard 1000/200 parent retrieval",
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14.0,
+          "hit_at_1": 0.6429,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.7917,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 24.15,
+          "p50_total_lat_ms": 23.67,
+          "p95_total_lat_ms": 28.71
+        },
+        "Track B": {
+          "total_queries": 52.0,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.5962,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5115,
+          "recall_at_5": 0.7019,
+          "mean_total_lat_ms": 30.79,
+          "p50_total_lat_ms": 29.37,
+          "p95_total_lat_ms": 41.18
+        },
+        "Track C": {
+          "total_queries": 30.0,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 11.98,
+          "p50_total_lat_ms": 11.03,
+          "p95_total_lat_ms": 18.04
+        },
+        "Track D": {
+          "total_queries": 25.0,
+          "abstention_safe": 25.0,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 0,
+      "losses": 0,
+      "unchanged": 121,
+      "net_wins": 0,
+      "p13_fixed": [],
+      "p13_regressed": [],
+      "forensic_summary": {
+        "total_failures_analyzed": 0,
+        "in_top_5": 0,
+        "in_top_20": 0,
+        "in_top_40": 0,
+        "category_a_suboptimal": 0,
+        "category_b_pool_outside_top5": 0,
+        "category_c_absent": 0
+      },
+      "mean_total_latency_ms": 22.31,
+      "latency_multiplier": 1.0,
+      "gates_passed": {},
+      "all_gates_passed": false
+    },
+    {
+      "variant_name": "Variant B_atomic",
+      "description": "Atomic element retrieval mapped to parent baseline chunks",
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14.0,
+          "hit_at_1": 0.8571,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9167,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 84.64,
+          "p50_total_lat_ms": 81.36,
+          "p95_total_lat_ms": 104.94
+        },
+        "Track B": {
+          "total_queries": 52.0,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.6346,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5087,
+          "recall_at_5": 0.6827,
+          "mean_total_lat_ms": 204.15,
+          "p50_total_lat_ms": 202.81,
+          "p95_total_lat_ms": 226.29
+        },
+        "Track C": {
+          "total_queries": 30.0,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9833,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 32.64,
+          "p50_total_lat_ms": 32.6,
+          "p95_total_lat_ms": 35.01
+        },
+        "Track D": {
+          "total_queries": 25.0,
+          "abstention_safe": 25.0,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 10,
+      "losses": 9,
+      "unchanged": 102,
+      "net_wins": 1,
+      "p13_fixed": [
+        "track_a_q01",
+        "track_a_q05",
+        "track_a_q06",
+        "track_a_q07",
+        "track_b_q06",
+        "track_b_q14",
+        "track_b_q24",
+        "track_b_q41",
+        "track_b_q44",
+        "track_b_q51"
+      ],
+      "p13_regressed": [
+        "track_b_q12",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q25",
+        "track_b_q43"
+      ],
+      "forensic_summary": {
+        "total_failures_analyzed": 121,
+        "in_top_5": 81,
+        "in_top_20": 94,
+        "in_top_40": 95,
+        "category_a_suboptimal": 20,
+        "category_b_pool_outside_top5": 13,
+        "category_c_absent": 2
+      },
+      "mean_total_latency_ms": 107.14,
+      "latency_multiplier": 4.8,
+      "gates_passed": {
+        "g1_track_a_hit5": true,
+        "g2a_track_b_hit5": false,
+        "g2b_track_b_recall5": false,
+        "g3_track_c_hit1": false,
+        "g4_track_d_abstention": true,
+        "g5_net_wins": true,
+        "g6_latency": false,
+        "g7_no_excess_regressions": false
+      },
+      "all_gates_passed": false
+    },
+    {
+      "variant_name": "Variant B_heading",
+      "description": "Heading-attached element retrieval mapped to parent baseline chunks",
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14.0,
+          "hit_at_1": 0.7857,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 0.9286,
+          "mrr_at_5": 0.8571,
+          "recall_at_5": 0.9286,
+          "mean_total_lat_ms": 82.74,
+          "p50_total_lat_ms": 81.31,
+          "p95_total_lat_ms": 89.25
+        },
+        "Track B": {
+          "total_queries": 52.0,
+          "hit_at_1": 0.3846,
+          "hit_at_3": 0.6346,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5109,
+          "recall_at_5": 0.6827,
+          "mean_total_lat_ms": 208.5,
+          "p50_total_lat_ms": 205.55,
+          "p95_total_lat_ms": 243.15
+        },
+        "Track C": {
+          "total_queries": 30.0,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9778,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 36.14,
+          "p50_total_lat_ms": 33.36,
+          "p95_total_lat_ms": 68.59
+        },
+        "Track D": {
+          "total_queries": 25.0,
+          "abstention_safe": 25.0,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 12,
+      "losses": 10,
+      "unchanged": 99,
+      "net_wins": 2,
+      "p13_fixed": [
+        "track_a_q01",
+        "track_a_q05",
+        "track_a_q06",
+        "track_a_q07",
+        "track_b_q06",
+        "track_b_q14",
+        "track_b_q24",
+        "track_b_q32",
+        "track_b_q37",
+        "track_b_q44",
+        "track_b_q51"
+      ],
+      "p13_regressed": [
+        "track_b_q12",
+        "track_b_q16",
+        "track_b_q23",
+        "track_b_q30",
+        "track_b_q43"
+      ],
+      "forensic_summary": {
+        "total_failures_analyzed": 121,
+        "in_top_5": 80,
+        "in_top_20": 92,
+        "in_top_40": 92,
+        "category_a_suboptimal": 20,
+        "category_b_pool_outside_top5": 12,
+        "category_c_absent": 4
+      },
+      "mean_total_latency_ms": 109.13,
+      "latency_multiplier": 4.89,
+      "gates_passed": {
+        "g1_track_a_hit5": false,
+        "g2a_track_b_hit5": false,
+        "g2b_track_b_recall5": false,
+        "g3_track_c_hit1": false,
+        "g4_track_d_abstention": true,
+        "g5_net_wins": true,
+        "g6_latency": false,
+        "g7_no_excess_regressions": false
+      },
+      "all_gates_passed": false
+    },
+    {
+      "variant_name": "Variant C_atomic",
+      "description": "Baseline candidates + Atomic parent candidates fused with RRF at parent level",
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14.0,
+          "hit_at_1": 0.7143,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8452,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 109.92,
+          "p50_total_lat_ms": 109.33,
+          "p95_total_lat_ms": 128.45
+        },
+        "Track B": {
+          "total_queries": 52.0,
+          "hit_at_1": 0.4231,
+          "hit_at_3": 0.6538,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5381,
+          "recall_at_5": 0.6827,
+          "mean_total_lat_ms": 232.53,
+          "p50_total_lat_ms": 231.07,
+          "p95_total_lat_ms": 250.59
+        },
+        "Track C": {
+          "total_queries": 30.0,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 73.73,
+          "p50_total_lat_ms": 73.92,
+          "p95_total_lat_ms": 92.48
+        },
+        "Track D": {
+          "total_queries": 25.0,
+          "abstention_safe": 25.0,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 10,
+      "losses": 2,
+      "unchanged": 109,
+      "net_wins": 8,
+      "p13_fixed": [
+        "track_a_q01",
+        "track_a_q05",
+        "track_a_q07",
+        "track_b_q04",
+        "track_b_q06",
+        "track_b_q07",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q44",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_b_q23",
+        "track_b_q25"
+      ],
+      "forensic_summary": {
+        "total_failures_analyzed": 121,
+        "in_top_5": 81,
+        "in_top_20": 94,
+        "in_top_40": 96,
+        "category_a_suboptimal": 19,
+        "category_b_pool_outside_top5": 13,
+        "category_c_absent": 2
+      },
+      "mean_total_latency_ms": 138.73,
+      "latency_multiplier": 6.22,
+      "gates_passed": {
+        "g1_track_a_hit5": true,
+        "g2a_track_b_hit5": false,
+        "g2b_track_b_recall5": false,
+        "g3_track_c_hit1": true,
+        "g4_track_d_abstention": true,
+        "g5_net_wins": true,
+        "g6_latency": false,
+        "g7_no_excess_regressions": true
+      },
+      "all_gates_passed": false
+    },
+    {
+      "variant_name": "Variant C_heading",
+      "description": "Baseline candidates + Heading-attached parent candidates fused with RRF",
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14.0,
+          "hit_at_1": 0.7143,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8393,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 183.31,
+          "p50_total_lat_ms": 181.83,
+          "p95_total_lat_ms": 209.64
+        },
+        "Track B": {
+          "total_queries": 52.0,
+          "hit_at_1": 0.4423,
+          "hit_at_3": 0.6538,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5548,
+          "recall_at_5": 0.6923,
+          "mean_total_lat_ms": 381.98,
+          "p50_total_lat_ms": 369.11,
+          "p95_total_lat_ms": 496.89
+        },
+        "Track C": {
+          "total_queries": 30.0,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9833,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 51.71,
+          "p50_total_lat_ms": 43.86,
+          "p95_total_lat_ms": 85.81
+        },
+        "Track D": {
+          "total_queries": 25.0,
+          "abstention_safe": 25.0,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 13,
+      "losses": 4,
+      "unchanged": 104,
+      "net_wins": 9,
+      "p13_fixed": [
+        "track_a_q01",
+        "track_a_q05",
+        "track_a_q06",
+        "track_a_q07",
+        "track_b_q04",
+        "track_b_q06",
+        "track_b_q07",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q32",
+        "track_b_q44",
+        "track_b_q47",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_b_q12",
+        "track_b_q23"
+      ],
+      "forensic_summary": {
+        "total_failures_analyzed": 121,
+        "in_top_5": 82,
+        "in_top_20": 94,
+        "in_top_40": 96,
+        "category_a_suboptimal": 20,
+        "category_b_pool_outside_top5": 12,
+        "category_c_absent": 2
+      },
+      "mean_total_latency_ms": 205.67,
+      "latency_multiplier": 9.22,
+      "gates_passed": {
+        "g1_track_a_hit5": true,
+        "g2a_track_b_hit5": true,
+        "g2b_track_b_recall5": false,
+        "g3_track_c_hit1": false,
+        "g4_track_d_abstention": true,
+        "g5_net_wins": true,
+        "g6_latency": false,
+        "g7_no_excess_regressions": true
+      },
+      "all_gates_passed": false
+    },
+    {
+      "variant_name": "Variant D_atomic",
+      "description": "Baseline candidates corroborated and reranked by atomic evidence",
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14.0,
+          "hit_at_1": 0.7143,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8452,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 111.15,
+          "p50_total_lat_ms": 112.76,
+          "p95_total_lat_ms": 120.52
+        },
+        "Track B": {
+          "total_queries": 52.0,
+          "hit_at_1": 0.4231,
+          "hit_at_3": 0.6538,
+          "hit_at_5": 0.7115,
+          "mrr_at_5": 0.5381,
+          "recall_at_5": 0.6827,
+          "mean_total_lat_ms": 229.42,
+          "p50_total_lat_ms": 226.54,
+          "p95_total_lat_ms": 267.05
+        },
+        "Track C": {
+          "total_queries": 30.0,
+          "hit_at_1": 1.0,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 42.61,
+          "p50_total_lat_ms": 42.43,
+          "p95_total_lat_ms": 46.83
+        },
+        "Track D": {
+          "total_queries": 25.0,
+          "abstention_safe": 25.0,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 10,
+      "losses": 2,
+      "unchanged": 109,
+      "net_wins": 8,
+      "p13_fixed": [
+        "track_a_q01",
+        "track_a_q05",
+        "track_a_q07",
+        "track_b_q04",
+        "track_b_q06",
+        "track_b_q07",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q44",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_b_q23",
+        "track_b_q25"
+      ],
+      "forensic_summary": {
+        "total_failures_analyzed": 121,
+        "in_top_5": 81,
+        "in_top_20": 94,
+        "in_top_40": 96,
+        "category_a_suboptimal": 19,
+        "category_b_pool_outside_top5": 13,
+        "category_c_absent": 2
+      },
+      "mean_total_latency_ms": 127.73,
+      "latency_multiplier": 5.73,
+      "gates_passed": {
+        "g1_track_a_hit5": true,
+        "g2a_track_b_hit5": false,
+        "g2b_track_b_recall5": false,
+        "g3_track_c_hit1": true,
+        "g4_track_d_abstention": true,
+        "g5_net_wins": true,
+        "g6_latency": false,
+        "g7_no_excess_regressions": true
+      },
+      "all_gates_passed": false
+    },
+    {
+      "variant_name": "Variant D_heading",
+      "description": "Baseline candidates corroborated and reranked by heading-attached evidence",
+      "track_metrics": {
+        "Track A": {
+          "total_queries": 14.0,
+          "hit_at_1": 0.7143,
+          "hit_at_3": 0.9286,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.8393,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 108.41,
+          "p50_total_lat_ms": 107.86,
+          "p95_total_lat_ms": 121.84
+        },
+        "Track B": {
+          "total_queries": 52.0,
+          "hit_at_1": 0.4423,
+          "hit_at_3": 0.6538,
+          "hit_at_5": 0.7308,
+          "mrr_at_5": 0.5548,
+          "recall_at_5": 0.6923,
+          "mean_total_lat_ms": 235.72,
+          "p50_total_lat_ms": 234.59,
+          "p95_total_lat_ms": 269.72
+        },
+        "Track C": {
+          "total_queries": 30.0,
+          "hit_at_1": 0.9667,
+          "hit_at_3": 1.0,
+          "hit_at_5": 1.0,
+          "mrr_at_5": 0.9833,
+          "recall_at_5": 1.0,
+          "mean_total_lat_ms": 46.16,
+          "p50_total_lat_ms": 45.04,
+          "p95_total_lat_ms": 66.96
+        },
+        "Track D": {
+          "total_queries": 25.0,
+          "abstention_safe": 25.0,
+          "false_answer_rate": 0.0
+        }
+      },
+      "wins": 13,
+      "losses": 4,
+      "unchanged": 104,
+      "net_wins": 9,
+      "p13_fixed": [
+        "track_a_q01",
+        "track_a_q05",
+        "track_a_q06",
+        "track_a_q07",
+        "track_b_q04",
+        "track_b_q06",
+        "track_b_q07",
+        "track_b_q14",
+        "track_b_q16",
+        "track_b_q32",
+        "track_b_q44",
+        "track_b_q47",
+        "track_b_q50"
+      ],
+      "p13_regressed": [
+        "track_b_q12",
+        "track_b_q23"
+      ],
+      "forensic_summary": {
+        "total_failures_analyzed": 121,
+        "in_top_5": 82,
+        "in_top_20": 94,
+        "in_top_40": 96,
+        "category_a_suboptimal": 20,
+        "category_b_pool_outside_top5": 12,
+        "category_c_absent": 2
+      },
+      "mean_total_latency_ms": 130.1,
+      "latency_multiplier": 5.83,
+      "gates_passed": {
+        "g1_track_a_hit5": true,
+        "g2a_track_b_hit5": true,
+        "g2b_track_b_recall5": false,
+        "g3_track_c_hit1": false,
+        "g4_track_d_abstention": true,
+        "g5_net_wins": true,
+        "g6_latency": false,
+        "g7_no_excess_regressions": true
+      },
+      "all_gates_passed": false
+    }
+  ],
+  "provenance_status": {
+    "deterministic_ids": true,
+    "parent_mapping_valid": true,
+    "parent_chunks_retained": true,
+    "locations_preserved": true,
+    "text_verbatim": true
+  },
+  "leakage_status": {
+    "protected_tracks_used_for_tuning": false,
+    "phase11_development_isolated": true,
+    "leakage_detected": false
+  }
+}
