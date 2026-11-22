@@ -1,0 +1,325 @@
+{
+  "metadata_schema_fields": {
+    "document_level": [
+      "document_id",
+      "filename",
+      "mime_type",
+      "content_sha256",
+      "byte_size",
+      "created_at",
+      "processed_at",
+      "source_uri",
+      "custom_metadata",
+      "page_count"
+    ],
+    "element_level": [
+      "element_id",
+      "element_type",
+      "content",
+      "order_index",
+      "location (page_number, bbox, coordinates)",
+      "table_data (headers, rows, caption)",
+      "metadata (e.g. style, confidence)"
+    ],
+    "chunk_level": [
+      "chunk_id",
+      "document_id",
+      "text",
+      "chunk_index",
+      "token_count",
+      "source_element_ids",
+      "locations",
+      "metadata"
+    ],
+    "derived_structural_signals": [
+      "document_title",
+      "section_path",
+      "heading_hierarchy",
+      "table_headers",
+      "table_caption",
+      "element_types_present",
+      "page_numbers",
+      "is_table",
+      "is_heading",
+      "is_list",
+      "neighbor_element_count"
+    ]
+  },
+  "corpus_statistics": {
+    "total_documents": 17,
+    "total_chunks": 114,
+    "total_elements": 586,
+    "element_type_counts": {
+      "text": 355,
+      "list_item": 144,
+      "header": 82,
+      "heading": 4,
+      "table": 1
+    },
+    "chunks_with_heading_context": 106,
+    "chunks_with_table_data": 1,
+    "chunks_with_page_location": 3,
+    "chunks_with_list_items": 45,
+    "chunks_multi_element": 99
+  },
+  "documents": [
+    {
+      "filename": "rfc8259.txt",
+      "relative_path": "eval/corpora/track_b/rfc8259.txt",
+      "split": "train",
+      "document_id": "doc_61a5378f4255c720",
+      "page_count": null,
+      "element_count": 221,
+      "chunk_count": 30,
+      "headings_sample": [
+        "1. Introduction",
+        "1.1. Conventions Used in This Document",
+        "1.2. Specifications of JSON",
+        "1.3. Introduction to This Revision",
+        "2. JSON Grammar"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "architecture.md",
+      "relative_path": "eval/corpora/track_a/architecture.md",
+      "split": "train",
+      "document_id": "doc_95ccdbb830bc7585",
+      "page_count": null,
+      "element_count": 26,
+      "chunk_count": 9,
+      "headings_sample": [
+        "Data flow",
+        "Components and contracts",
+        "Storage and model compatibility",
+        "Evaluation and experiment reports",
+        "Current scope and limitations"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "render-deployment.md",
+      "relative_path": "docs/render-deployment.md",
+      "split": "train",
+      "document_id": "doc_735db93c2ca2200c",
+      "page_count": null,
+      "element_count": 43,
+      "chunk_count": 10,
+      "headings_sample": [
+        "External services required",
+        "Render Free tier limitations",
+        "Create the Render services",
+        "Required environment variables",
+        "Configure account sign-in"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "hosted-beta.md",
+      "relative_path": "eval/corpora/track_a/hosted-beta.md",
+      "split": "train",
+      "document_id": "doc_839c6457fbcaccfb",
+      "page_count": null,
+      "element_count": 18,
+      "chunk_count": 7,
+      "headings_sample": [
+        "Configuration",
+        "Current beta behavior and operational limits",
+        "API contract"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "benchmarks.md",
+      "relative_path": "docs/benchmarks.md",
+      "split": "train",
+      "document_id": "doc_4c33cb13b1129819",
+      "page_count": null,
+      "element_count": 22,
+      "chunk_count": 6,
+      "headings_sample": [
+        "RAG evaluation metrics",
+        "Comparing pipeline variants",
+        "Historical local model inference sample"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "incident_log.txt",
+      "relative_path": "eval/corpora/track_c/incident_log.txt",
+      "split": "train",
+      "document_id": "doc_878722b903c1bf46",
+      "page_count": null,
+      "element_count": 5,
+      "chunk_count": 2,
+      "headings_sample": [
+        "Incident ID: INC-402",
+        "Incident ID: INC-502"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "hosted-terms.md",
+      "relative_path": "docs/hosted-terms.md",
+      "split": "train",
+      "document_id": "doc_db4bdf5f9de88ec3",
+      "page_count": null,
+      "element_count": 16,
+      "chunk_count": 4,
+      "headings_sample": [
+        "Your content and processing",
+        "Service limits and beta status",
+        "Disclaimer and liability",
+        "Changes and contact"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "product_evaluation.docx",
+      "relative_path": "eval/corpora/track_c/product_evaluation.docx",
+      "split": "train",
+      "document_id": "doc_8ba7306c9afe56ff",
+      "page_count": null,
+      "element_count": 10,
+      "chunk_count": 2,
+      "headings_sample": [
+        "3. Operational Deployment Recommendations"
+      ],
+      "has_tables": true
+    },
+    {
+      "filename": "runbook.md",
+      "relative_path": "eval/corpora/track_a/runbook.md",
+      "split": "validation",
+      "document_id": "doc_192da8a407960f82",
+      "page_count": null,
+      "element_count": 47,
+      "chunk_count": 9,
+      "headings_sample": [
+        "Prerequisites",
+        "Parse and chunk one file",
+        "Use the dense retrieval API",
+        "Generate a grounded answer",
+        "Evaluate against a JSONL dataset"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "findings.md",
+      "relative_path": "docs/findings.md",
+      "split": "validation",
+      "document_id": "doc_8459b1b648f32e4e",
+      "page_count": null,
+      "element_count": 28,
+      "chunk_count": 4,
+      "headings_sample": [
+        "Verified capabilities",
+        "Evidence not yet available",
+        "Product and engineering gaps",
+        "Next product milestone"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "hosted-privacy.md",
+      "relative_path": "docs/hosted-privacy.md",
+      "split": "validation",
+      "document_id": "doc_4313d24296fb50e5",
+      "page_count": null,
+      "element_count": 18,
+      "chunk_count": 5,
+      "headings_sample": [
+        "Information processed",
+        "Use and disclosure",
+        "Retention and deletion",
+        "Your choices and contact"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "operations_guide.pdf",
+      "relative_path": "eval/corpora/track_c/operations_guide.pdf",
+      "split": "validation",
+      "document_id": "doc_21572e58b8b61bc2",
+      "page_count": 3,
+      "element_count": 3,
+      "chunk_count": 3,
+      "headings_sample": [],
+      "has_tables": false
+    },
+    {
+      "filename": "reference_guide.md",
+      "relative_path": "eval/corpora/track_d/reference_guide.md",
+      "split": "validation",
+      "document_id": "doc_08e910553db1207f",
+      "page_count": null,
+      "element_count": 9,
+      "chunk_count": 2,
+      "headings_sample": [
+        "3. Supported Authentication Mechanisms",
+        "4. Message Queuing Subsystem and Worker Architecture"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "README.md",
+      "relative_path": "README.md",
+      "split": "test",
+      "document_id": "doc_b4ff04cd73155a92",
+      "page_count": null,
+      "element_count": 74,
+      "chunk_count": 12,
+      "headings_sample": [
+        "Current scope",
+        "Requirements",
+        "Configure local Ollama models",
+        "Hosted beta workbench",
+        "Quickstart: ingest, index, retrieve, and answer"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "system_spec.md",
+      "relative_path": "eval/corpora/track_c/system_spec.md",
+      "split": "test",
+      "document_id": "doc_2a22a64a8901f8b9",
+      "page_count": null,
+      "element_count": 17,
+      "chunk_count": 3,
+      "headings_sample": [
+        "2. Infrastructure Resource Allocation & Hardware Quotas",
+        "3. Operational System Error Codes",
+        "4. Network Firewall and Port Configurations"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "ci-cd.md",
+      "relative_path": "docs/ci-cd.md",
+      "split": "test",
+      "document_id": "doc_10e653ec3bbc29f8",
+      "page_count": null,
+      "element_count": 11,
+      "chunk_count": 3,
+      "headings_sample": [
+        "GitHub Actions",
+        "Deployment"
+      ],
+      "has_tables": false
+    },
+    {
+      "filename": "privacy.md",
+      "relative_path": "docs/privacy.md",
+      "split": "test",
+      "document_id": "doc_f0c398f69611d73c",
+      "page_count": null,
+      "element_count": 18,
+      "chunk_count": 3,
+      "headings_sample": [
+        "Data handled by the current workflow",
+        "Operator responsibilities"
+      ],
+      "has_tables": false
+    }
+  ]
+}
