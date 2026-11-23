@@ -395,9 +395,15 @@ def complete_job(
         db_time = datetime.now(UTC)
 
     # Validate lease hasn't expired using wall-clock time
-    if job.lease_expires_at is not None and job.lease_expires_at <= db_time:
-        db.commit()
-        return False
+    lease_expires = job.lease_expires_at
+    if lease_expires is not None:
+        if lease_expires.tzinfo is None and db_time.tzinfo is not None:
+            lease_expires = lease_expires.replace(tzinfo=UTC)
+        elif lease_expires.tzinfo is not None and db_time.tzinfo is None:
+            db_time = db_time.replace(tzinfo=UTC)
+        if lease_expires <= db_time:
+            db.commit()
+            return False
 
     job.status = "complete"
     job.detail = detail
@@ -477,9 +483,15 @@ def fail_job(
         db_time = datetime.now(UTC)
 
     # Validate lease hasn't expired using wall-clock time
-    if job.lease_expires_at is not None and job.lease_expires_at <= db_time:
-        db.commit()
-        return False
+    lease_expires = job.lease_expires_at
+    if lease_expires is not None:
+        if lease_expires.tzinfo is None and db_time.tzinfo is not None:
+            lease_expires = lease_expires.replace(tzinfo=UTC)
+        elif lease_expires.tzinfo is not None and db_time.tzinfo is None:
+            db_time = db_time.replace(tzinfo=UTC)
+        if lease_expires <= db_time:
+            db.commit()
+            return False
 
     should_retry = is_retryable and (job.cycle_attempts < job.max_attempts)
     clean_error = error[:2048]

@@ -32,6 +32,7 @@ from sqlalchemy import (
     Text,
     create_engine,
     delete,
+    inspect,
     select,
     text,
 )
@@ -367,8 +368,45 @@ worker_engine = create_engine(
 )
 SessionLocalWorker = sessionmaker(worker_engine, expire_on_commit=False)
 
+
+def _sync_sqlite_columns(eng, metadata) -> None:
+    """Ensure existing SQLite tables contain any columns added to models."""
+    with eng.begin() as conn:
+        insp = inspect(conn)
+        existing_tables = set(insp.get_table_names())
+        for table_name, table in metadata.tables.items():
+            if table_name not in existing_tables:
+                continue
+            existing_cols = {c["name"] for c in insp.get_columns(table_name)}
+            for col in table.columns:
+                if col.name not in existing_cols:
+                    col_type = col.type.compile(eng.dialect)
+                    default_clause = ""
+                    if col.server_default is not None:
+                        default_clause = f" DEFAULT {col.server_default.arg}"
+                    elif not col.nullable:
+                        type_str = str(col_type).upper()
+                        if "INT" in type_str:
+                            default_clause = " DEFAULT 0"
+                        elif "CHAR" in type_str or "TEXT" in type_str:
+                            default_clause = " DEFAULT ''"
+                        elif "TIME" in type_str or "DATE" in type_str:
+                            default_clause = " DEFAULT CURRENT_TIMESTAMP"
+                        elif "BOOL" in type_str:
+                            default_clause = " DEFAULT 0"
+                        elif "JSON" in type_str:
+                            default_clause = " DEFAULT '{}'"
+                    sql = (
+                        f'ALTER TABLE "{table_name}" ADD COLUMN "{col.name}" '
+                        f"{col_type}{default_clause}"
+                    )
+                    conn.execute(text(sql))
+
+
 if os.getenv("SKIP_SCHEMA_INIT") != "true":
     Base.metadata.create_all(engine)
+    if engine.dialect.name == "sqlite":
+        _sync_sqlite_columns(engine, Base.metadata)
 if engine.dialect.name == "postgresql" and os.getenv("SKIP_RLS_SETUP") != "true":
     with engine.begin() as conn:
         for table in (
