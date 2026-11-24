@@ -13,4 +13,4 @@ RUN uv sync --no-dev --locked
 COPY . ./
 COPY --from=frontend /web/dist ./frontend/dist
 EXPOSE 8000
-CMD ["uv", "run", "uvicorn", "apps.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec uv run uvicorn apps.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
