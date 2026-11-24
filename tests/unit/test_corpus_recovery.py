@@ -54,19 +54,15 @@ def db_session_factory():
     return session_factory
 
 
-def _mock_httpx_embed(mock_post, vector_dim=4):
-    """Helper to mock httpx.post for the embedding service."""
+def _mock_embedding_provider(vector_dim=4):
+    """Return a configured embedding-provider mock without network I/O."""
+    provider = MagicMock()
 
-    def fake_post(url, json=None, timeout=None):
-        inputs = json.get("input", []) if json else []
-        vectors = [[0.1 * (i + 1)] * vector_dim for i in range(len(inputs))]
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {"embeddings": vectors}
-        mock_resp.raise_for_status = MagicMock()
-        return mock_resp
+    def embed_documents(texts):
+        return [[0.1 * (i + 1)] * vector_dim for i in range(len(texts))]
 
-    mock_post.side_effect = fake_post
+    provider.embed_documents.side_effect = embed_documents
+    return provider
 
 
 # =============================================================================
@@ -152,8 +148,10 @@ def test_missing_s3_object_does_not_block_embedding(db_session_factory, monkeypa
         db.add_all([doc, job, el])
         db.commit()
 
-    with patch("httpx.post") as mock_post:
-        _mock_httpx_embed(mock_post)
+    with patch(
+        "apps.worker.tasks.get_embedding_provider",
+        return_value=_mock_embedding_provider(),
+    ):
         result = index_document(
             workspace_id=ws_id,
             document_id=doc_id,
@@ -211,8 +209,10 @@ def test_missing_local_file_does_not_block_embedding(db_session_factory, tmp_pat
     # File definitely does not exist on disk
     assert not (tmp_path / f"{ws_id}/completely_missing_file.txt").exists()
 
-    with patch("httpx.post") as mock_post:
-        _mock_httpx_embed(mock_post)
+    with patch(
+        "apps.worker.tasks.get_embedding_provider",
+        return_value=_mock_embedding_provider(),
+    ):
         result = index_document(
             workspace_id=ws_id,
             document_id=doc_id,
@@ -273,16 +273,14 @@ def test_existing_embeddings_preserved_and_only_missing_generated(db_session_fac
 
     captured_inputs = []
 
-    def mock_embed_call(url, json=None, timeout=None):
+    def mock_embed_call(texts):
         nonlocal captured_inputs
-        captured_inputs = json.get("input", [])
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {"embeddings": [[0.1, 0.2, 0.3, 0.4]]}
-        mock_resp.raise_for_status = MagicMock()
-        return mock_resp
+        captured_inputs = texts
+        return [[0.1, 0.2, 0.3, 0.4]]
 
-    with patch("httpx.post", side_effect=mock_embed_call):
+    provider = MagicMock()
+    provider.embed_documents.side_effect = mock_embed_call
+    with patch("apps.worker.tasks.get_embedding_provider", return_value=provider):
         result = index_document(
             workspace_id=ws_id,
             document_id=doc_id,
@@ -339,7 +337,7 @@ def test_fully_embedded_corpus_completes_without_embedder_call(db_session_factor
         db.add_all([doc, job, el])
         db.commit()
 
-    with patch("httpx.post") as mock_post:
+    with patch("apps.worker.tasks.get_embedding_provider") as mock_provider:
         result = index_document(
             workspace_id=ws_id,
             document_id=doc_id,
@@ -347,7 +345,7 @@ def test_fully_embedded_corpus_completes_without_embedder_call(db_session_factor
             session_factory=db_session_factory,
         )
         # Embedder must NOT be called
-        mock_post.assert_not_called()
+        mock_provider.assert_not_called()
 
     assert result == {"indexed": 1}
     with db_session_factory() as db:
@@ -391,7 +389,9 @@ def test_embedding_failure_does_not_mark_document_indexed(db_session_factory):
         db.add_all([doc, job, el])
         db.commit()
 
-    with patch("httpx.post", side_effect=ConnectionError("Embedding service unreachable")):
+    provider = MagicMock()
+    provider.embed_documents.side_effect = ConnectionError("Embedding service unreachable")
+    with patch("apps.worker.tasks.get_embedding_provider", return_value=provider):
         with pytest.raises(ConnectionError):
             index_document(
                 workspace_id=ws_id,
@@ -447,8 +447,10 @@ def test_element_metadata_order_and_ids_preserved(db_session_factory):
         db.add_all([doc, job, *elements])
         db.commit()
 
-    with patch("httpx.post") as mock_post:
-        _mock_httpx_embed(mock_post)
+    with patch(
+        "apps.worker.tasks.get_embedding_provider",
+        return_value=_mock_embedding_provider(),
+    ):
         index_document(
             workspace_id=ws_id,
             document_id=doc_id,
@@ -570,8 +572,10 @@ def test_normal_successful_indexing(db_session_factory):
         db.add_all([doc, job, el1, el2])
         db.commit()
 
-    with patch("httpx.post") as mock_post:
-        _mock_httpx_embed(mock_post)
+    with patch(
+        "apps.worker.tasks.get_embedding_provider",
+        return_value=_mock_embedding_provider(),
+    ):
         result = index_document(
             workspace_id=ws_id,
             document_id=doc_id,
@@ -651,19 +655,15 @@ def test_47_element_recovery_scenario_without_touching_corpus(db_session_factory
 
     captured_embed_inputs = []
 
-    def fake_embed(url, json=None, timeout=None):
+    def fake_embed(texts):
         nonlocal captured_embed_inputs
-        inputs = json.get("input", []) if json else []
-        captured_embed_inputs.extend(inputs)
+        captured_embed_inputs.extend(texts)
         # Return unique vector per input
-        vectors = [[0.77, 0.88, float(len(txt)), 1.0] for txt in inputs]
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {"embeddings": vectors}
-        mock_resp.raise_for_status = MagicMock()
-        return mock_resp
+        return [[0.77, 0.88, float(len(txt)), 1.0] for txt in texts]
 
-    with patch("httpx.post", side_effect=fake_embed):
+    provider = MagicMock()
+    provider.embed_documents.side_effect = fake_embed
+    with patch("apps.worker.tasks.get_embedding_provider", return_value=provider):
         result = index_document(
             workspace_id=ws_id,
             document_id=doc_id,

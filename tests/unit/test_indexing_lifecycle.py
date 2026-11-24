@@ -233,11 +233,9 @@ def test_full_indexing_lifecycle_success(test_db_factory):
 
     # Mock embedding provider to return 37 fake 768-dim vectors
     fake_vectors = [[0.01 * j for j in range(768)] for _ in range(element_count)]
-    mock_resp = MagicMock()
-    mock_resp.json.return_value = {"embeddings": fake_vectors}
-    mock_resp.raise_for_status = MagicMock()
-
-    with patch("httpx.post", return_value=mock_resp):
+    provider = MagicMock()
+    provider.embed_documents.return_value = fake_vectors
+    with patch("apps.worker.tasks.get_embedding_provider", return_value=provider):
         res = index_document(
             workspace_id="ws-test",
             document_id=doc_id,
@@ -306,11 +304,9 @@ def test_reindex_failed_document_success(test_db_factory):
         claim = claim_next_job(db, worker_id="worker-test")
         assert claim is not None
 
-    mock_resp = MagicMock()
-    mock_resp.json.return_value = {"embeddings": [[0.1] * 768]}
-    mock_resp.raise_for_status = MagicMock()
-
-    with patch("httpx.post", return_value=mock_resp):
+    provider = MagicMock()
+    provider.embed_documents.return_value = [[0.1] * 768]
+    with patch("apps.worker.tasks.get_embedding_provider", return_value=provider):
         res = index_document(
             workspace_id="ws-test",
             document_id=doc_id,
@@ -387,9 +383,8 @@ def test_api_upload_and_ask_e2e(monkeypatch, tmp_path):
 
         # Run worker processing with mocked embedding
         fake_vectors = [[0.05] * 768 for _ in range(data["element_count"])]
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {"embeddings": fake_vectors}
-        mock_resp.raise_for_status = MagicMock()
+        provider = MagicMock()
+        provider.embed_documents.return_value = fake_vectors
 
         processor = JobProcessor(
             worker_id="test-worker",
@@ -401,7 +396,7 @@ def test_api_upload_and_ask_e2e(monkeypatch, tmp_path):
             assert claim is not None
             assert claim["id"] == job_id
 
-        with patch("httpx.post", return_value=mock_resp):
+        with patch("apps.worker.tasks.get_embedding_provider", return_value=provider):
             import asyncio
 
             asyncio.run(processor._process_job(claim))
