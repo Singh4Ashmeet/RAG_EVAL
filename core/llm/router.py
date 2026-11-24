@@ -1217,10 +1217,12 @@ def get_embedding_provider(provider_name: str | None = None):
     settings = get_settings()
     provider_name = provider_name or settings.embedding_provider
 
-    cache_key = f"embedding:{provider_name}"
+    embedding_base_url = settings.embedding_base_url.rstrip("/")
+    cache_key = f"embedding:{provider_name}:{embedding_base_url}:{settings.embedding_model}"
     if cache_key in _embedding_provider_cache:
         return _embedding_provider_cache[cache_key]
 
+    provider: Any
     if provider_name == "ollama":
         from core.embed.ollama_embedder import OllamaEmbedder
 
@@ -1229,12 +1231,22 @@ def get_embedding_provider(provider_name: str | None = None):
             host=settings.embedding_base_url,
             timeout=settings.rq_job_timeout,
         )
+    elif provider_name == "openai_compatible":
+        from core.embed.openai_compatible_embedder import OpenAICompatibleEmbedder
+
+        provider = OpenAICompatibleEmbedder(
+            model=settings.embedding_model,
+            base_url=settings.embedding_base_url,
+            api_key=settings.embedding_api_key,
+            timeout=settings.rq_job_timeout,
+        )
     else:
         raise ProviderNotSupportedError(
-            f"Unsupported embedding provider: {provider_name}. Supported providers: ollama"
+            "Unsupported embedding provider: "
+            f"{provider_name}. Supported providers: ollama, openai_compatible"
         )
 
-    _embedding_provider_cache[provider_name] = provider
+    _embedding_provider_cache[cache_key] = provider
     return provider
 
 

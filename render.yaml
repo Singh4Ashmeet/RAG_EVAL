@@ -52,6 +52,16 @@ services:
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
         sync: false
+      - key: EMBEDDING_PROVIDER
+        value: openai_compatible
+      - key: EMBEDDING_BASE_URL
+        sync: false
+      - key: EMBEDDING_MODEL
+        value: "@cf/baai/bge-small-en-v1.5"
+      - key: EMBEDDING_API_KEY
+        sync: false
+      - key: CHAT_BASE_URL
+        sync: false
       - key: OLLAMA_BASE_URL
         sync: false
       - key: OLLAMA_EMBED_MODEL

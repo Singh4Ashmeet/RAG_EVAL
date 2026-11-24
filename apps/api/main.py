@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import math
@@ -41,6 +42,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker,
 
 from core.config import get_settings
 from core.generate.pipeline import NO_CONTEXT_ANSWER
+from core.llm.router import get_embedding_provider
 from eval.datasets.schema import EvaluationCase, EvaluationDataset
 
 dotenv.load_dotenv()
@@ -1201,7 +1203,6 @@ async def ask(payload: AskPayload, account=Depends(current_account), db=Depends(
         )
     )
     base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
-    embed_model = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
     chat_model = {
         "ollama": os.getenv("OLLAMA_CHAT_MODEL", "llama3.2:3b"),
         "gemini": os.getenv("GEMINI_CHAT_MODEL", "gemini-3.8-flash"),
@@ -1212,11 +1213,8 @@ async def ask(payload: AskPayload, account=Depends(current_account), db=Depends(
     if elements:
         try:
             async with httpx.AsyncClient(timeout=90) as client:
-                qresp = await client.post(
-                    f"{base}/api/embed", json={"model": embed_model, "input": payload.query}
-                )
-                qresp.raise_for_status()
-                query_vector = qresp.json()["embeddings"][0]
+                embedder = get_embedding_provider()
+                query_vector = await asyncio.to_thread(embedder.embed_query, payload.query)
                 ranked = []
                 for element in elements:
                     vector = json.loads(element.embedding_json or "[]")
@@ -1735,6 +1733,17 @@ def delete_credential(provider: str, account=Depends(current_account), db=Depend
 
 @app.get("/api/v1/capabilities")
 async def capabilities(account=Depends(current_account)):
+    settings = get_settings()
+    if settings.embedding_provider != "ollama":
+        return {
+            "embedding": {
+                "provider": settings.embedding_provider,
+                "model": settings.embedding_model,
+                "available": True,
+            },
+            "ollama": {"available": False, "models": []},
+            "chat_providers": ["ollama", "gemini", "groq"],
+        }
     url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
     try:
         async with httpx.AsyncClient(timeout=2) as client:

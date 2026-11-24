@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 
-import httpx
 from sqlalchemy import func, select, text, update
 
 from apps.api.main import (
@@ -19,7 +18,7 @@ from apps.api.main import (
 from apps.worker.pg_queue import StaleLeaseError, complete_job
 from core.config import get_settings
 from core.generate.pipeline import GroundedAnswerGenerator
-from core.llm.router import get_chat_provider
+from core.llm.router import get_chat_provider, get_embedding_provider
 from core.normalize.schema import Chunk
 from core.retrieval.schema import RetrievalStrategy, SearchResult
 from eval.datasets.schema import EvaluationDataset
@@ -40,14 +39,10 @@ class HostedElementRetriever:
         self.max_depth = max_depth
         settings = get_settings()
         self.model_id = settings.embedding_model
-        self.base_url = settings.embedding_base_url.rstrip("/")
+        self.embedder = get_embedding_provider()
 
     def retrieve(self, query: str, top_k: int = 10) -> list[SearchResult]:
-        response = httpx.post(
-            f"{self.base_url}/api/embed", json={"model": self.model_id, "input": query}, timeout=90
-        )
-        response.raise_for_status()
-        query_vector = response.json()["embeddings"][0]
+        query_vector = self.embedder.embed_query(query)
         scored = []
         for element in self.elements:
             vector = json.loads(element.embedding_json or "[]")
@@ -161,17 +156,10 @@ def index_document(
     # Phase B: External I/O without holding database connection
     # -------------------------------------------------------------
     try:
-        settings = get_settings()
-        base = settings.embedding_base_url.rstrip("/")
-        model = settings.embedding_model
         texts = [text for _, text in missing_elements]
         vectors = []
         if texts:
-            response = httpx.post(
-                f"{base}/api/embed", json={"model": model, "input": texts}, timeout=180
-            )
-            response.raise_for_status()
-            vectors = response.json().get("embeddings", [])
+            vectors = get_embedding_provider().embed_documents(texts)
             if len(vectors) != len(texts):
                 raise ValueError("Embedding service returned an unexpected vector count.")
     except Exception as exc:

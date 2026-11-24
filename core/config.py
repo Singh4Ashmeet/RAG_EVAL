@@ -4,11 +4,30 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
+from ipaddress import ip_address
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import AliasChoices, Field, ValidationError, field_validator
 from pydantic_core import InitErrorDetails, PydanticCustomError
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _is_local_or_loopback_url(value: str) -> bool:
+    """Return whether a configured service URL targets localhost or a loopback IP."""
+    try:
+        hostname = urlparse(value).hostname
+    except ValueError:
+        return False
+    if not hostname:
+        return False
+    normalized = hostname.rstrip(".").lower()
+    if normalized == "localhost" or normalized.endswith(".localhost"):
+        return True
+    try:
+        return ip_address(normalized).is_loopback
+    except ValueError:
+        return False
 
 
 class Settings(BaseSettings):
@@ -65,19 +84,19 @@ class Settings(BaseSettings):
     )
 
     # Inference Providers
-    embedding_provider: Literal["ollama"] = Field(
+    embedding_provider: Literal["ollama", "openai_compatible"] = Field(
         default="ollama",
         validation_alias="EMBEDDING_PROVIDER",
-        description="Embedding provider (currently only ollama)",
+        description="Embedding provider",
     )
     embedding_model: str = Field(
         default="nomic-embed-text",
-        validation_alias="EMBEDDING_MODEL",
+        validation_alias=AliasChoices("EMBEDDING_MODEL", "OLLAMA_EMBED_MODEL"),
         description="Embedding model name",
     )
     embedding_base_url: str = Field(
         default="http://localhost:11434",
-        validation_alias="EMBEDDING_BASE_URL",
+        validation_alias=AliasChoices("EMBEDDING_BASE_URL", "OLLAMA_BASE_URL"),
         description="Embedding service base URL",
     )
     embedding_api_key: str = Field(
@@ -485,8 +504,15 @@ class Settings(BaseSettings):
         if self.database_url.startswith("sqlite"):
             errors.append("DATABASE_URL must use PostgreSQL in production")
 
-        if self.embedding_base_url.startswith("http://localhost"):
-            errors.append("EMBEDDING_BASE_URL must not be localhost in production")
+        if _is_local_or_loopback_url(self.embedding_base_url):
+            errors.append("EMBEDDING_BASE_URL must not be localhost or loopback in production")
+        if self.embedding_provider == "openai_compatible":
+            if not self.embedding_base_url.startswith("https://"):
+                errors.append(
+                    "EMBEDDING_BASE_URL must use HTTPS for openai_compatible in production"
+                )
+            if not self.embedding_api_key.strip():
+                errors.append("EMBEDDING_API_KEY is required for openai_compatible in production")
 
         if self.chat_base_url.startswith("http://localhost"):
             errors.append("CHAT_BASE_URL must not be localhost in production")

@@ -8,10 +8,11 @@ The repository includes a Render Blueprint in [`render.yaml`](../render.yaml). I
 
 ## External services required
 
-Render does not provision the app's S3-compatible object bucket or Ollama model endpoint. Configure these before using uploads or asking/indexing documents:
+Render does not provision the app's S3-compatible object bucket, embedding endpoint, or optional Ollama chat endpoint. Configure these before using uploads or asking/indexing documents:
 
 - A private AWS S3 bucket (or S3-compatible service) and a narrowly scoped access key. The app stores uploaded originals in this bucket. Configure via `S3_BUCKET`, `S3_ENDPOINT_URL`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
-- An Ollama HTTP endpoint reachable from the Render web service. Configure the full base URL in `OLLAMA_BASE_URL`; the selected models must already be available there: `nomic-embed-text` and `llama3.2:3b` by default. Keep this endpoint private or protected and allow requests only from the app's service where possible.
+- An embedding endpoint reachable from the Render web service. For Cloudflare Workers AI, set `EMBEDDING_PROVIDER=openai_compatible`, use the account-scoped HTTPS `/ai/v1` base URL in `EMBEDDING_BASE_URL`, select `@cf/baai/bge-small-en-v1.5`, and store its API token only in `EMBEDDING_API_KEY` in Render. Keep endpoint credentials restricted to the app.
+- If using Ollama for chat, an Ollama HTTP endpoint reachable from Render. Configure `OLLAMA_BASE_URL` and `CHAT_BASE_URL` with its remote HTTPS base URL; localhost and the developer's PC are not reachable from Render.
 
 ## Render Free tier limitations
 
@@ -47,9 +48,11 @@ Render does not provision the app's S3-compatible object bucket or Ollama model 
 | `CREDENTIAL_ENCRYPTION_KEY` | Yes | Fernet key for encrypting provider credentials |
 | `INVITATION_ADMIN_TOKEN` | Yes | Admin token for workspace invitations |
 | `S3_BUCKET`, `S3_ENDPOINT_URL`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Yes | S3-compatible storage configuration |
-| `OLLAMA_BASE_URL` | Yes | Ollama HTTP endpoint (e.g., `https://ollama.example.com`) |
-| `OLLAMA_EMBED_MODEL` | No | Embedding model name (default: `nomic-embed-text`) |
-| `OLLAMA_MODEL` | No | Chat model name (default: `llama3.2:3b`) |
+| `EMBEDDING_PROVIDER` | Yes | `openai_compatible` for a hosted OpenAI-compatible embedding service; `ollama` remains the local-development default |
+| `EMBEDDING_BASE_URL` | Yes | HTTPS OpenAI-compatible API root (Cloudflare: account-scoped `/ai/v1` URL) |
+| `EMBEDDING_MODEL` | Yes | Cloudflare example: `@cf/baai/bge-small-en-v1.5` |
+| `EMBEDDING_API_KEY` | Yes for external embeddings | Store only in Render secret settings |
+| `OLLAMA_BASE_URL`, `CHAT_BASE_URL` | Only for Ollama chat | Remote Ollama HTTPS endpoint; never a local machine address |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | Optional | GitHub OAuth credentials |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth credentials |
 | `RESEND_API_KEY`, `AUTH_EMAIL_FROM` | Optional | Email delivery via Resend |
