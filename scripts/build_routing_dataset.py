@@ -26,12 +26,9 @@ from eval.routing.schema import (
 
 
 def compute_sha256(path: Path) -> str:
-    """Compute SHA-256 hash of a file."""
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        while chunk := f.read(65536):
-            h.update(chunk)
-    return h.hexdigest()
+    """Compute SHA-256 hash of a file, normalizing CRLF to LF for cross-platform stability."""
+    content = path.read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(content).hexdigest()
 
 
 def parse_args(args: list[str] | None = None) -> argparse.Namespace:

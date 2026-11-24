@@ -1,3 +1,5 @@
 * text=auto eol=lf
 eval/corpora/** text eol=lf
 eval/golden/** text eol=lf
+data/routing/** text eol=lf
+
