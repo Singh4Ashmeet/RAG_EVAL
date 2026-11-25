@@ -405,10 +405,23 @@ def _sync_sqlite_columns(eng, metadata) -> None:
                     conn.execute(text(sql))
 
 
-if os.getenv("SKIP_SCHEMA_INIT") != "true":
+def _should_initialize_schema() -> bool:
+    """Return whether import-time development schema initialization is enabled."""
+    return os.getenv("SKIP_SCHEMA_INIT", "").strip().lower() != "true"
+
+
+def _initialize_schema() -> None:
+    """Initialize local schemas only when production initialization is not disabled."""
+    if not _should_initialize_schema():
+        return
+
     Base.metadata.create_all(engine)
     if engine.dialect.name == "sqlite":
         _sync_sqlite_columns(engine, Base.metadata)
+
+
+_initialize_schema()
+
 if engine.dialect.name == "postgresql" and os.getenv("SKIP_RLS_SETUP") != "true":
     with engine.begin() as conn:
         for table in (
