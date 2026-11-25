@@ -55,17 +55,18 @@ class OpenAICompatibleEmbedder:
             raise EmbedderError("Document texts must be non-empty strings.")
         return self._embed(texts)
 
-    def embed_query(self, text: str) -> list[float]:
+    def embed_query(self, text: str, *, timeout: float | None = None) -> list[float]:
         if not isinstance(text, str) or not text.strip():
             raise EmbedderError("Query text must be a non-empty string.")
-        return self._embed([text])[0]
+        return self._embed([text], timeout=timeout)[0]
 
-    def _embed(self, texts: list[str]) -> list[list[float]]:
+    def _embed(self, texts: list[str], *, timeout: float | None = None) -> list[list[float]]:
         try:
             response = self._client.post(
                 f"{self.base_url}/embeddings",
                 headers=self._headers,
                 json={"model": self.model, "input": texts, "encoding_format": "float"},
+                timeout=timeout,
             )
             response.raise_for_status()
             payload = response.json()

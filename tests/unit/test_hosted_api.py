@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import json
+import logging
+import time
 from collections.abc import Iterator
 from pathlib import Path
 
+import httpx
 import pytest
 from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
@@ -63,6 +67,7 @@ def hosted_client(tmp_path: Path, monkeypatch) -> Iterator[tuple[TestClient, mai
 
     main.app.dependency_overrides[main.db_session] = session_override
     main.app.dependency_overrides[main.current_account] = account_override
+    main.app.state.hosted_test_engine = engine
     previous_root = main.PRIVATE_DATA
     main.PRIVATE_DATA = tmp_path
     try:
@@ -71,6 +76,8 @@ def hosted_client(tmp_path: Path, monkeypatch) -> Iterator[tuple[TestClient, mai
     finally:
         main.PRIVATE_DATA = previous_root
         main.app.dependency_overrides.clear()
+        if hasattr(main.app.state, "hosted_test_engine"):
+            del main.app.state.hosted_test_engine
         engine.dispose()
 
 
@@ -268,6 +275,227 @@ def test_ask_abstains_without_indexed_sources(hosted_client) -> None:
     assert response.json()["answer"] == (
         "I don't have enough information in the retrieved sources to answer that question."
     )
+
+
+class _AskEmbedder:
+    def embed_query(self, _query: str) -> list[float]:
+        return [1.0, 0.0]
+
+
+class _FailingAskEmbedder:
+    def embed_query(self, _query: str) -> list[float]:
+        from core.errors import EmbedderError
+
+        raise EmbedderError("embedding upstream failed")
+
+
+class _SlowAskEmbedder:
+    def embed_query(self, _query: str) -> list[float]:
+        time.sleep(0.05)
+        return [1.0, 0.0]
+
+
+class _FakeAsyncClient:
+    def __init__(
+        self, responses: list[httpx.Response], calls: list[dict[str, object]], **_kwargs
+    ) -> None:
+        self._responses = iter(responses)
+        self._calls = calls
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_args) -> None:
+        return None
+
+    async def post(self, url: str, **kwargs) -> httpx.Response:
+        self._calls.append({"url": url, **kwargs})
+        return next(self._responses)
+
+
+def _provider_response(status: int, payload: dict[str, object]) -> httpx.Response:
+    return httpx.Response(
+        status,
+        json=payload,
+        request=httpx.Request("POST", "https://provider.example.test/generate"),
+    )
+
+
+def _seed_ask_source(account: main.Account) -> None:
+    engine = main.app.state.hosted_test_engine
+    with Session(engine) as db:
+        document = main.Document(
+            id="ask-document",
+            workspace_id=account.id,
+            name="source.md",
+            storage_key="test-workspace/source.md",
+            status="indexed",
+            sha256="1" * 64,
+        )
+        db.add(document)
+        db.add(
+            main.CorpusElement(
+                id="ask-element",
+                workspace_id=account.id,
+                document_id=document.id,
+                ordinal=0,
+                text="The source describes the data model.",
+                embedding_json=json.dumps([1.0, 0.0]),
+            )
+        )
+        db.commit()
+
+
+def _save_gemini_credential(client: TestClient, monkeypatch, secret: str = "tenant-key") -> None:
+    monkeypatch.setenv("CREDENTIAL_ENCRYPTION_KEY", Fernet.generate_key().decode())
+    response = client.put(
+        "/api/v1/settings/credentials", json={"provider": "gemini", "api_key": secret}
+    )
+    assert response.status_code == 200
+
+
+def _configure_ask_dependencies(
+    monkeypatch, responses: list[httpx.Response]
+) -> list[dict[str, object]]:
+    calls: list[dict[str, object]] = []
+    monkeypatch.setattr(main, "get_embedding_provider", lambda: _AskEmbedder())
+    monkeypatch.setattr(
+        main.httpx,
+        "AsyncClient",
+        lambda **kwargs: _FakeAsyncClient(responses, calls, **kwargs),
+    )
+    return calls
+
+
+def test_ask_gemini_success(hosted_client, monkeypatch) -> None:
+    client, account = hosted_client
+    _seed_ask_source(account)
+    _save_gemini_credential(client, monkeypatch)
+    calls = _configure_ask_dependencies(
+        monkeypatch,
+        [
+            _provider_response(
+                200, {"candidates": [{"content": {"parts": [{"text": "Answer [S1]"}]}}]}
+            )
+        ],
+    )
+
+    response = client.post(
+        "/api/v1/ask", json={"query": "What is described?", "provider": "gemini"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["answer"] == "Answer [S1]"
+    assert len(calls) == 1
+
+
+def test_ask_gemini_retries_one_transient_unavailable_response(hosted_client, monkeypatch) -> None:
+    client, account = hosted_client
+    _seed_ask_source(account)
+    _save_gemini_credential(client, monkeypatch)
+    monkeypatch.setattr(main, "ASK_GEMINI_RETRY_DELAY_SECONDS", 0.0)
+    calls = _configure_ask_dependencies(
+        monkeypatch,
+        [
+            _provider_response(503, {"error": {"status": "UNAVAILABLE"}}),
+            _provider_response(200, {"candidates": [{"content": {"parts": [{"text": "OK"}]}}]}),
+        ],
+    )
+
+    response = client.post(
+        "/api/v1/ask", json={"query": "What is described?", "provider": "gemini"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["answer"] == "OK"
+    assert len(calls) == 2
+
+
+def test_ask_gemini_exhausts_bounded_unavailable_retries(hosted_client, monkeypatch) -> None:
+    client, account = hosted_client
+    _seed_ask_source(account)
+    _save_gemini_credential(client, monkeypatch)
+    monkeypatch.setattr(main, "ASK_GEMINI_RETRY_DELAY_SECONDS", 0.0)
+    calls = _configure_ask_dependencies(
+        monkeypatch,
+        [
+            _provider_response(503, {"error": {"status": "UNAVAILABLE"}}),
+            _provider_response(503, {"error": {"status": "UNAVAILABLE"}}),
+        ],
+    )
+
+    response = client.post(
+        "/api/v1/ask", json={"query": "What is described?", "provider": "gemini"}
+    )
+
+    assert response.status_code == 503
+    assert len(calls) == main.ASK_GEMINI_MAX_ATTEMPTS
+
+
+def test_ask_gemini_does_not_retry_permanent_fourxx(hosted_client, monkeypatch) -> None:
+    client, account = hosted_client
+    _seed_ask_source(account)
+    _save_gemini_credential(client, monkeypatch)
+    calls = _configure_ask_dependencies(
+        monkeypatch,
+        [_provider_response(400, {"error": {"status": "INVALID_ARGUMENT"}})],
+    )
+
+    response = client.post(
+        "/api/v1/ask", json={"query": "What is described?", "provider": "gemini"}
+    )
+
+    assert response.status_code == 503
+    assert len(calls) == 1
+
+
+def test_ask_embedding_failure_is_controlled(hosted_client, monkeypatch) -> None:
+    client, account = hosted_client
+    _seed_ask_source(account)
+    monkeypatch.setattr(main, "get_embedding_provider", lambda: _FailingAskEmbedder())
+
+    response = client.post(
+        "/api/v1/ask", json={"query": "What is described?", "provider": "gemini"}
+    )
+
+    assert response.status_code == 503
+    assert (
+        response.json()["detail"]
+        == "The embedding provider is unavailable or rejected the request."
+    )
+
+
+def test_ask_enforces_overall_deadline(hosted_client, monkeypatch) -> None:
+    client, account = hosted_client
+    _seed_ask_source(account)
+    monkeypatch.setattr(main, "ASK_DEADLINE_SECONDS", 0.01)
+    monkeypatch.setattr(main, "get_embedding_provider", lambda: _SlowAskEmbedder())
+
+    response = client.post(
+        "/api/v1/ask", json={"query": "What is described?", "provider": "gemini"}
+    )
+
+    assert response.status_code == 504
+
+
+def test_ask_logs_do_not_expose_gemini_credential(hosted_client, monkeypatch, caplog) -> None:
+    client, account = hosted_client
+    _seed_ask_source(account)
+    secret = "never-log-this-gemini-key"
+    _save_gemini_credential(client, monkeypatch, secret)
+    _configure_ask_dependencies(
+        monkeypatch,
+        [_provider_response(503, {"error": {"status": "UNAVAILABLE"}})] * 2,
+    )
+    monkeypatch.setattr(main, "ASK_GEMINI_RETRY_DELAY_SECONDS", 0.0)
+
+    with caplog.at_level(logging.INFO, logger="apps.api.main"):
+        response = client.post(
+            "/api/v1/ask", json={"query": "What is described?", "provider": "gemini"}
+        )
+
+    assert response.status_code == 503
+    assert secret not in caplog.text
 
 
 def test_invitation_management_requires_owner_token(hosted_client, monkeypatch) -> None:

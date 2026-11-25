@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import math
 import os
 import re
@@ -41,11 +42,132 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, synonym
 
 from core.config import get_settings
+from core.embed.openai_compatible_embedder import OpenAICompatibleEmbedder
+from core.errors import EmbedderError
 from core.generate.pipeline import NO_CONTEXT_ANSWER
 from core.llm.router import get_embedding_provider
 from eval.datasets.schema import EvaluationCase, EvaluationDataset
 
 dotenv.load_dotenv()
+
+logger = logging.getLogger(__name__)
+
+# Keep the complete request below Render's observed proxy timeout while leaving
+# enough time for one bounded embedding call and two bounded Gemini attempts.
+ASK_DEADLINE_SECONDS = 75.0
+ASK_EMBEDDING_TIMEOUT_SECONDS = 20.0
+ASK_GEMINI_TIMEOUT_SECONDS = 30.0
+ASK_GEMINI_MAX_ATTEMPTS = 2
+ASK_GEMINI_RETRY_DELAY_SECONDS = 0.5
+ASK_GEMINI_MAX_RETRY_AFTER_SECONDS = 5.0
+
+
+class AskDeadlineExceededError(Exception):
+    """Raised when the hosted Ask request reaches its end-to-end deadline."""
+
+
+def _gemini_unavailable(response: httpx.Response) -> bool:
+    """Return whether a response is Gemini's transient 503 UNAVAILABLE error."""
+    if response.status_code != 503:
+        return False
+    try:
+        return response.json().get("error", {}).get("status") == "UNAVAILABLE"
+    except (ValueError, AttributeError):
+        return False
+
+
+def _gemini_retry_delay(response: httpx.Response, attempt: int) -> float:
+    """Use a small bounded Retry-After value, otherwise exponential backoff."""
+    retry_after = response.headers.get("Retry-After")
+    if retry_after:
+        try:
+            parsed = float(retry_after)
+        except ValueError:
+            parsed = -1.0
+        if 0.0 <= parsed <= ASK_GEMINI_MAX_RETRY_AFTER_SECONDS:
+            return parsed
+    return min(
+        ASK_GEMINI_RETRY_DELAY_SECONDS * (2 ** (attempt - 1)),
+        ASK_GEMINI_MAX_RETRY_AFTER_SECONDS,
+    )
+
+
+async def _generate_gemini_answer(
+    client: httpx.AsyncClient,
+    *,
+    model: str,
+    api_key: str,
+    prompt: str,
+    deadline: float,
+) -> str:
+    """Generate once or retry one transient Gemini 503 without leaking secrets."""
+    loop = asyncio.get_running_loop()
+    for attempt in range(1, ASK_GEMINI_MAX_ATTEMPTS + 1):
+        remaining = deadline - loop.time()
+        if remaining <= 0:
+            raise AskDeadlineExceededError
+        timeout = min(ASK_GEMINI_TIMEOUT_SECONDS, remaining)
+        started = loop.time()
+        try:
+            response = await client.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                headers={"x-goog-api-key": api_key},
+                json={"contents": [{"parts": [{"text": prompt}]}]},
+                timeout=timeout,
+            )
+        except httpx.HTTPError as exc:
+            logger.warning(
+                "ask_provider_failure provider=gemini status=unknown category=http_error "
+                "attempt=%d latency_ms=%.1f",
+                attempt,
+                (loop.time() - started) * 1000,
+            )
+            raise exc
+
+        latency_ms = (loop.time() - started) * 1000
+        if _gemini_unavailable(response) and attempt < ASK_GEMINI_MAX_ATTEMPTS:
+            delay = min(_gemini_retry_delay(response, attempt), max(deadline - loop.time(), 0.0))
+            logger.warning(
+                "ask_provider_retry provider=gemini status=%d category=unavailable "
+                "attempt=%d latency_ms=%.1f delay_s=%.2f",
+                response.status_code,
+                attempt,
+                latency_ms,
+                delay,
+            )
+            if deadline - loop.time() <= 0:
+                raise AskDeadlineExceededError
+            if delay:
+                await asyncio.sleep(delay)
+            continue
+
+        if not response.is_success:
+            category = "unavailable" if _gemini_unavailable(response) else "http_error"
+            logger.warning(
+                "ask_provider_failure provider=gemini status=%d category=%s "
+                "attempt=%d latency_ms=%.1f",
+                response.status_code,
+                category,
+                attempt,
+                latency_ms,
+            )
+            response.raise_for_status()
+
+        logger.info(
+            "ask_provider_success provider=gemini status=%d attempt=%d latency_ms=%.1f",
+            response.status_code,
+            attempt,
+            latency_ms,
+        )
+        return "".join(
+            part.get("text", "")
+            for part in response.json()
+            .get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [])
+        )
+
+    raise AskDeadlineExceededError
 
 
 class StorageError(Exception):
@@ -1245,26 +1367,48 @@ class AskPayload(BaseModel):
 
 @app.post("/api/v1/ask", response_model=AskResponse)
 async def ask(payload: AskPayload, account=Depends(current_account), db=Depends(db_session)):
-    elements = list(
-        db.scalars(
-            select(CorpusElement).where(
-                CorpusElement.workspace_id == account.id, CorpusElement.embedding_json.is_not(None)
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + ASK_DEADLINE_SECONDS
+    try:
+        async with asyncio.timeout(ASK_DEADLINE_SECONDS):
+            elements = list(
+                db.scalars(
+                    select(CorpusElement).where(
+                        CorpusElement.workspace_id == account.id,
+                        CorpusElement.embedding_json.is_not(None),
+                    )
+                )
             )
-        )
-    )
-    base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
-    chat_model = {
-        "ollama": os.getenv("OLLAMA_CHAT_MODEL", "llama3.2:3b"),
-        "gemini": os.getenv("GEMINI_CHAT_MODEL", "gemini-3.8-flash"),
-        "groq": os.getenv("GROQ_CHAT_MODEL", "openai/gpt-oss-120b"),
-    }[payload.provider]
-    sources: list[dict[str, Any]] = []
-    answer = NO_CONTEXT_ANSWER
-    if elements:
-        try:
-            async with httpx.AsyncClient(timeout=90) as client:
+            base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+            chat_model = {
+                "ollama": os.getenv("OLLAMA_CHAT_MODEL", "llama3.2:3b"),
+                "gemini": os.getenv("GEMINI_CHAT_MODEL", "gemini-3.8-flash"),
+                "groq": os.getenv("GROQ_CHAT_MODEL", "openai/gpt-oss-120b"),
+            }[payload.provider]
+            sources: list[dict[str, Any]] = []
+            answer = NO_CONTEXT_ANSWER
+            if elements:
                 embedder = get_embedding_provider()
-                query_vector = await asyncio.to_thread(embedder.embed_query, payload.query)
+                embedding_started = loop.time()
+                try:
+                    if isinstance(embedder, OpenAICompatibleEmbedder):
+                        query_vector = await asyncio.wait_for(
+                            asyncio.to_thread(
+                                embedder.embed_query,
+                                payload.query,
+                                timeout=ASK_EMBEDDING_TIMEOUT_SECONDS,
+                            ),
+                            timeout=min(ASK_EMBEDDING_TIMEOUT_SECONDS, deadline - loop.time()),
+                        )
+                    else:
+                        query_vector = await asyncio.to_thread(embedder.embed_query, payload.query)
+                except EmbedderError:
+                    logger.warning(
+                        "ask_provider_failure provider=embedding status=unknown "
+                        "category=embedding_error attempt=1 latency_ms=%.1f",
+                        (loop.time() - embedding_started) * 1000,
+                    )
+                    raise
                 ranked = []
                 for element in elements:
                     vector = json.loads(element.embedding_json or "[]")
@@ -1347,64 +1491,75 @@ async def ask(payload: AskPayload, account=Depends(current_account), db=Depends(
                         )
                         + f"\n\nQuestion: {payload.query}"
                     )
-                    if payload.provider == "ollama":
-                        response = await client.post(
-                            f"{base}/api/chat",
-                            json={
-                                "model": chat_model,
-                                "stream": False,
-                                "messages": [{"role": "user", "content": prompt}],
-                            },
-                        )
-                        response.raise_for_status()
-                        answer = response.json().get("message", {}).get("content", "")
-                    else:
-                        credential = db.get(ProviderCredential, (account.id, payload.provider))
-                        encryption_key = os.getenv("CREDENTIAL_ENCRYPTION_KEY")
-                        if credential is None or not encryption_key:
-                            raise HTTPException(
-                                409,
-                                f"Save a {payload.provider.title()} chat key in Settings first.",
-                            )
-                        api_key = (
-                            Fernet(encryption_key.encode())
-                            .decrypt(credential.encrypted_key.encode())
-                            .decode()
-                        )
-                        if payload.provider == "gemini":
+                    async with httpx.AsyncClient(timeout=90) as client:
+                        if payload.provider == "ollama":
                             response = await client.post(
-                                f"https://generativelanguage.googleapis.com/v1beta/models/{chat_model}:generateContent",
-                                headers={"x-goog-api-key": api_key},
-                                json={"contents": [{"parts": [{"text": prompt}]}]},
-                            )
-                            response.raise_for_status()
-                            answer = "".join(
-                                part.get("text", "")
-                                for part in response.json()
-                                .get("candidates", [{}])[0]
-                                .get("content", {})
-                                .get("parts", [])
-                            )
-                        else:
-                            response = await client.post(
-                                "https://api.groq.com/openai/v1/chat/completions",
-                                headers={"Authorization": f"Bearer {api_key}"},
+                                f"{base}/api/chat",
                                 json={
                                     "model": chat_model,
+                                    "stream": False,
                                     "messages": [{"role": "user", "content": prompt}],
                                 },
                             )
                             response.raise_for_status()
-                            answer = (
-                                response.json()
-                                .get("choices", [{}])[0]
-                                .get("message", {})
-                                .get("content", "")
+                            answer = response.json().get("message", {}).get("content", "")
+                        else:
+                            credential = db.get(ProviderCredential, (account.id, payload.provider))
+                            encryption_key = os.getenv("CREDENTIAL_ENCRYPTION_KEY")
+                            if credential is None or not encryption_key:
+                                raise HTTPException(
+                                    409,
+                                    "Save a "
+                                    f"{payload.provider.title()} chat key in Settings first.",
+                                )
+                            api_key = (
+                                Fernet(encryption_key.encode())
+                                .decrypt(credential.encrypted_key.encode())
+                                .decode()
                             )
-        except (httpx.HTTPError, InvalidToken, ValueError) as exc:
-            raise HTTPException(
-                503, "The selected model provider is unavailable or rejected the request."
-            ) from exc
+                            if payload.provider == "gemini":
+                                answer = await _generate_gemini_answer(
+                                    client,
+                                    model=chat_model,
+                                    api_key=api_key,
+                                    prompt=prompt,
+                                    deadline=deadline,
+                                )
+                            else:
+                                response = await client.post(
+                                    "https://api.groq.com/openai/v1/chat/completions",
+                                    headers={"Authorization": f"Bearer {api_key}"},
+                                    json={
+                                        "model": chat_model,
+                                        "messages": [{"role": "user", "content": prompt}],
+                                    },
+                                )
+                                response.raise_for_status()
+                                answer = (
+                                    response.json()
+                                    .get("choices", [{}])[0]
+                                    .get("message", {})
+                                    .get("content", "")
+                                )
+    except TimeoutError as exc:
+        logger.warning("ask_request_timeout provider=%s category=deadline", payload.provider)
+        raise HTTPException(
+            504, "The request timed out while contacting the selected provider."
+        ) from exc
+    except AskDeadlineExceededError as exc:
+        logger.warning("ask_request_timeout provider=%s category=deadline", payload.provider)
+        raise HTTPException(
+            504, "The request timed out while contacting the selected provider."
+        ) from exc
+    except EmbedderError as exc:
+        raise HTTPException(
+            503, "The embedding provider is unavailable or rejected the request."
+        ) from exc
+    except (httpx.HTTPError, InvalidToken, ValueError) as exc:
+        logger.warning("ask_provider_failure provider=%s category=provider_error", payload.provider)
+        raise HTTPException(
+            503, "The selected model provider is unavailable or rejected the request."
+        ) from exc
     cited_indexes = {int(index) for index in re.findall(r"\[S(\d+)\]", answer)}
     citations = [
         {"label": f"S{index}", "element_id": sources[index - 1]["element_id"]}
