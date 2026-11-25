@@ -32,6 +32,23 @@ def test_account_auth_rls_migration_requires_invited_identity() -> None:
     assert "FROM public.invitations" in bootstrap
 
 
+def test_invitation_management_rls_migration_allows_only_api_role() -> None:
+    migration = (
+        Path(__file__).resolve().parents[2]
+        / "migrations"
+        / "versions"
+        / "20261125_0005_invitation_management_rls.py"
+    ).read_text(encoding="utf-8")
+
+    assert "ALTER TABLE public.invitations ENABLE ROW LEVEL SECURITY" in migration
+    assert "ALTER TABLE public.invitations FORCE ROW LEVEL SECURITY" in migration
+    assert "CREATE POLICY invitation_management ON public.invitations" in migration
+    assert "FOR ALL TO rag_api" in migration
+    assert "USING (true)" in migration
+    assert "WITH CHECK (true)" in migration
+    assert "BYPASSRLS" not in migration
+
+
 def test_github_account_resolution_sets_production_rls_identity_context() -> None:
     from types import SimpleNamespace
     from unittest.mock import MagicMock

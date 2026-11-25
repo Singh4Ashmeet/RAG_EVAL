@@ -92,6 +92,17 @@ CREATE POLICY account_self_delete ON public.accounts
     FOR DELETE TO rag_api
     USING (id = current_setting('app.workspace_id', true));
 
+-- Invitations are global administration records, never tenant data. Only the
+-- application database role can access them; the API separately requires the
+-- INVITATION_ADMIN_TOKEN before it permits any invitation management action.
+ALTER TABLE public.invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.invitations FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS invitation_management ON public.invitations;
+CREATE POLICY invitation_management ON public.invitations
+    FOR ALL TO rag_api
+    USING (true)
+    WITH CHECK (true);
+
 -- 3. Base Table Grants for rag_api
 -- General domain tables: full CRUD
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.accounts TO rag_api;
