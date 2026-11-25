@@ -92,6 +92,25 @@ def test_upload_validates_type_and_persists_utf8_source(hosted_client) -> None:
     assert [row["name"] for row in listed.json()] == ["notes.md"]
 
 
+def test_account_creation_requires_an_invitation_under_auth_context() -> None:
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
+    main.Base.metadata.create_all(engine)
+    try:
+        with Session(engine) as db:
+            with pytest.raises(main.HTTPException, match="has not been invited"):
+                main.resolve_auth_account(db, "github-123", "new@example.test", "new-user")
+
+            db.add(main.Invitation(email="new@example.test"))
+            db.commit()
+            account = main.resolve_auth_account(db, "github-123", "new@example.test", "new-user")
+            db.commit()
+
+            assert account.auth_subject == "github-123"
+            assert account.email == "new@example.test"
+    finally:
+        engine.dispose()
+
+
 def test_upload_docx_success(hosted_client) -> None:
     import io
 

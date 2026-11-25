@@ -50,6 +50,48 @@ END
 $$;
 GRANT USAGE ON SCHEMA public TO rag_api, rag_worker, rag_api_queue_owner, rag_worker_queue_owner;
 
+-- Account bootstrap RLS: an unauthenticated request has no workspace ID yet.
+-- The API sets these transaction-local values only after a provider verifies
+-- the subject and email; new accounts must also have an invitation.
+ALTER TABLE public.accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.accounts FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS account_identity_isolation ON public.accounts;
+DROP POLICY IF EXISTS account_invited_creation ON public.accounts;
+DROP POLICY IF EXISTS account_self_update ON public.accounts;
+DROP POLICY IF EXISTS account_self_delete ON public.accounts;
+CREATE POLICY account_identity_isolation ON public.accounts
+    FOR SELECT TO rag_api
+    USING (
+        id = current_setting('app.workspace_id', true)
+        OR github_id = current_setting('app.auth_subject', true)
+        OR email = current_setting('app.auth_email', true)
+    );
+CREATE POLICY account_invited_creation ON public.accounts
+    FOR INSERT TO rag_api
+    WITH CHECK (
+        github_id = current_setting('app.auth_subject', true)
+        AND email = current_setting('app.auth_email', true)
+        AND EXISTS (
+            SELECT 1 FROM public.invitations
+            WHERE invitations.email = accounts.email
+        )
+    );
+CREATE POLICY account_self_update ON public.accounts
+    FOR UPDATE TO rag_api
+    USING (
+        id = current_setting('app.workspace_id', true)
+        OR github_id = current_setting('app.auth_subject', true)
+        OR email = current_setting('app.auth_email', true)
+    )
+    WITH CHECK (
+        id = current_setting('app.workspace_id', true)
+        OR github_id = current_setting('app.auth_subject', true)
+        OR email = current_setting('app.auth_email', true)
+    );
+CREATE POLICY account_self_delete ON public.accounts
+    FOR DELETE TO rag_api
+    USING (id = current_setting('app.workspace_id', true));
+
 -- 3. Base Table Grants for rag_api
 -- General domain tables: full CRUD
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.accounts TO rag_api;

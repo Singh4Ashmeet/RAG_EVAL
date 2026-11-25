@@ -507,14 +507,14 @@ def current_account(request: Request, db=Depends(db_session)) -> Account:
         expiry = expiry.replace(tzinfo=UTC)
     if not record or expiry is None or expiry < datetime.now(UTC):
         raise HTTPException(401, "Session expired. Sign in again.")
-    account = db.get(Account, record.account_id)
-    if account is None:
-        raise HTTPException(401, "Account is unavailable.")
     if db.bind and db.bind.dialect.name == "postgresql":
         db.execute(
             text("SELECT set_config('app.workspace_id', :workspace_id, true)"),
-            {"workspace_id": account.id},
+            {"workspace_id": record.account_id},
         )
+    account = db.get(Account, record.account_id)
+    if account is None:
+        raise HTTPException(401, "Account is unavailable.")
     return account
 
 
@@ -657,10 +657,30 @@ def hosted_privacy():
 
 
 def resolve_auth_account(db, subject: str, email: str, login: str) -> Account:
+    """Resolve a verified identity to its invited workspace account.
+
+    PostgreSQL RLS policies use this server-derived identity context to restrict
+    account lookup and creation before a workspace session exists.
+    """
+    email = email.strip().lower()
+    if db.bind and db.bind.dialect.name == "postgresql":
+        db.execute(
+            text("SELECT set_config('app.auth_subject', :subject, true)"),
+            {"subject": subject},
+        )
+        db.execute(
+            text("SELECT set_config('app.auth_email', :email, true)"),
+            {"email": email},
+        )
+
     account = db.scalar(select(Account).where(Account.auth_subject == subject))
     if account is None:
         account = db.scalar(select(Account).where(Account.email == email))
     if account is None:
+        # A verified provider email must be explicitly invited before it can
+        # create a tenant/workspace. The database policy mirrors this guard.
+        if db.get(Invitation, email) is None:
+            raise HTTPException(403, "This verified email has not been invited.")
         account = Account(
             id=str(uuid.uuid4()), auth_subject=subject, login=login[:128], email=email
         )
