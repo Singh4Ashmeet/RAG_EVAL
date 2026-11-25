@@ -514,7 +514,7 @@ class Settings(BaseSettings):
             if not self.embedding_api_key.strip():
                 errors.append("EMBEDDING_API_KEY is required for openai_compatible in production")
 
-        if self.chat_base_url.startswith("http://localhost"):
+        if self.chat_provider == "ollama" and _is_local_or_loopback_url(self.chat_base_url):
             errors.append("CHAT_BASE_URL must not be localhost in production")
 
         if not self.credential_encryption_key:

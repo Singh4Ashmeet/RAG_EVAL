@@ -8,11 +8,11 @@ The repository includes a Render Blueprint in [`render.yaml`](../render.yaml). I
 
 ## External services required
 
-Render does not provision the app's S3-compatible object bucket, embedding endpoint, or optional Ollama chat endpoint. Configure these before using uploads or asking/indexing documents:
+Render does not provision the app's S3-compatible object bucket, embedding endpoint, or Gemini chat credentials. Configure these before using uploads or asking/indexing documents:
 
 - A private AWS S3 bucket (or S3-compatible service) and a narrowly scoped access key. The app stores uploaded originals in this bucket. Configure via `S3_BUCKET`, `S3_ENDPOINT_URL`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
 - An embedding endpoint reachable from the Render web service. For Cloudflare Workers AI, set `EMBEDDING_PROVIDER=openai_compatible`, use the account-scoped HTTPS `/ai/v1` base URL in `EMBEDDING_BASE_URL`, select `@cf/baai/bge-small-en-v1.5`, and store its API token only in `EMBEDDING_API_KEY` in Render. Keep endpoint credentials restricted to the app.
-- If using Ollama for chat, an Ollama HTTP endpoint reachable from Render. Configure `OLLAMA_BASE_URL` and `CHAT_BASE_URL` with its remote HTTPS base URL; localhost and the developer's PC are not reachable from Render.
+- Render uses Gemini for server-managed chat. Set `GEMINI_API_KEY` only in Render's secret settings. `GEMINI_BASE_URL` and `GEMINI_CHAT_MODEL` use their application defaults unless you explicitly need to override them. Local development continues to default to Ollama.
 
 ## Render Free tier limitations
 
@@ -52,7 +52,10 @@ Render does not provision the app's S3-compatible object bucket, embedding endpo
 | `EMBEDDING_BASE_URL` | Yes | HTTPS OpenAI-compatible API root (Cloudflare: account-scoped `/ai/v1` URL) |
 | `EMBEDDING_MODEL` | Yes | Cloudflare example: `@cf/baai/bge-small-en-v1.5` |
 | `EMBEDDING_API_KEY` | Yes for external embeddings | Store only in Render secret settings |
-| `OLLAMA_BASE_URL`, `CHAT_BASE_URL` | Only for Ollama chat | Remote Ollama HTTPS endpoint; never a local machine address |
+| `CHAT_PROVIDER` | Yes | `gemini` for the Render deployment |
+| `GEMINI_API_KEY` | Yes | Store only in Render secret settings |
+| `GEMINI_BASE_URL`, `GEMINI_CHAT_MODEL` | Optional | Override only when required; application defaults target Gemini's standard API and configured default model |
+| `OLLAMA_BASE_URL`, `CHAT_BASE_URL` | Local Ollama only | Not needed by Render when `CHAT_PROVIDER=gemini` |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | Optional | GitHub OAuth credentials |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional | Google OAuth credentials |
 | `RESEND_API_KEY`, `AUTH_EMAIL_FROM` | Optional | Email delivery via Resend |

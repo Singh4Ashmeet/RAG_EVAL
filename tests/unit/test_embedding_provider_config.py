@@ -51,6 +51,22 @@ def test_external_embeddings_are_strictly_validated_in_production(overrides, mes
         _production_settings(**overrides).validate_production_requirements()
 
 
+def test_gemini_chat_does_not_require_chat_base_url_in_production() -> None:
+    settings = _production_settings(
+        chat_provider="gemini",
+        chat_base_url="http://localhost:11434",
+    )
+
+    settings.validate_production_requirements()
+
+
+def test_ollama_chat_still_rejects_localhost_in_production() -> None:
+    settings = _production_settings(chat_base_url="http://localhost:11434")
+
+    with pytest.raises(ValidationError, match="CHAT_BASE_URL must not be localhost"):
+        settings.validate_production_requirements()
+
+
 def test_local_ollama_defaults_remain_valid_in_development() -> None:
     settings = Settings()
     assert settings.embedding_provider == "ollama"
