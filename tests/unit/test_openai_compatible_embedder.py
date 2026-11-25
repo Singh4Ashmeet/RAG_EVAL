@@ -128,7 +128,7 @@ def test_http_failure_is_sanitized() -> None:
         "secret-token",
         _client(lambda request: httpx.Response(401, text="provider response detail")),
     )
-    with pytest.raises(EmbedderError, match="request failed") as error:
+    with pytest.raises(EmbedderError, match="HTTP 401") as error:
         embedder.embed_query("query")
     assert "secret-token" not in str(error.value)
     assert "provider response detail" not in str(error.value)

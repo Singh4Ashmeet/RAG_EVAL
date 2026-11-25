@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from functools import lru_cache
 from ipaddress import ip_address
 from typing import Literal
@@ -28,6 +29,19 @@ def _is_local_or_loopback_url(value: str) -> bool:
         return ip_address(normalized).is_loopback
     except ValueError:
         return False
+
+
+def _is_valid_cloudflare_workers_ai_base_url(value: str) -> bool:
+    """Validate Cloudflare's account-scoped OpenAI-compatible API root."""
+    parsed = urlparse(value)
+    if parsed.hostname != "api.cloudflare.com":
+        return True
+    return bool(
+        re.fullmatch(
+            r"/client/v4/accounts/[0-9a-fA-F]{32}/ai/v1/?",
+            parsed.path,
+        )
+    )
 
 
 class Settings(BaseSettings):
@@ -513,6 +527,11 @@ class Settings(BaseSettings):
                 )
             if not self.embedding_api_key.strip():
                 errors.append("EMBEDDING_API_KEY is required for openai_compatible in production")
+            if not _is_valid_cloudflare_workers_ai_base_url(self.embedding_base_url):
+                errors.append(
+                    "Cloudflare EMBEDDING_BASE_URL must be "
+                    "https://api.cloudflare.com/client/v4/accounts/<32-hex-account-id>/ai/v1"
+                )
 
         if self.chat_provider == "ollama" and _is_local_or_loopback_url(self.chat_base_url):
             errors.append("CHAT_BASE_URL must not be localhost in production")

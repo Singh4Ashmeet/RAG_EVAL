@@ -44,11 +44,29 @@ def _production_settings(**overrides):
         ({"embedding_api_key": ""}, "EMBEDDING_API_KEY is required"),
         ({"embedding_base_url": "https://127.0.0.1/v1"}, "localhost or loopback"),
         ({"embedding_base_url": "https://localhost/v1"}, "localhost or loopback"),
+        (
+            {
+                "embedding_base_url": (
+                    "https://api.cloudflare.com/client/v4/accounts/not-an-account-id/ai/v"
+                )
+            },
+            "Cloudflare EMBEDDING_BASE_URL",
+        ),
     ],
 )
 def test_external_embeddings_are_strictly_validated_in_production(overrides, message) -> None:
     with pytest.raises(ValidationError, match=message):
         _production_settings(**overrides).validate_production_requirements()
+
+
+def test_cloudflare_openai_compatible_base_url_accepts_account_scoped_v1_endpoint() -> None:
+    settings = _production_settings(
+        embedding_base_url=(
+            "https://api.cloudflare.com/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/v1"
+        )
+    )
+
+    settings.validate_production_requirements()
 
 
 def test_gemini_chat_does_not_require_chat_base_url_in_production() -> None:

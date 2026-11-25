@@ -69,6 +69,11 @@ class OpenAICompatibleEmbedder:
             )
             response.raise_for_status()
             payload = response.json()
+        except httpx.HTTPStatusError as exc:
+            raise EmbedderError(
+                "OpenAI-compatible embedding request failed "
+                f"with HTTP {exc.response.status_code} for model '{self.model}'."
+            ) from exc
         except (httpx.HTTPError, ValueError) as exc:
             raise EmbedderError(
                 f"OpenAI-compatible embedding request failed for model '{self.model}'."
