@@ -1424,7 +1424,7 @@ async def ask(payload: AskPayload, account=Depends(current_account), db=Depends(
 
                 from core.normalize.schema import Chunk
                 from core.retrieval.bm25 import BM25Retriever
-                from core.retrieval.hybrid import _rrf_fusion
+                from core.retrieval.rrf import _rrf_fusion
                 from core.retrieval.schema import RetrievalStrategy, SearchResult
 
                 # Convert all workspace elements to Chunk instances
