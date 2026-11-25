@@ -19,6 +19,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import create_engine, make_url, select, text, update
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import sessionmaker
 
 from apps.api.main import (
@@ -26,6 +27,7 @@ from apps.api.main import (
     Document,
     Job,
     JobAttempt,
+    SessionRecord,
 )
 from apps.worker.pg_queue import (
     JobProcessor,
@@ -216,6 +218,52 @@ def test_rls_isolates_tenant_documents(clean_db):
         docs_beta = list(db.scalars(select(Document)))
         assert len(docs_beta) == 1
         assert docs_beta[0].id == doc_beta.id
+    api_engine.dispose()
+
+
+def test_rag_api_session_rls_scopes_insert_and_lookup(clean_db):
+    """The API role can create sessions only for its workspace and read by cookie hash."""
+    with clean_db() as db:
+        db.add(
+            SessionRecord(
+                token_hash="b" * 64,
+                account_id="ws-beta",
+                expires_at=datetime.now(UTC) + timedelta(days=1),
+            )
+        )
+        db.commit()
+
+    api_engine = create_engine(RAG_API_URL)
+    with api_engine.begin() as conn:
+        conn.execute(text("SELECT set_config('app.workspace_id', 'ws-alpha', true)"))
+        conn.execute(
+            text("""
+                INSERT INTO public.sessions (token_hash, account_id, expires_at)
+                VALUES (:token_hash, 'ws-alpha', now() + interval '1 day')
+            """),
+            {"token_hash": "a" * 64},
+        )
+
+    with api_engine.connect() as conn:
+        conn.execute(text("SELECT set_config('app.workspace_id', 'ws-alpha', true)"))
+        with pytest.raises(DBAPIError):
+            conn.execute(
+                text("""
+                    INSERT INTO public.sessions (token_hash, account_id, expires_at)
+                    VALUES (:token_hash, 'ws-beta', now() + interval '1 day')
+                """),
+                {"token_hash": "c" * 64},
+            )
+        conn.rollback()
+
+    with api_engine.begin() as conn:
+        assert conn.execute(text("SELECT count(*) FROM public.sessions")).scalar_one() == 0
+        conn.execute(
+            text("SELECT set_config('app.session_token_hash', :token_hash, true)"),
+            {"token_hash": "a" * 64},
+        )
+        rows = conn.execute(text("SELECT token_hash, account_id FROM public.sessions")).all()
+        assert rows == [("a" * 64, "ws-alpha")]
     api_engine.dispose()
 
 

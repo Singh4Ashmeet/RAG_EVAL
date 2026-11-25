@@ -103,6 +103,31 @@ CREATE POLICY invitation_management ON public.invitations
     USING (true)
     WITH CHECK (true);
 
+-- Sessions are private authentication records. Before a workspace is known,
+-- the API may access only the row identified by the presented cookie's hash.
+-- Once an identity is verified, the API may create or revoke sessions only for
+-- that transaction-local workspace.
+ALTER TABLE public.sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sessions FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS session_token_lookup ON public.sessions;
+DROP POLICY IF EXISTS session_owner_create ON public.sessions;
+DROP POLICY IF EXISTS session_owner_delete ON public.sessions;
+CREATE POLICY session_token_lookup ON public.sessions
+    FOR SELECT TO rag_api
+    USING (
+        token_hash = current_setting('app.session_token_hash', true)
+        OR account_id = current_setting('app.workspace_id', true)
+    );
+CREATE POLICY session_owner_create ON public.sessions
+    FOR INSERT TO rag_api
+    WITH CHECK (account_id = current_setting('app.workspace_id', true));
+CREATE POLICY session_owner_delete ON public.sessions
+    FOR DELETE TO rag_api
+    USING (
+        token_hash = current_setting('app.session_token_hash', true)
+        OR account_id = current_setting('app.workspace_id', true)
+    );
+
 -- 3. Base Table Grants for rag_api
 -- General domain tables: full CRUD
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.accounts TO rag_api;

@@ -501,7 +501,13 @@ def current_account(request: Request, db=Depends(db_session)) -> Account:
     token = request.cookies.get("rag_eval_session")
     if not token:
         raise HTTPException(401, "Sign in with an invited GitHub account.")
-    record = db.get(SessionRecord, hashlib.sha256(token.encode()).hexdigest())
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    if db.bind and db.bind.dialect.name == "postgresql":
+        db.execute(
+            text("SELECT set_config('app.session_token_hash', :token_hash, true)"),
+            {"token_hash": token_hash},
+        )
+    record = db.get(SessionRecord, token_hash)
     expiry = record.expires_at if record else None
     if expiry is not None and expiry.tzinfo is None:
         expiry = expiry.replace(tzinfo=UTC)
@@ -698,6 +704,11 @@ def resolve_auth_account(db, subject: str, email: str, login: str) -> Account:
 
 def create_session_response(db, account: Account, response: RedirectResponse | None = None):
     session_token = secrets.token_urlsafe(48)
+    if db.bind and db.bind.dialect.name == "postgresql":
+        db.execute(
+            text("SELECT set_config('app.workspace_id', :workspace_id, true)"),
+            {"workspace_id": account.id},
+        )
     db.add(
         SessionRecord(
             token_hash=hashlib.sha256(session_token.encode()).hexdigest(),
@@ -957,7 +968,13 @@ def consume_email_login(token: str, db=Depends(db_session)):
 def logout(request: Request, db=Depends(db_session)):
     token = request.cookies.get("rag_eval_session")
     if token:
-        record = db.get(SessionRecord, hashlib.sha256(token.encode()).hexdigest())
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        if db.bind and db.bind.dialect.name == "postgresql":
+            db.execute(
+                text("SELECT set_config('app.session_token_hash', :token_hash, true)"),
+                {"token_hash": token_hash},
+            )
+        record = db.get(SessionRecord, token_hash)
         if record:
             db.delete(record)
             db.commit()
